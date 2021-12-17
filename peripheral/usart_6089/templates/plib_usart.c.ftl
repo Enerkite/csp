@@ -626,4 +626,44 @@ size_t ${USART_INSTANCE_NAME}_ReadCountGet( void )
     </#if>
 }
 
+void ${USART_INSTANCE_NAME}_StartReadTimeoutAfterNextChar(uint32_t nbitperiods)
+{
+    /* update timer value, this also starts the countdown */
+    ${USART_INSTANCE_NAME}_StartReadTimeoutNow(nbitperiods);
+    
+    /* immediately cancel running countdown (hopefully we're fast enough), and wait for next char */
+    ${USART_INSTANCE_NAME}_REGS->US_CR = US_CR_USART_STTTO_Msk;
+}
+
+void ${USART_INSTANCE_NAME}_StartReadTimeoutNow(uint32_t nbitperiods)
+{
+    <#if USART_INTERRUPT_MODE_ENABLE == true>
+    /* enable USART Rx timeout interrupt */
+    ${USART_INSTANCE_NAME}_REGS->US_IER = US_IER_USART_TIMEOUT_Msk;
+    </#if>
+
+    /* update timer value, immediately starts timeout */
+    ${USART_INSTANCE_NAME}_REGS->US_RTOR = US_RTOR_TO(nbitperiods);
+}
+
+void ${USART_INSTANCE_NAME}_RestartReadTimeoutAfterNextChar()
+{
+    ${USART_INSTANCE_NAME}_REGS->US_CR = US_CR_USART_STTTO_Msk;
+}
+
+void ${USART_INSTANCE_NAME}_RestartReadTimeoutNow()
+{
+    ${USART_INSTANCE_NAME}_REGS->US_CR = US_CR_USART_RETTO_Msk;
+}
+
+void ${USART_INSTANCE_NAME}_ClearReadTimeout( void )
+{
+    /* reset timer value, stops running timer */
+    ${USART_INSTANCE_NAME}_REGS->US_RTOR = 0;
+
+    <#if USART_INTERRUPT_MODE_ENABLE == true>
+    /* disable USART Rx timeout interrupt */
+    ${USART_INSTANCE_NAME}_REGS->US_IDR = US_IDR_USART_TIMEOUT_Msk;
+    </#if>
+}
 </#if>
