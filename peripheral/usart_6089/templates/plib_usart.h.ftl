@@ -99,6 +99,8 @@ void ${USART_INSTANCE_NAME}_WriteCallbackRegister( USART_CALLBACK callback, uint
 
 void ${USART_INSTANCE_NAME}_ReadCallbackRegister( USART_CALLBACK callback, uintptr_t context );
 
+void ${USART_INSTANCE_NAME}_ReadTimeoutCallbackRegister( USART_CALLBACK callback, uintptr_t context );
+
 </#if>
 
 // DOM-IGNORE-BEGIN
