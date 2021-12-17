@@ -210,6 +210,16 @@ void ${USART_INSTANCE_NAME}_InterruptHandler( void )
         }
     }
     <#else>
+    
+    /* Receiver timeout  */
+    if (${USART_INSTANCE_NAME}_REGS->US_CSR & US_CSR_USART_TIMEOUT_Msk)
+    {
+        if(${USART_INSTANCE_NAME?lower_case}Obj.rxTimeoutCallback != NULL)
+        {
+            ${USART_INSTANCE_NAME?lower_case}Obj.rxTimeoutCallback(${USART_INSTANCE_NAME?lower_case}Obj.rxTimeoutContext);
+        }
+    }
+
     /* Receiver status */
     if (${USART_INSTANCE_NAME}_REGS->US_CSR & US_CSR_USART_RXRDY_Msk)
     {
@@ -563,6 +573,13 @@ void ${USART_INSTANCE_NAME}_ReadCallbackRegister( USART_CALLBACK callback, uintp
     ${USART_INSTANCE_NAME?lower_case}Obj.rxCallback = callback;
 
     ${USART_INSTANCE_NAME?lower_case}Obj.rxContext = context;
+}
+
+void ${USART_INSTANCE_NAME}_ReadTimeoutCallbackRegister( USART_CALLBACK callback, uintptr_t context )
+{
+    ${USART_INSTANCE_NAME?lower_case}Obj.rxTimeoutCallback = callback;
+
+    ${USART_INSTANCE_NAME?lower_case}Obj.rxTimeoutContext = context;
 }
 
 bool ${USART_INSTANCE_NAME}_WriteIsBusy( void )
