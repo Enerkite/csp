@@ -120,7 +120,13 @@ void ${DMA_INSTANCE_NAME}_InterruptHandler( void )
             }
             
             if (event != XDMAC_TRANSFER_NONE) {
-                xdmacChObj->busyStatus = false;
+                /* a flush event may occur while a DMA transfer is still running. Therefore don't 
+                 * reset the busyStatus in this case.
+                 */
+                if (event != XDMAC_TRANSFER_FLUSH_END)
+                {
+                    xdmacChObj->busyStatus = false;
+                }
 
                 if (NULL != xdmacChObj->callback)
                 {
