@@ -218,6 +218,11 @@ void ${USART_INSTANCE_NAME}_InterruptHandler( void )
         {
             ${USART_INSTANCE_NAME?lower_case}Obj.rxTimeoutCallback(${USART_INSTANCE_NAME?lower_case}Obj.rxTimeoutContext);
         }
+        else 
+        {
+            /* clear and disable timer to avoid re-raising the timout, reset should be controlled by rxTimeoutCallback */
+            ${USART_INSTANCE_NAME}_ClearReadTimeout();
+        }
     }
 
     /* Receiver status */
