@@ -339,6 +339,11 @@ bool ${MCAN_INSTANCE_NAME}_MessageTransmit(uint8_t bufferNumber, MCAN_TX_BUFFER 
     txBuf = (uint8_t *)((uint8_t*)${MCAN_INSTANCE_NAME?lower_case}Obj.msgRAMConfig.txBuffersAddress + ((uint32_t)bufferNumber * ${MCAN_INSTANCE_NAME}_TX_FIFO_BUFFER_ELEMENT_SIZE));
 
     memcpy(txBuf, (uint8_t *)txBuffer, ${MCAN_INSTANCE_NAME}_TX_FIFO_BUFFER_ELEMENT_SIZE);
+	
+	SCB_CleanDCache_by_Addr((uint32_t *) txFifo, ${MCAN_INSTANCE_NAME}_TX_FIFO_BUFFER_ELEMENT_SIZE);
+
+	/* memory barrier to make sure processor updates values*/
+	__DMB();
 
     /* Enable Transmission Interrupt */
     ${MCAN_INSTANCE_NAME}_REGS->MCAN_TXBTIE = 1UL << bufferNumber;
@@ -390,6 +395,11 @@ bool ${MCAN_INSTANCE_NAME}_MessageTransmitFifo(uint8_t numberOfMessage, MCAN_TX_
         txFifo = (uint8_t *)((uint8_t*)${MCAN_INSTANCE_NAME?lower_case}Obj.msgRAMConfig.txBuffersAddress + ((uint32_t)tfqpi * ${MCAN_INSTANCE_NAME}_TX_FIFO_BUFFER_ELEMENT_SIZE));
 
         memcpy(txFifo, txBuf, ${MCAN_INSTANCE_NAME}_TX_FIFO_BUFFER_ELEMENT_SIZE);
+		
+		SCB_CleanDCache_by_Addr((uint32_t *) txFifo, ${MCAN_INSTANCE_NAME}_TX_FIFO_BUFFER_ELEMENT_SIZE);
+
+        /* memory barrier to make sure processor updates values*/
+        __DMB();
 
         txBuf += ${MCAN_INSTANCE_NAME}_TX_FIFO_BUFFER_ELEMENT_SIZE;
         bufferNumber |= (1UL << tfqpi);
@@ -494,8 +504,14 @@ bool ${MCAN_INSTANCE_NAME}_TxEventFifoRead(uint8_t numberOfTxEvent, MCAN_TX_EVEN
     for (count = 0; count < numberOfTxEvent; count++)
     {
         txEvent = (uint8_t *) ((uint8_t *)${MCAN_INSTANCE_NAME?lower_case}Obj.msgRAMConfig.txEventFIFOAddress + ((uint32_t)txefgi * sizeof(MCAN_TX_EVENT_FIFO)));
+		
+		/* make sure CPU reads new values from memory by invalidating data cache */
+        SCB_InvalidateDCache_by_Addr((uint32_t *) txEvent, sizeof(MCAN_TX_EVENT_FIFO));
 
         memcpy(txEvtFifo, txEvent, sizeof(MCAN_TX_EVENT_FIFO));
+		
+		/* memory barrier to make sure processor updates values*/
+        __DMB();
 
         if ((count + 1) == numberOfTxEvent)
         {
@@ -546,8 +562,14 @@ bool ${MCAN_INSTANCE_NAME}_MessageReceive(uint8_t bufferNumber, MCAN_RX_BUFFER *
     }
 
     rxBuf = (uint8_t *) ((uint8_t *)${MCAN_INSTANCE_NAME?lower_case}Obj.msgRAMConfig.rxBuffersAddress + ((uint32_t)bufferNumber * ${MCAN_INSTANCE_NAME}_RX_BUFFER_ELEMENT_SIZE));
+	
+	/* make sure CPU reads new values from memory by invalidating data cache */
+    SCB_InvalidateDCache_by_Addr((uint32_t *) rxBuf, ${MCAN_INSTANCE_NAME}_RX_BUFFER_ELEMENT_SIZE);
 
     memcpy((uint8_t *)rxBuffer, rxBuf, ${MCAN_INSTANCE_NAME}_RX_BUFFER_ELEMENT_SIZE);
+	
+	/* memory barrier to make sure processor updates values*/
+    __DMB();
 
     /* Clear new data flag */
     if (bufferNumber < 32U)
@@ -606,8 +628,14 @@ bool ${MCAN_INSTANCE_NAME}_MessageReceiveFifo(MCAN_RX_FIFO_NUM rxFifoNum, uint8_
             for (count = 0; count < numberOfMessage; count++)
             {
                 rxFifo = (uint8_t *) ((uint8_t *)${MCAN_INSTANCE_NAME?lower_case}Obj.msgRAMConfig.rxFIFO0Address + ((uint32_t)rxgi * ${MCAN_INSTANCE_NAME}_RX_FIFO0_ELEMENT_SIZE));
+				
+				/* make sure CPU reads new values from memory by invalidating data cache */
+				SCB_InvalidateDCache_by_Addr((uint32_t *) rxFifo, ${MCAN_INSTANCE_NAME}_RX_FIFO0_ELEMENT_SIZE);
 
                 memcpy(rxBuf, rxFifo, ${MCAN_INSTANCE_NAME}_RX_FIFO0_ELEMENT_SIZE);
+				
+				/* memory barrier to make sure processor updates values*/
+				__DMB();
 
                 if ((count + 1) == numberOfMessage)
                 {
@@ -634,8 +662,14 @@ bool ${MCAN_INSTANCE_NAME}_MessageReceiveFifo(MCAN_RX_FIFO_NUM rxFifoNum, uint8_
             for (count = 0; count < numberOfMessage; count++)
             {
                 rxFifo = (uint8_t *) ((uint8_t *)${MCAN_INSTANCE_NAME?lower_case}Obj.msgRAMConfig.rxFIFO1Address + ((uint32_t)rxgi * ${MCAN_INSTANCE_NAME}_RX_FIFO1_ELEMENT_SIZE));
+				
+				/* make sure CPU reads new values from memory by invalidating data cache */
+				SCB_InvalidateDCache_by_Addr((uint32_t *) rxFifo, ${MCAN_INSTANCE_NAME}_RX_FIFO1_ELEMENT_SIZE);
 
                 memcpy(rxBuf, rxFifo, ${MCAN_INSTANCE_NAME}_RX_FIFO1_ELEMENT_SIZE);
+				
+				/* memory barrier to make sure processor updates values*/
+				__DMB();
 
                 if ((count + 1) == numberOfMessage)
                 {
@@ -660,6 +694,7 @@ bool ${MCAN_INSTANCE_NAME}_MessageReceiveFifo(MCAN_RX_FIFO_NUM rxFifoNum, uint8_
     }
     return status;
 }
+
 </#if>
 
 // *****************************************************************************
