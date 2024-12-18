@@ -21,6 +21,7 @@
 * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
 *****************************************************************************"""
 
+import re
 from collections import defaultdict
 from os.path import join
 from xml.etree import ElementTree
@@ -1110,14 +1111,16 @@ children = []
 val = ATDF.getNode("/avr-tools-device-file/pinouts/pinout@[name=\"" + str(pinout) + "\"]")
 children = val.getChildren()
 for pad in range(0, len(children)):
-    availablePins.append(children[pad].getAttribute("pad"))
+    # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+    availablePins.append(re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', children[pad].getAttribute("pad")))
 
 gclk = ATDF.getNode(
     "/avr-tools-device-file/devices/device/peripherals/module@[name=\"GCLK\"]/instance@[name=\"GCLK\"]/signals")
 wakeup_signals = gclk.getChildren()
 for pad in range(0, len(wakeup_signals)):
     if "index" in wakeup_signals[pad].getAttributeList():
-        padSignal = wakeup_signals[pad].getAttribute("pad")
+        # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+        padSignal = re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', wakeup_signals[pad].getAttribute("pad"))
         if padSignal in availablePins:
             gclk_io_signals[int(
                 wakeup_signals[pad].getAttribute("index"))] = True
@@ -1143,17 +1146,18 @@ for gclknumber in range(0, 12):
 
     # GCLK External Clock input frequency
 
-    if(gclk_io_signals[gclknumber] == True):
-        numPads = numPads + 1
-        gclkSym_GCLK_IO_FREQ.append(gclknumber)
-        gclkSym_GCLK_IO_FREQ[gclknumber] = coreComponent.createIntegerSymbol(
+    numPads = numPads + 1
+    gclkSym_GCLK_IO_FREQ.append(gclknumber)
+    gclkSym_GCLK_IO_FREQ[gclknumber] = coreComponent.createIntegerSymbol(
             "GCLK_IO_" + str(gclknumber) + "_FREQ", gclkSym_num[gclknumber])
-        gclkSym_GCLK_IO_FREQ[gclknumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
-        gclkSym_GCLK_IO_FREQ[gclknumber].setLabel(
+    gclkSym_GCLK_IO_FREQ[gclknumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
+    gclkSym_GCLK_IO_FREQ[gclknumber].setLabel(
             "External Input (GCLK_IO[" + str(gclknumber) + "]) Frequency")
-        gclkSym_GCLK_IO_FREQ[gclknumber].setDefaultValue(0)
-        gclkSym_GCLK_IO_FREQ[gclknumber].setDependencies(setGCLKIOFreq, [
+    gclkSym_GCLK_IO_FREQ[gclknumber].setDefaultValue(0)
+    gclkSym_GCLK_IO_FREQ[gclknumber].setDependencies(setGCLKIOFreq, [
                                                          "GCLK_" + str(gclknumber) + "_FREQ", "GCLK_" + str(gclknumber) + "_OUTPUTENABLE"])
+    gclkSym_GCLK_IO_FREQ[gclknumber].setVisible(gclk_io_signals[gclknumber])
+    gclkSym_GCLK_IO_FREQ[gclknumber].setReadOnly(not gclk_io_signals[gclknumber])
 
     # GCLK Generator Source Selection
     gclkSym_GENCTRL_SRC.append(gclknumber)
@@ -1171,6 +1175,8 @@ for gclknumber in range(0, 12):
 
     if(gclk_io_signals[gclknumber] == True):
         gclkSym_GENCTRL_SRC[gclknumber].addKey(gclk_in, "1", gclk_in_desc)
+    else:
+        gclkSym_GENCTRL_SRC[gclknumber].addKey("Unavailable", "1", "Unavailable")
 
     if gclknumber != 1:
         gclkSym_GENCTRL_SRC[gclknumber].addKey(
@@ -1199,32 +1205,36 @@ for gclknumber in range(0, 12):
     gclkSym_GENCTRL_SRC[gclknumber].setDisplayMode("Key")
 
     # GCLK Generator Output Enable
-    if(gclk_io_signals[gclknumber] == True):
-        gclkSym_GENCTRL_OE.append(gclknumber)
-        gclkSym_GENCTRL_OE[gclknumber] = coreComponent.createBooleanSymbol(
-            "GCLK_" + str(gclknumber) + "_OUTPUTENABLE", gclkSym_num[gclknumber])
-        gclkSym_GENCTRL_OE[gclknumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
-        gclkSym_GENCTRL_OE[gclknumber].setLabel(
-            "Output GCLK clock signal on IO pin?")
+    gclkSym_GENCTRL_OE.append(gclknumber)
+    gclkSym_GENCTRL_OE[gclknumber] = coreComponent.createBooleanSymbol(
+        "GCLK_" + str(gclknumber) + "_OUTPUTENABLE", gclkSym_num[gclknumber])
+    gclkSym_GENCTRL_OE[gclknumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
+    gclkSym_GENCTRL_OE[gclknumber].setLabel(
+        "Output GCLK clock signal on IO pin?")
+    gclkSym_GENCTRL_OE[gclknumber].setVisible(gclk_io_signals[gclknumber])
+    gclkSym_GENCTRL_OE[gclknumber].setReadOnly(not gclk_io_signals[gclknumber])
 
     # GCLK Generator Output Off Value
-    if(gclk_io_signals[gclknumber] == True):
-        gclkSym_GENCTRL_OOV.append(gclknumber)
-        gclkSym_GENCTRL_OOV[gclknumber] = coreComponent.createKeyValueSetSymbol(
-            "GCLK_" + str(gclknumber) + "_OUTPUTOFFVALUE", gclkSym_GENCTRL_OE[gclknumber])
-        gclkSym_GENCTRL_OOV[gclknumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
-        gclkSym_GENCTRL_OOV[gclknumber].setLabel("Output Off Value")
-        gclkSym_GENCTRL_OOV[gclknumber].addKey("LOW", "0", "Logic Level 0")
-        gclkSym_GENCTRL_OOV[gclknumber].addKey("HIGH", "1", "Logic Level 1")
-        gclkSym_GENCTRL_OOV[gclknumber].setDefaultValue(0)
-        gclkSym_GENCTRL_OOV[gclknumber].setOutputMode("Key")
-        gclkSym_GENCTRL_OOV[gclknumber].setDisplayMode("Description")
+    gclkSym_GENCTRL_OOV.append(gclknumber)
+    gclkSym_GENCTRL_OOV[gclknumber] = coreComponent.createKeyValueSetSymbol(
+        "GCLK_" + str(gclknumber) + "_OUTPUTOFFVALUE", gclkSym_GENCTRL_OE[gclknumber])
+    gclkSym_GENCTRL_OOV[gclknumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
+    gclkSym_GENCTRL_OOV[gclknumber].setLabel("Output Off Value")
+    gclkSym_GENCTRL_OOV[gclknumber].addKey("LOW", "0", "Logic Level 0")
+    gclkSym_GENCTRL_OOV[gclknumber].addKey("HIGH", "1", "Logic Level 1")
+    gclkSym_GENCTRL_OOV[gclknumber].setDefaultValue(0)
+    gclkSym_GENCTRL_OOV[gclknumber].setOutputMode("Key")
+    gclkSym_GENCTRL_OOV[gclknumber].setDisplayMode("Description")
+    gclkSym_GENCTRL_OOV[gclknumber].setVisible(gclk_io_signals[gclknumber])
+    gclkSym_GENCTRL_OOV[gclknumber].setReadOnly(not gclk_io_signals[gclknumber])
 
-        gclkInFreq = coreComponent.createBooleanSymbol(
-            "GCLK_IN_" + str(gclknumber) + "_FREQ", gclkSym_num[gclknumber])
-        gclkInFreq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
-        gclkInFreq.setLabel("Gclk Input Frequency")
-        gclkInFreq.setDefaultValue(0)
+    gclkInFreq = coreComponent.createBooleanSymbol(
+        "GCLK_IN_" + str(gclknumber) + "_FREQ", gclkSym_num[gclknumber])
+    gclkInFreq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32ck_gc_sg;register:GENCTRL")
+    gclkInFreq.setLabel("Gclk Input Frequency")
+    gclkInFreq.setDefaultValue(0)
+    gclkInFreq.setVisible(gclk_io_signals[gclknumber])
+    gclkInFreq.setReadOnly(not gclk_io_signals[gclknumber])
 
     # GCLK Generator Division Selection
     gclkSym_GENCTRL_DIVSEL.append(gclknumber)
