@@ -217,3 +217,6 @@ package:
     - name: "PIC32AK-GC_DFP"
       type: "dfp"
       version: "1.0.5"
+    - name: "PIC32WM_DEV_DFP"
+      type: "dfp"
+      version: "0.0.3"
