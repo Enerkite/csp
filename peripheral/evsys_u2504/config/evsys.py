@@ -347,14 +347,16 @@ def instantiateComponent(evsysComponent):
     generatorsNode=ATDF.getNode(
         "/avr-tools-device-file/devices/device/events/generators")
     for id in range(0, len(generatorsNode.getChildren())):
-        generator[generatorsNode.getChildren()[id].getAttribute("name")]=int(
-            generatorsNode.getChildren()[id].getAttribute("index"))
-        generatorActive=evsysComponent.createBooleanSymbol(
-            "GENERATOR_" + str(generatorsNode.getChildren()[id].getAttribute("name")) + "_ACTIVE", evsysSym_Menu)
-        generatorActive.setVisible(False)
-        generatorActive.setDefaultValue(False)
-        generatorSymbol.append(
-            "GENERATOR_" + str(generatorsNode.getChildren()[id].getAttribute("name")) + "_ACTIVE")
+        
+        if (generatorsNode.getChildren()[id].getAttribute("module-instance") != "RESERVED") :
+            generator[generatorsNode.getChildren()[id].getAttribute("name")]=int(
+                generatorsNode.getChildren()[id].getAttribute("index"))
+            generatorActive=evsysComponent.createBooleanSymbol(
+                "GENERATOR_" + str(generatorsNode.getChildren()[id].getAttribute("name")) + "_ACTIVE", evsysSym_Menu)
+            generatorActive.setVisible(False)
+            generatorActive.setDefaultValue(False)
+            generatorSymbol.append(
+                "GENERATOR_" + str(generatorsNode.getChildren()[id].getAttribute("name")) + "_ACTIVE")
 
     usersNode=ATDF.getNode(
         "/avr-tools-device-file/devices/device/events/users")
