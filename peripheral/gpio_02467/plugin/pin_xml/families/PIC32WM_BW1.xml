@@ -32,7 +32,6 @@
 			<function name="TC3_WO0 (in)" direction="in" register-name="TC3WO0G1R"/>
 		</group>
 		<group id="2">
-			<pin name="RPA0" value="15"/>
 			<pin name="RPA4" value="1"/>
 			<pin name="RPA8" value="2"/>
 			<pin name="RPB1" value="4"/>
@@ -315,7 +314,9 @@
 			<function name="AC_CMP0"/>
 			<function name="AC_CMP1"/>
 			<function name="AC_CMP1_ALT"/>
+			<function name="AC_CMPTEN"/>
 			<function name="AC_CMPTOUT"/>
+			<function name="AC_CMPTRDY"/>
 		</module>
 		<module name="ADCHS">
 			<function name="AIN0"/>
@@ -417,27 +418,10 @@
 			<function name="PMU_sub"/>
 		</module>
 		<module name="QSPI">
-			<function name="QSPI_SCK"/>
 			<function name="QSPI_CS"/>
 			<function name="QSPI_DATA0"/>
 			<function name="QSPI_DATA1"/>
-			<function name="QSPI_DATA2"/>
-			<function name="QSPI_DATA3"/>
-			<function name="QSPI_SCK (in)"/>
-			<function name="QSPI_DATA0 (in)"/>
-			<function name="QSPI_DATA1 (in)"/>
-			<function name="QSPI_DATA2 (in)"/>
-			<function name="QSPI_DATA3 (in)"/>
-			<function name="QSPI_SCK (out)"/>
-			<function name="QSPI_CS (out)"/>
-			<function name="QSPI_DATA0 (out)"/>
-			<function name="QSPI_DATA1 (out)"/>
-			<function name="QSPI_DATA2 (out)"/>
-			<function name="QSPI_DATA3 (out)"/>
-			<function name="QSPI_DATA0 (in/out)"/>
-			<function name="QSPI_DATA1 (in/out)"/>
-			<function name="QSPI_DATA2 (in/out)"/>
-			<function name="QSPI_DATA3 (in/out)"/>						
+			<function name="QSPI_SCK"/>
 		</module>
 		<module name="RTC">
 			<function name="RTC_EVENT"/>
@@ -466,8 +450,6 @@
 		<module name="SERCOM1">
 			<function name="SERCOM1_PAD0"/>
 			<function name="SERCOM1_PAD1"/>
-			<function name="SERCOM1_PAD2"/>
-			<function name="SERCOM1_PAD3"/>
 			<function name="SERCOM1_PAD0 (in)"/>
 			<function name="SERCOM1_PAD0 (out)"/>
 			<function name="SERCOM1_PAD1 (in)"/>
@@ -480,6 +462,8 @@
 		<module name="SERCOM2">
 			<function name="SERCOM2_PAD0"/>
 			<function name="SERCOM2_PAD1"/>
+			<function name="SERCOM2_PAD2"/>
+			<function name="SERCOM2_PAD3"/>
 			<function name="SERCOM2_PAD0 (in)"/>
 			<function name="SERCOM2_PAD0 (out)"/>
 			<function name="SERCOM2_PAD1 (in)"/>
@@ -490,6 +474,8 @@
 			<function name="SERCOM2_PAD3 (out)"/>
 		</module>
 		<module name="SERCOM3">
+			<function name="SERCOM3_PAD0"/>
+			<function name="SERCOM3_PAD3"/>
 			<function name="SERCOM3_PAD0 (in)"/>
 			<function name="SERCOM3_PAD0 (out)"/>
 			<function name="SERCOM3_PAD1 (in)"/>

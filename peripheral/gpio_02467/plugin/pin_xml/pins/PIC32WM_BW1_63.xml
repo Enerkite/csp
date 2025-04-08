@@ -1,310 +1,332 @@
 <?xml version="1.0"?>
-<!-- This is an auto-generated pin data file created: 14:48:48 03/06/25 -->
+<!-- This is an auto-generated pin data file created: 18:16:01 08/25/25 -->
 <pinfile family="PIC32WM_BW1">
    <packages>
-     <package diagram="LGA58" id="1" name="LGA58" />
-  </packages>
+     <package id="1" name="LGA63" diagram="LGA63" />
+    </packages>
   <pins>
      <pin name="GND">
        <number package="1" pin="1" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="2" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="3" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="4" />
-    </pin>
+      </pin>
     <pin name="NMCLR">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="5" />
-    </pin>
+      </pin>
     <pin name="RB1">
        <number package="1" pin="6" />
       <function name="AC_AIN3" />
       <function name="AIN5" />
       <function name="RPB1" />
-    </pin>
+      </pin>
     <pin name="RB2">
        <number package="1" pin="7" />
       <function name="AC_AIN0" />
       <function name="AIN6" />
       <function name="RPB2" />
-    </pin>
+      </pin>
     <pin name="RB3">
        <number package="1" pin="8" />
       <function name="AC_AIN1" />
       <function name="AIN7" />
       <function name="RPB3" />
-    </pin>
+      </pin>
     <pin name="RB4">
        <number package="1" pin="9" />
       <function name="AIN0" />
       <function name="PMU_INT0" />
       <function name="TPI_TRD3" />
       <function name="RPB4" />
-    </pin>
+      </pin>
     <pin name="RB5">
        <number package="1" pin="10" />
       <function name="AIN1" />
       <function name="TPI_TRD0" />
       <function name="RPB5" />
-    </pin>
+      </pin>
     <pin name="RB6">
        <number package="1" pin="11" />
       <function name="AIN2" />
       <function name="ANN0" />
       <function name="TPI_TRD1" />
       <function name="RPB6" />
-    </pin>
+      </pin>
     <pin name="RA11">
        <number package="1" pin="12" />
       <function name="SOSCI" />
       <function name="RPA11" />
       <fixed-direction name="In" />
-    </pin>
+      </pin>
     <pin name="RA12">
        <number package="1" pin="13" />
       <function name="SOSCO" />
       <function name="RPA12" />
       <fixed-direction name="In" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="14" />
-    </pin>
+      </pin>
     <pin name="RB9">
        <number package="1" pin="15" />
-	  <function name="CM4_SWDIO" /> 
       <function name="RPB9" />
-    </pin>
+      </pin>
     <pin name="RB8">
        <number package="1" pin="16" />
       <function name="RPB8" />
-    </pin>
+      </pin>
     <pin name="RB7">
        <number package="1" pin="17" />
       <function name="AIN3" />
       <function name="TPI_TRD2" />
-      <function name="LVDIN" />
       <function name="RPB7" />
-    </pin>
+      </pin>
     <pin name="RA4">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="18" />
+      <function name="RTC_OUT" />
       <function name="SERCOM0_PAD3" />
       <function name="RPA4" />
-    </pin>
+      </pin>
     <pin name="RA3">
        <number package="1" pin="19" />
       <function name="RTC_IN0" />
-	  <function name="SCLKI" />
       <function name="SERCOM0_PAD2" />
       <function name="RPA3" />
-    </pin>
+      </pin>
     <pin name="RA6">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="20" />
+      <function name="AC_CMP1_ALT" />
+      <function name="AC_CMPTEN" />
       <function name="SERCOM0_PAD1" />
-	  <function name="AC_CMP1_ALT" />
       <function name="RPA6" />
-    </pin>
+      </pin>
     <pin name="RA5">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="21" />
+      <function name="AC_CMPTRDY" />
       <function name="SERCOM0_PAD0" />
       <function name="RPA5" />
-    </pin>
+      </pin>
     <pin name="RA2">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="22" />
       <function name="AC_CMP0" />
       <function name="RTC_IN1" />
       <function name="RPA2" />
-    </pin>
+      </pin>
     <pin name="RA0">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="23" />
-      <function name="QSPI_DATA2" />
       <function name="RTC_IN3" />
+      <function name="SERCOM2_PAD2" />
       <function name="RPA0" />
-    </pin>
+      </pin>
     <pin name="RA1">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="24" />
       <function name="AC_CMP1" />
-	  <function name="AC_CMPTOUT" />
-      <function name="QSPI_DATA3" />
+      <function name="AC_CMPTOUT" />
       <function name="RTC_IN2" />
-      <function name="RTC_OUT" />
+      <function name="SERCOM2_PAD3" />
       <function name="RPA1" />
-    </pin>
+      </pin>
     <pin name="RB13">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="25" />
       <function name="QSPI_DATA1" />
       <function name="RTC_EVENT" />
       <function name="RPB13" />
-    </pin>
+      </pin>
     <pin name="RB12">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="26" />
       <function name="QSPI_DATA0" />
       <function name="RPB12" />
-    </pin>
+      </pin>
     <pin name="RB10">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="27" />
       <function name="QSPI_CS" />
       <function name="RPB10" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="28" />
-    </pin>
+      </pin>
     <pin name="RB11">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="29" />
       <function name="QSPI_SCK" />
       <function name="RPB11" />
-    </pin>
+      </pin>
     <pin name="VDD">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="30" />
-    </pin>
+      </pin>
     <pin name="VDD">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="31" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="32" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="33" />
-    </pin>
+      </pin>
     <pin name="RA8">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="34" />
       <function name="SERCOM1_PAD1" />
       <function name="RPA8" />
-    </pin>
+      </pin>
     <pin name="RA7">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="35" />
       <function name="SERCOM1_PAD0" />
       <function name="TPI_TRCLK" />
       <function name="RPA7" />
-    </pin>
+      </pin>
     <pin name="RA9">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="36" />
       <function name="RTC_IN0_ALT" />
-      <function name="SERCOM1_PAD2" />
+      <function name="SERCOM2_PAD0" />
+      <function name="SERCOM3_PAD0" />
       <function name="RPA9" />
-    </pin>
+      </pin>
     <pin name="RA10">
        <modifiers>
          <modifier value="5V" />
-      </modifiers>
+        </modifiers>
       <number package="1" pin="37" />
+      <function name="PMU_TEST_SDO" />
       <function name="RTC_OUT_ALT" />
-      <function name="SERCOM1_PAD3" />
+      <function name="SERCOM2_PAD1" />
+      <function name="SERCOM3_PAD3" />
       <function name="RPA10" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="38" />
-    </pin>
+      </pin>
     <pin name="IRQ">
        <number package="1" pin="39" />
-    </pin>
+      </pin>
     <pin name="UART2_TX">
        <number package="1" pin="40" />
-    </pin>
+      </pin>
     <pin name="ECC_SCL">
        <number package="1" pin="41" />
-    </pin>
+      </pin>
     <pin name="ECC_SDA">
        <number package="1" pin="42" />
-    </pin>
+      </pin>
     <pin name="NC">
        <number package="1" pin="43" />
-    </pin>
-    <pin name="NC">
+      </pin>
+    <pin name="UART1_TXD">
        <number package="1" pin="44" />
-    </pin>
+      </pin>
     <pin name="NC">
        <number package="1" pin="45" />
-    </pin>
+      </pin>
     <pin name="NC">
        <number package="1" pin="46" />
-    </pin>
+      </pin>
     <pin name="NC">
        <number package="1" pin="47" />
-    </pin>
-    <pin name="NC">
+      </pin>
+    <pin name="UART1_RXD">
        <number package="1" pin="48" />
-    </pin>
+      </pin>
     <pin name="NC">
        <number package="1" pin="49" />
-    </pin>
-    <pin name="NC">
+      </pin>
+    <pin name="TDO_SOSCO">
        <number package="1" pin="50" />
-    </pin>
-    <pin name="WAKE">
+      </pin>
+    <pin name="TMS_WAKE">
        <number package="1" pin="51" />
-    </pin>
+      </pin>
     <pin name="W_NMCLR">
        <number package="1" pin="52" />
-    </pin>
+      </pin>
     <pin name="DFU_TX_STRAP2">
        <number package="1" pin="53" />
-    </pin>
+      </pin>
     <pin name="DFU_RX_STRAP1">
        <number package="1" pin="54" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="55" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="56" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="57" />
-    </pin>
+      </pin>
     <pin name="GND">
        <number package="1" pin="58" />
-    </pin>
-  </pins>
-</pinfile>
+      </pin>
+    <pin name="GND">
+       <number package="1" pin="59" />
+      </pin>
+    <pin name="GND">
+       <number package="1" pin="60" />
+      </pin>
+    <pin name="RA13">
+       <number package="1" pin="61" />
+      <function name="RPA13" />
+      </pin>
+    <pin name="RA14">
+       <number package="1" pin="62" />
+      <function name="RPA14" />
+      </pin>
+    <pin name="RB0">
+       <number package="1" pin="63" />
+      <function name="AC_AIN2" />
+      <function name="AIN4" />
+      <function name="RPB0" />
+      </pin>
+    </pins>
+  </pinfile>
