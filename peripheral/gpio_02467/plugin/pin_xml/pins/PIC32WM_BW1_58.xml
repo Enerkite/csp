@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- This is an auto-generated pin data file created: 14:48:48 03/06/25 -->
-<pinfile family="PIC32WM_TF1">
+<pinfile family="PIC32WM_BW1">
    <packages>
      <package diagram="LGA58" id="1" name="LGA58" />
   </packages>
