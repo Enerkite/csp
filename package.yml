@@ -24,7 +24,7 @@ package:
       version: "1.2.150"
     - name: "PIC32CK-SG_DFP"
       type: "dfp"
-      version: "1.4.173"
+      version: "1.6.199"
     - name: "PIC32CK-MC_DFP"
       type: "dfp"
       version: "1.0.3"
