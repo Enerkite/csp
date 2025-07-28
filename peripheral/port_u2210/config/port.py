@@ -109,7 +109,7 @@ def setPinConfigurationValue(pinNumber, setting, value):
                     symbol.setValue("ANALOG")
                 else:
                     symbol.clearValue()
-                    
+
             symbol = pinSymbolsDictionary.get(pinNumber).get('peripheralfunction')
             periphFnValue = value
             if symbol:
@@ -124,7 +124,7 @@ def setPinConfigurationValue(pinNumber, setting, value):
 
                     if ((periphFnValue not in portPeripheralFunc) and (periphFnValue not in peripheralFunctionality)):
                         periphFnValue = "GPIO"
-                    
+
                 symbol.clearValue()
                 symbol.setValue(periphFnValue)
 
@@ -172,7 +172,7 @@ def getPinConfigurationValue(pinNumber, setting):
             return "True"
         else:
             return "False"
-        
+
     elif setting == "direction":
         symbol = pinSymbolsDictionary.get(pinNumber).get("input")
         inputValue = symbol.getValue()
@@ -184,7 +184,7 @@ def getPinConfigurationValue(pinNumber, setting):
             return "Out"
         elif inputValue == "True" and dirValue == "Out":
             return "In/Out"
-        
+
     elif setting == "trustzone":
         symbol = pinSymbolsDictionary.get(pinNumber).get("trustzone")
         if symbol is not None:
@@ -203,7 +203,7 @@ def clearPinConfigurationValue(pinNumber, setting):
                 symbol.setReadOnly(True)
                 symbol.setReadOnly(False)
                 symbol.clearValue()
-            
+
             symbol = pinSymbol.get('mode')
             if symbol is not None:
                 symbol.setReadOnly(True)
@@ -233,15 +233,15 @@ def clearPinConfigurationValue(pinNumber, setting):
                 symbol.setReadOnly(True)
                 symbol.setReadOnly(False)
                 symbol.clearValue()
-            
+
         else:
             symbol = pinSymbol.get(setting)
             if symbol is not None:
                 symbol.setReadOnly(True)
                 symbol.setReadOnly(False)
                 symbol.clearValue()
-        
-    
+
+
 portSecAliasRegSpace = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"PORT\"]/instance@[name=\"PORT\"]/register-group@[name=\"PORT_SEC\"]")
 
 portRegName = coreComponent.createStringSymbol("PORT_REG_NAME", None)
@@ -514,7 +514,7 @@ def update_port_nonsec_mask(symbol, event):
                 portNonSecRegValue = portNonSecRegValue & ~(1<<pinPos)
 
             Database.setSymbolValue("core", "PORT_GROUP_" + str(portGroup) + "_NONSEC", long(portNonSecRegValue))
-        
+
 
 def updateSecurityAttributeVisibility(symbol, event):
     component = event["source"]
@@ -839,19 +839,22 @@ for pinNumber in range(1, internalPincount + 1):
 
     if portPINCFGSlewRate.getValue() == True:
         portSLEWLIMValueGroupNode = getValueGroupNode__Port("PORT", "GROUP", "PINCFG", "SLEWLIM")
+        pinSlewRate.append(pinNumber)
+        pinSlewRate[pinNumber-1] = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_SLEWRATE", pin[pinNumber-1])
+        pinSlewRate[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
+        pinSlewRate[pinNumber-1].setLabel("Slew Rate")
+        pinSlewRate[pinNumber-1].setDisplayMode("Key")
         if portSLEWLIMValueGroupNode != None:
-            pinSlewRate.append(pinNumber)
-            pinSlewRate[pinNumber-1] = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_SLEWRATE", pin[pinNumber-1])
-            pinSlewRate[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
-            pinSlewRate[pinNumber-1].setLabel("Slew Rate")
-            pinSlewRate[pinNumber-1].setDisplayMode("Key")
             for index in range(0, len(portSLEWLIMValueGroupNode.getChildren())):
                 portSLEWLIMKeyName = portSLEWLIMValueGroupNode.getChildren()[index].getAttribute("name")
                 portSLEWLIMValue = portSLEWLIMValueGroupNode.getChildren()[index].getAttribute("value")
                 portSLEWLIMDescription = portSLEWLIMValueGroupNode.getChildren()[index].getAttribute("caption")
                 pinSlewRate[pinNumber-1].addKey(portSLEWLIMKeyName, portSLEWLIMValue, portSLEWLIMDescription)
-            pinSlewRate[pinNumber-1].setReadOnly(True)
-            symbolsDict.setdefault('slewrate', pinSlewRate[pinNumber-1])
+        else:
+            pinSlewRate[pinNumber-1].addKey("DISABLED", "0", "Output Driver Slew Rate Limit is disabled.")
+            pinSlewRate[pinNumber-1].addKey("ENABLED", "1", "Output Driver Slew Rate Limit is enabled.")
+        pinSlewRate[pinNumber-1].setReadOnly(True)
+        symbolsDict.setdefault('slewrate', pinSlewRate[pinNumber-1])
 
     if portPINCFGDriverStrength.getValue() == True:
         pinDrvStr.append(pinNumber)
@@ -866,7 +869,7 @@ for pinNumber in range(1, internalPincount + 1):
 
     ## Add symbol to global dictionary
     pinSymbolsDictionary.setdefault(pinNumber, symbolsDict)
-    
+
     #creating list for direction dependency
     pinDirList.append(pinNumber)
     pinDirList[pinNumber-1] = "PIN_" + str(pinNumber) +"_DIR"
