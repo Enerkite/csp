@@ -23,7 +23,7 @@
 import os
 global setDspLibParameters
 def setDspLibParameters(dspLibSym, compilerID):
-    cmsisPath = os.path.join(Variables.get("__FRAMEWORK_ROOT"), "CMSIS_5")
+    cmsisPath = Variables.get("__CMSIS_PACK_DIR")
     libCoreName = dspLibSym.getID().split("CMSIS_DSP_LIB_")[1]
     # For IAR compiler, M7 fp libraries are named differently
     if compilerID == 1:
@@ -48,7 +48,7 @@ def dspLibCallback(symbol, event):
 
 def instantiateComponent(cmsisComponent):
     import xml.etree.ElementTree as ET
-    cmsisPath = os.path.join(Variables.get("__FRAMEWORK_ROOT"), "CMSIS_5")
+    cmsisPath = Variables.get("__CMSIS_PACK_DIR")
     pdscPath = os.path.join(cmsisPath, "ARM.CMSIS.pdsc")
     cmsisReleaseInfo = ET.parse(pdscPath).getroot().find("releases/release")
 
