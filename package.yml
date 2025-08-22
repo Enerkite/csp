@@ -105,7 +105,7 @@ package:
       version: "1.9.170"
     - name: "SAMA5D2_DFP"
       type: "dfp"
-      version: "1.11.228"
+      version: "1.14.264"
     - name: "SAMA7G5_DFP"
       type: "dfp"
       version: "1.8.235"
