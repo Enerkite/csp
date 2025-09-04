@@ -3,6 +3,40 @@
 
 # Microchip MPLAB® Harmony 3 Release Notes
 
+## CSP Release v3.23.0
+
+### New Features
+
+- **New part support**
+  - Added support for PIC32WM-BW1 family of devices
+  - Added support for PIC32CK-SG 128KB RAM parts
+
+- **New Features and Enhancements**
+  - None
+
+- **Bug Fixes**
+  - Updated clock init routine of PIC32MZ_W1 device family to ensure consistent PLL locking
+  - Fixed relative path issue for RAM PLIB
+  - Updated PIC32CM-JH DFP version to 1.5.236 to fix build issues in PIC32CM-JH00 family of devices
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+For PIC32WM-BW1 family of devices:
+- [MPLAB® X IDE v6.25](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v4.60](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.2 or higher
+
+For all other parts:
+ - Same as v3.22.0
+
 ## CSP Release v3.22.7
 
 ### New Features

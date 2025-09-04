@@ -1,7 +1,7 @@
 package:
   format-version: "1.0.0"
   name: "csp"
-  version: "v3.22.7"
+  version: "v3.23.0"
   type: "api"
   status: "production"
   required: true
@@ -222,4 +222,4 @@ package:
       version: "1.0.5"
     - name: "PIC32WM_DFP"
       type: "dfp"
-      version: "1.0.22"
+      version: "1.0.29"

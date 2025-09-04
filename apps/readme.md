@@ -41,3 +41,4 @@ Microchip MPLAB Harmony provides several application examples for most supported
 | [csp_apps_pic32cm_sg_gc](https://github.com/Microchip-MPLAB-Harmony/csp_apps_pic32cm_sg_gc) | Application examples for PIC32CM-GC/SG family |
 | [csp_apps_pic32cz_ca70](https://github.com/Microchip-MPLAB-Harmony/csp_apps_pic32cz_ca70) | Application examples for PIC32CZ-CA70 family |
 | [csp_apps_pic32ak_gc](https://github.com/Microchip-MPLAB-Harmony/csp_apps_pic32ak_gc) | Application examples for PIC32AK-GC family |
+| [csp_apps_pic32wm_bw1](https://github.com/Microchip-MPLAB-Harmony/csp_apps_pic32wm_bw1) | Application examples for PIC32WM-BW1 family |
