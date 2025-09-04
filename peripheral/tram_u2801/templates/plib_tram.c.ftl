@@ -105,7 +105,7 @@ void ${TRAM_INSTANCE_NAME}_DataScrambleKeySet(uint32_t dsckey)
 
     if (en)
     {
-        ${TRAM_INSTANCE_NAME}_Enable(true);
+        (void)${TRAM_INSTANCE_NAME}_Enable(true);
     }
 
 }
@@ -126,6 +126,6 @@ void ${TRAM_INSTANCE_NAME}_DataScrambleEnable(bool enable)
 
     if (en)
     {
-        ${TRAM_INSTANCE_NAME}_Enable(true);
+        (void)${TRAM_INSTANCE_NAME}_Enable(true);
     }
 }
