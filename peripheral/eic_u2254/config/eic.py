@@ -354,7 +354,11 @@ def instantiateComponent(eicComponent):
         eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_CONFIG__SENSE0\"]")
         if eicConfigSenseNode == None:
            eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_CONFIG__SENSE\"]") 
-
+        if eicConfigSenseNode == None:
+           if ATDF.getNode('/avr-tools-device-file/modules/module@[name=\"EIC\"]/register-group@[name="EIC"]/register@[name=\"CONFIG0\"]') is not None:
+                eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/register-group@[name=\"EIC\"]/register@[name=\"CONFIG0\"]/bitfield@[name=\"SENSE0\"]")
+                eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"" + eicConfigSenseNode.getAttribute("values") + "\"]")
+                
         for index in range(len(eicConfigSenseNode.getChildren())):
             eicConfigSenseKeyName = eicConfigSenseNode.getChildren()[index].getAttribute("name")
             eicConfigSenseKeyDescription = eicConfigSenseNode.getChildren()[index].getAttribute("caption")
