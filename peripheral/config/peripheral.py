@@ -146,6 +146,7 @@ peripheral_ID_map = {
     "SERCOM_03715" : "SERCOM_U2201",
     "SERCOM_04707" : "SERCOM_U2201",
     "TC_04705"     : "TC_U2249",
+    "TC_03609"     : "TC_U2249",
     "TCC_03610"    : "TCC_U2213",
     "TCC_04706"    : "TCC_U2213",
     "TRAM_03938"   : "TRAM_U2801",
