@@ -1,0 +1,1 @@
+    ${I3CC_INSTANCE_NAME}_Host_Initialize();

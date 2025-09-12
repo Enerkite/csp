@@ -1,0 +1,175 @@
+/*******************************************************************************
+  Improved Inter-Integrated Circuit (I3C) Host/Controller Library PLIB
+
+  Company
+    Microchip Technology Inc.
+
+  File Name
+    plib_${I3CC_INSTANCE_NAME?lower_case}_host.h
+
+  Summary
+    I3C host/controller peripheral library interface.
+
+  Description
+    This file defines the interface to the I3C host/controller peripheral library. This
+    library provides access to and control of the associated peripheral
+    instance.
+
+  Remarks:
+    None.
+*******************************************************************************/
+
+/*******************************************************************************
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
+*
+* Subject to your compliance with these terms, you may use Microchip software
+* and any derivatives exclusively with Microchip products. It is your
+* responsibility to comply with third party license terms applicable to your
+* use of third party software (including open source software) that may
+* accompany Microchip software.
+*
+* THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER
+* EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY IMPLIED
+* WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
+* PARTICULAR PURPOSE.
+*
+* IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE,
+* INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND
+* WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS
+* BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO THE
+* FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN
+* ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
+* THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
+*******************************************************************************/
+
+#ifndef PLIB_${I3CC_INSTANCE_NAME}_HOST_H
+#define PLIB_${I3CC_INSTANCE_NAME}_HOST_H
+
+#include "device.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include "plib_i3cc_host_common.h"
+
+#ifdef __cplusplus  // Provide C++ Compatibility
+
+    extern "C" {
+
+#endif
+
+bool ${I3CC_INSTANCE_NAME}_Host_IsBusy(void);
+void ${I3CC_INSTANCE_NAME}_Host_Abort(void);
+void ${I3CC_INSTANCE_NAME}_Host_Resume(void);
+void ${I3CC_INSTANCE_NAME}_Host_StatusEnable(I3C_PIO_INTR_STATUS pioIntrStatus);
+void ${I3CC_INSTANCE_NAME}_Host_StatusDisable(I3C_PIO_INTR_STATUS pioIntrStatus);
+void ${I3CC_INSTANCE_NAME}_Host_SignalEnable(I3C_PIO_INTR_SIGNAL pioIntrSignal);
+void ${I3CC_INSTANCE_NAME}_Host_SignalDisable(I3C_PIO_INTR_SIGNAL pioIntrSignal);
+uint32_t ${I3CC_INSTANCE_NAME}_Host_StatusGet(I3C_PIO_INTR_STATUS pioIntrStatus);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueLevelGet(I3C_QUEUE_LVL qLvl);
+void ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3C_QUEUE_THLD qThresholdType, uint8_t threshold);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueThresholdGet(I3C_QUEUE_THLD qThresholdType);
+void ${I3CC_INSTANCE_NAME}_Host_QueueReset(I3C_QUEUE_RESET qType);
+void ${I3CC_INSTANCE_NAME}_Host_SoftReset(void);
+void ${I3CC_INSTANCE_NAME}_Host_DATTableRead(void* pBuffer, uint8_t numDATEntries);
+void ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(DAT_TABLE_ENTRY_TYPE type);
+void ${I3CC_INSTANCE_NAME}_Host_Initialize(void);
+int8_t ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(uint8_t addr);
+bool ${I3CC_INSTANCE_NAME}_Host_DATEntrySet(uint8_t datIndex, DAT_TABLE_SETUP* datTableSetup);
+bool ${I3CC_INSTANCE_NAME}_Host_DATEntryGet(uint8_t datIndex, DAT_TABLE_ENTRY* datTableEntry);
+bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigSet(uint8_t dynamic_addr, IBI_SETUP* ibiSetup);
+bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigGet(uint8_t dynamic_addr, IBI_SETUP* ibiSetup);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(uint8_t datIndex);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_NumTargetsGet(void);
+bool ${I3CC_INSTANCE_NAME}_Host_IsIBICapable(uint8_t dynamic_addr);
+bool ${I3CC_INSTANCE_NAME}_Host_IBIHasPayload(uint8_t dynamic_addr);
+bool ${I3CC_INSTANCE_NAME}_Host_TargetHasMaxDataSpeedLimit(uint8_t dynamic_addr);
+bool ${I3CC_INSTANCE_NAME}_Host_DCTInfoGet(uint8_t dynamic_addr, DCT_TABLE_ENTRY* dctInfo);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_DCTInfoGetAll(DCT_TABLE_ENTRY* dctInfo, uint8_t maxEntries);
+void ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsSet(I3C_XFER_FLAGS* xferFlags);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DeviceDiscovery(void);
+
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(
+    I3C_CCC  addrAssignCmd,
+    uint8_t devIndex,
+    uint8_t devCount
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
+    uint8_t targetAddr,
+    bool cp,
+    uint8_t cmd,
+    void* pDataBuffer,
+    uint32_t numTxBytes,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(
+    uint8_t targetAddr,
+    bool cp,
+    uint8_t cmd,
+    I3C_XFER_DIR dir,
+    void* pDataBuffer,
+    uint32_t numRxTxBytes,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
+    uint8_t targetAddr,
+    I3C_XFER_OFFSET_LEN offsetLen,
+    uint16_t offsetVal,
+    I3C_XFER_DIR dir,
+    void* pDataBuffer,
+    uint32_t numRxTxBytes,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_BroadcastCCCXfer(
+    uint8_t cmd,
+    I3C_XFER_DIR dir,
+    void* pDataBuffer,
+    uint32_t numRxTxBytes,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DirectCCCXfer(
+    uint8_t targetAddr,
+    uint8_t cmd,
+    I3C_XFER_DIR dir,
+    void* pDataBuffer,
+    uint32_t numRxTxBytes,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_PrivateDataXfer(
+    uint8_t targetAddr,
+    I3C_XFER_DIR dir,
+    void* pDataBuffer,
+    uint32_t numRxTxBytes,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Write(
+    uint8_t targetAddr,
+    void* pWrDataBuffer,
+    uint32_t numTxBytes,
+    I3C_CCC cmd,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Read(
+    uint8_t targetAddr,
+    void* pRdDataBuffer,
+    uint32_t numRxBytes,
+    I3C_CCC cmd,
+    I3C_XFER_FLAGS* xferFlags
+);
+I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_WriteRead(
+    uint8_t targetAddr,
+    I3C_XFER_OFFSET_LEN offsetLen,
+    uint16_t offsetVal,
+    void* pRdDataBuffer,
+    uint32_t numRxBytes,
+    I3C_XFER_FLAGS* xferFlags
+);
+
+void ${I3CC_INSTANCE_NAME}_Host_CallbackRegister(I3C_CALLBACK callback_fn);
+
+void ${I3CC_INSTANCE_NAME}_Host_PresentStateGet(I3C_PRESENT_STATE* currState);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //PLIB_${I3CC_INSTANCE_NAME}_HOST_H
