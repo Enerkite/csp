@@ -74,7 +74,7 @@
     </#if>
 </#if>
 
-<#if ADC_CONV_TRIGGER != "Free Run" && ADC_SEQ_ENABLE == true>
+<#if ADC_CONV_TRIGGER != "Free Run">
     <#list 0..ADC_NUM_CHANNELS-1 as i>
         <#assign ADC_SEQCTRL = "ADC_SEQCTRL_SEQ" + i>
         <#if .vars[ADC_SEQCTRL]?has_content>
@@ -129,9 +129,9 @@
 </#if>
 <#if ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == true>
     <#if ADC_INTENSET_VAL != "">
-        <#assign ADC_INTENSET_VAL = ADC_INTENSET_VAL + " | ADC_INTENSET_WINMON_Msk">
+        <#assign ADC_INTENSET_VAL = ADC_INTENSET_VAL + " | ADC_INTENSET_WCMP_Msk">
     <#else>
-        <#assign ADC_INTENSET_VAL = "ADC_INTENSET_WINMON_Msk">
+        <#assign ADC_INTENSET_VAL = "ADC_INTENSET_WCMP_Msk">
     </#if>
 </#if>
 
@@ -187,7 +187,7 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     <#assign OPMODE = hexStr?number />
     ${ADC_INSTANCE_NAME}_REGS->ADC_COMMAND = (uint8_t)ADC_COMMAND_MODE(${OPMODE}UL);
     /* Prescaler and timebase configuration */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLB = (uint8_t)ADC_CTRLB_PRESCALER_${ADC_CTRLB_PRESCALER} | ADC_CTRLB_TIMEBASE(${ADC_CTRLB_TIMEBASE}UL) ;
+    ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLB = (uint8_t)ADC_CTRLB_PRESC_${ADC_CTRLB_PRESCALER} | ADC_CTRLB_TIMEBASE(${ADC_CTRLB_TIMEBASE}UL) ;
     /* Sampling length */
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLE = (uint8_t)ADC_CTRLE_SAMPLEN(${ADC_CTRLE_SAMPLEN - 1}UL);
 
@@ -366,8 +366,7 @@ void ${ADC_INSTANCE_NAME}_InterruptsDisable(ADC_STATUS interruptMask)
     ${ADC_INSTANCE_NAME}_REGS->ADC_INTENCLR = (uint8_t)interruptMask;
 }
 
-<#if MULTI_VECTOR_SUPPORT??>
-<#if ADC_INTENSET_RESRDY == true || (ADC_INTENSET_WCMP == true && ADC_WINCTRL_WINMODE != "0")>
+<#if ADC_INTENSET_RESRDY == true || (ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == true)>
 /* Register callback function */
 void ${ADC_INSTANCE_NAME}_CallbackRegister( ADC_CALLBACK callback, uintptr_t context )
 {
@@ -375,98 +374,6 @@ void ${ADC_INSTANCE_NAME}_CallbackRegister( ADC_CALLBACK callback, uintptr_t con
 
     ${ADC_INSTANCE_NAME}_CallbackObject.context = context;
 }
-
-<#if ADC_INTENSET_RESRDY = true>
-void __attribute__((used)) ${ADC_INSTANCE_NAME}_RESRDY_InterruptHandler( void )
-{
-    ADC_STATUS status;
-    status = (ADC_STATUS)${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG & ADC_INTFLAG_RESRDY_Msk;
-    /* Clear interrupt flag */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTFLAG_RESRDY_Msk;
-    if (${ADC_INSTANCE_NAME}_CallbackObject.callback != NULL)
-    {
-        uintptr_t context = ${ADC_INSTANCE_NAME}_CallbackObject.context;
-        ${ADC_INSTANCE_NAME}_CallbackObject.callback(status, context);
-    }
-}
-<#else>
-/* Check whether result is ready */
-bool ${ADC_INSTANCE_NAME}_ConversionStatusGet( void )
-{
-    bool status;
-    status =  (bool)((${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG & ADC_INTFLAG_RESRDY_Msk) >> ADC_INTFLAG_RESRDY_Pos);
-    if (status == true)
-    {
-        ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTFLAG_RESRDY_Msk;
-    }
-    return status;
-}
-</#if>
-<#if ADC_INTENSET_WCMP = true && ADC_WINCTRL_WINMODE != "0">
-void __attribute__((used)) ${ADC_INSTANCE_NAME}_OTHER_InterruptHandler( void )
-{
-    ADC_STATUS status;
-    status = (ADC_STATUS) (${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG);
-    /* Clear interrupt flag */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)(ADC_INTFLAG_WINMON_Msk | ADC_INTFLAG_OVERRUN_Msk);
-    if (${ADC_INSTANCE_NAME}_CallbackObject.callback != NULL)
-    {
-        uintptr_t context = ${ADC_INSTANCE_NAME}_CallbackObject.context;
-        ${ADC_INSTANCE_NAME}_CallbackObject.callback(status, context);
-    }
-}
-<#else>
-<#if ADC_WINCTRL_WINMODE != "0">
-/* Check whether window monitor result is ready */
-bool ${ADC_INSTANCE_NAME}_WindowMonitorStatusGet( void )
-{
-    bool status;
-    status = (((${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG & ADC_INTFLAG_WINMON_Msk) >> ADC_INTFLAG_WINMON_Pos) != 0U);
-    if (status == true)
-    {
-        ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTFLAG_WINMON_Msk;
-    }
-    return status;
-}
-</#if>
-</#if>
-<#else>
-/* Check whether result is ready */
-bool ${ADC_INSTANCE_NAME}_ConversionStatusGet( void )
-{
-    bool status;
-    status =  (((${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG & ADC_INTFLAG_RESRDY_Msk) >> ADC_INTFLAG_RESRDY_Pos) != 0U);
-    if (status == true)
-    {
-        ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTFLAG_RESRDY_Msk;
-    }
-    return status;
-}
-
-<#if ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == false>
-/* Check whether window monitor result is ready */
-bool ${ADC_INSTANCE_NAME}_WindowMonitorStatusGet( void )
-{
-    bool status;
-    status = (((${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG & ADC_INTFLAG_WINMON_Msk) >> ADC_INTFLAG_WINMON_Pos) != 0U);
-    if (status == true)
-    {
-        ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTFLAG_WINMON_Msk;
-    }
-    return status;
-}
-</#if>
-</#if>
-<#else>
-<#if ADC_INTENSET_RESRDY == true || (ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == true)>
-/* Register callback function */
-void ${ADC_INSTANCE_NAME}_CallbackRegister( ADC_CALLBACK callback, uintptr_t context )
-{
-    ${ADC_INSTANCE_NAME}_CallbackObject.callback = callback;
-
-    ${ADC_INSTANCE_NAME}_CallbackObject.context = context;
-}
-
 
 void __attribute__((used)) ${ADC_INSTANCE_NAME}_InterruptHandler( void )
 {
@@ -494,7 +401,7 @@ bool ${ADC_INSTANCE_NAME}_ConversionStatusGet( void )
     return status;
 }
 </#if>
-<#if ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == false>
+<#if ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == false>
 /* Check whether window monitor result is ready */
 bool ${ADC_INSTANCE_NAME}_WindowMonitorStatusGet( void )
 {
@@ -506,5 +413,4 @@ bool ${ADC_INSTANCE_NAME}_WindowMonitorStatusGet( void )
     }
     return status;
 }
-</#if>
 </#if>

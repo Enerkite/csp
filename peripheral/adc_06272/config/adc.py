@@ -783,7 +783,7 @@ def instantiateComponent(adcComponent):
     adcSym_CTRLB_PRESCALER.setDefaultValue(2)
     adcSym_CTRLB_PRESCALER.setOutputMode("Key")
     adcSym_CTRLB_PRESCALER.setDisplayMode("Description")
-    adcPrescalerNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_CTRLB__PRESCALER\"]")
+    adcPrescalerNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_CTRLB__PRESC\"]")
     adcPrescalerValues = []
     adcPrescalerValues = adcPrescalerNode.getChildren()
     for index in range(0, len(adcPrescalerValues)):
@@ -1064,6 +1064,20 @@ def instantiateComponent(adcComponent):
     for index in range (0 , len(adcResultScalingValues)):
         adcSym_CTRLD_SCALING.addKey(adcResultScalingValues[index].getAttribute("name"), adcResultScalingValues[index].getAttribute("value"),
         adcResultScalingValues[index].getAttribute("caption"))
+        
+    adcSampleMenu = adcComponent.createMenuSymbol("ADC_SAMPLE_MENU", None)
+    adcSampleMenu.setLabel("Sample Configuration")
+    
+    # interrupt mode
+    global adcSym_INTENSET_SAMPRDY
+    adcSym_INTENSET_SAMPRDY = adcComponent.createBooleanSymbol("ADC_INTENSET_SAMPRDY", adcSampleMenu)
+    adcSym_INTENSET_SAMPRDY.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:INTENSET")
+    adcSym_INTENSET_SAMPRDY.setLabel("Enable Sample Ready Interrupt")
+
+    # event out mode
+    adcSym_EVCTRL_SAMPRDYEO = adcComponent.createBooleanSymbol("ADC_EVCTRL_SAMPRDYEO", adcSampleMenu)
+    adcSym_EVCTRL_SAMPRDYEO.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:EVCTRL")
+    adcSym_EVCTRL_SAMPRDYEO.setLabel("Enable Sample Ready Event Out")
 
     adcWindowMenu = adcComponent.createMenuSymbol("ADC_WINDOW_CONFIG_MENU", None)
     adcWindowMenu.setLabel("Window Mode Configuration")
