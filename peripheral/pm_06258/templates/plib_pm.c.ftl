@@ -22,7 +22,7 @@
 
 // DOM-IGNORE-BEGIN
 /*******************************************************************************
-* Copyright (C) 2019 Microchip Technology Inc. and its subsidiaries.
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
 * Subject to your compliance with these terms, you may use Microchip software
 * and any derivatives exclusively with Microchip products. It is your
@@ -63,14 +63,14 @@
 void PM_Initialize( void )
 {
 	<#if PM_WPCTRL__WPEN>
-    // Enable Write Protect
+	<#if PM_WPCTRL__WPLCK>
+    // Enable Write Protect and Lock
+    ${PM_INSTANCE_NAME}_REGS->PM_WPCTRL = PM_WPCTRL_WPKEY(PM_WPKEY_VALUE) | PM_WPCTRL_WPEN_Msk | PM_WPCTRL_WPLCK_Msk;
+	<#else>
+	// Enable Write Protect
     ${PM_INSTANCE_NAME}_REGS->PM_WPCTRL = PM_WPCTRL_WPKEY(PM_WPKEY_VALUE) | PM_WPCTRL_WPEN_Msk;
     </#if>
-	<#if PM_WPCTRL__WPLCK && PM_WPCTRL__WPEN>
-    // Enable Write Protect Lock
-    ${PM_INSTANCE_NAME}_REGS->PM_WPCTRL = PM_WPCTRL_WPKEY(PM_WPKEY_VALUE) | PM_WPCTRL_WPEN_Msk | PM_WPCTRL_WPLCK_Msk;
-    </#if>
-
+	</#if>
 }
 
 void ${PM_INSTANCE_NAME}_IdleModeEnter( void )
@@ -87,7 +87,7 @@ void ${PM_INSTANCE_NAME}_IdleModeEnter( void )
     /* Configure Idle Sleep mode */
     ${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG = (uint8_t)PM_SLEEPCFG_SLEEPMODE_IDLE_Val;
 
-    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_IDLE_Val) == 0U)
+    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_Msk) != PM_SLEEPCFG_SLEEPMODE_IDLE_Val)
     {
         /* Ensure that SLEEPMODE bits are configured with the given value */
     }
@@ -101,7 +101,7 @@ void ${PM_INSTANCE_NAME}_StandbyModeEnter( void )
     /* Configure Standby Sleep */
     ${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG = (uint8_t)PM_SLEEPCFG_SLEEPMODE_STANDBY_Val;
   
-    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_STANDBY_Val) == 0U)
+    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_Msk) != PM_SLEEPCFG_SLEEPMODE_STANDBY_Val)
     {
         /* Ensure that SLEEPMODE bits are configured with the given value */
     }
@@ -116,7 +116,7 @@ void ${PM_INSTANCE_NAME}_BackupModeEnter( void )
     /* Configure Backup Sleep */
     ${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG = (uint8_t)PM_SLEEPCFG_SLEEPMODE_BACKUP_Val;
     
-    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_BACKUP_Val) == 0U)
+    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_Msk) != PM_SLEEPCFG_SLEEPMODE_BACKUP_Val)
     {
         /* Ensure that SLEEPMODE bits are configured with the given value */
     }
@@ -132,7 +132,7 @@ void ${PM_INSTANCE_NAME}_OffModeEnter( void )
     /* Configure Off Sleep */
     ${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG = (uint8_t)PM_SLEEPCFG_SLEEPMODE_OFF_Val;
 
-    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_OFF_Val) == 0U)
+    while ((${PM_INSTANCE_NAME}_REGS->PM_SLEEPCFG & PM_SLEEPCFG_SLEEPMODE_Msk) != PM_SLEEPCFG_SLEEPMODE_OFF_Val)
     {
         /* Ensure that SLEEPMODE bits are configured with the given value */
     }

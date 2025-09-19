@@ -1,6 +1,6 @@
 # coding: utf-8
 """*****************************************************************************
-* Copyright (C) 2019 Microchip Technology Inc. and its subsidiaries.
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
 * Subject to your compliance with these terms, you may use Microchip software
 * and any derivatives exclusively with Microchip products. It is your
@@ -69,7 +69,7 @@ def instantiateComponent(pmComponent):
     if IdleModeCount > 1:
         #Idle configuration
         pmSym_PM_IDLE = pmComponent.createKeyValueSetSymbol("PM_IDLE_OPTION", None)
-        pmSym_PM_IDLE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pm_pwr_pm_arm_v1;register:SLEEPCFG")
+        pmSym_PM_IDLE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pm_06258;register:SLEEPCFG")
         pmSym_PM_IDLE.setLabel("Idle Mode Configuration")
         pmSym_PM_IDLE.setOutputMode("Value")
         pmSym_PM_IDLE.setDisplayMode("Description")
@@ -95,7 +95,7 @@ def instantiateComponent(pmComponent):
     # WriteProtect Enable
     wpctrl_Enabel = pmComponent.createBooleanSymbol("PM_WPCTRL__WPEN", wpctrl_Menu)
     wpctrl_Enabel.setLabel("Enable WriteProtect")
-    wpctrl_Enabel.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pm_pwr_pm_arm_v1;register:WPCTRL")
+    wpctrl_Enabel.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pm_06258;register:WPCTRL")
     wpctrl_Enabel.setDescription("Write protection blocks non-debugger access to PM registers")
     wpctrl_Enabel.setDefaultValue(False)
     wpctrl_Enabel.setVisible(True)
@@ -103,7 +103,7 @@ def instantiateComponent(pmComponent):
     # WriteProtect Lock
     wpctrl_Lock = pmComponent.createBooleanSymbol("PM_WPCTRL__WPLCK", wpctrl_Menu)
     wpctrl_Lock.setLabel("Enable WriteProtect LOCK")
-    wpctrl_Lock.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pm_pwr_pm_arm_v1;register:WPCTRL")
+    wpctrl_Lock.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pm_06258;register:WPCTRL")
     wpctrl_Lock.setDescription("WPCTRL register is write-protected and can only be cleared by a system reset")
     wpctrl_Lock.setDefaultValue(False)
     wpctrl_Lock.setVisible(False)
@@ -121,7 +121,7 @@ def instantiateComponent(pmComponent):
     pmModuleID = pmModuleNode.getAttribute("id")
 
     pmSym_HeaderFile = pmComponent.createFileSymbol("PM_HEADER", None)
-    pmSym_HeaderFile.setSourcePath("../peripheral/pm_pwr_pm_arm_v1/templates/plib_pm.h.ftl")
+    pmSym_HeaderFile.setSourcePath("../peripheral/pm_06258/templates/plib_pm.h.ftl")
     pmSym_HeaderFile.setOutputName("plib_" + pmInstanceName.getValue().lower() + ".h")
     pmSym_HeaderFile.setDestPath("/peripheral/pm/")
     pmSym_HeaderFile.setProjectPath("config/" + configName + "/peripheral/pm/")
@@ -129,7 +129,7 @@ def instantiateComponent(pmComponent):
     pmSym_HeaderFile.setMarkup(True)
 
     pmSym_SourceFile = pmComponent.createFileSymbol("PM_SOURCE", None)
-    pmSym_SourceFile.setSourcePath("../peripheral/pm_pwr_pm_arm_v1/templates/plib_pm.c.ftl")
+    pmSym_SourceFile.setSourcePath("../peripheral/pm_06258/templates/plib_pm.c.ftl")
     pmSym_SourceFile.setOutputName("plib_" + pmInstanceName.getValue().lower() + ".c")
     pmSym_SourceFile.setDestPath("/peripheral/pm/")
     pmSym_SourceFile.setProjectPath("config/" + configName + "/peripheral/pm/")
@@ -139,12 +139,12 @@ def instantiateComponent(pmComponent):
     pmSym_SystemInitFile = pmComponent.createFileSymbol("PM_SYS_INIT", None)
     pmSym_SystemInitFile.setType("STRING")
     pmSym_SystemInitFile.setOutputName("core.LIST_SYSTEM_INIT_C_SYS_INITIALIZE_START")
-    pmSym_SystemInitFile.setSourcePath("../peripheral/pm_pwr_pm_arm_v1/templates/system/initialization.c.ftl")
+    pmSym_SystemInitFile.setSourcePath("../peripheral/pm_06258/templates/system/initialization.c.ftl")
     pmSym_SystemInitFile.setMarkup(True)
 
     pmSymSystemDefFile = pmComponent.createFileSymbol("PM_SYS_DEF", None)
     pmSymSystemDefFile.setType("STRING")
     pmSymSystemDefFile.setOutputName("core.LIST_SYSTEM_DEFINITIONS_H_INCLUDES")
-    pmSymSystemDefFile.setSourcePath("../peripheral/pm_pwr_pm_arm_v1/templates/system/definitions.h.ftl")
+    pmSymSystemDefFile.setSourcePath("../peripheral/pm_06258/templates/system/definitions.h.ftl")
     pmSymSystemDefFile.setMarkup(True)
 
