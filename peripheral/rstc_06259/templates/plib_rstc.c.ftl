@@ -22,7 +22,7 @@
 
 // DOM-IGNORE-BEGIN
 /*******************************************************************************
-* Copyright (C) 2018 Microchip Technology Inc. and its subsidiaries.
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
 * Subject to your compliance with these terms, you may use Microchip software
 * and any derivatives exclusively with Microchip products. It is your
@@ -70,16 +70,18 @@ void RSTC_Initialize( void )
 {
     <#if RSTC_CTRLA__RSTPINDIS>
     // Disable Reset Pin
-    ${RSTC_INSTANCE_NAME}_REGS->RSTC_CTRLA = RSTC_CTRLA_RSTPINDIS_DISABLE;
+    ${RSTC_INSTANCE_NAME}_REGS->RSTC_CTRLA = RSTC_CTRLA_RSTPINDIS_Msk;
     </#if>
 	<#if RSTC_WPCTRL__WPEN>
-    // Enable Write Protect
-    ${RSTC_INSTANCE_NAME}_REGS->RSTC_WPCTRL = RSTC_WPCTRL_WPKEY(RSTC_WPKEY_VALUE) | RSTC_WPCTRL_WPEN_ENABLE;
+    <#if RSTC_WPCTRL__WPLCK>
+    // Enable Write Protect and Lock
+    ${RSTC_INSTANCE_NAME}_REGS->RSTC_WPCTRL = RSTC_WPCTRL_WPKEY(RSTC_WPKEY_VALUE) | RSTC_WPCTRL_WPEN_Msk | RSTC_WPCTRL_WPLCK_Msk;
+    <#else>
+    // Enable Write Protect (no lock)
+    ${RSTC_INSTANCE_NAME}_REGS->RSTC_WPCTRL =RSTC_WPCTRL_WPKEY(RSTC_WPKEY_VALUE) | RSTC_WPCTRL_WPEN_Msk;
     </#if>
-	<#if RSTC_WPCTRL__WPLCK && RSTC_WPCTRL__WPEN>
-    // Enable Write Protect Lock
-    ${RSTC_INSTANCE_NAME}_REGS->RSTC_WPCTRL = RSTC_WPCTRL_WPKEY(RSTC_WPKEY_VALUE) | RSTC_WPCTRL_WPEN_ENABLE | RSTC_WPCTRL_WPLCK_LOCKED;
     </#if>
+
 
 }
 

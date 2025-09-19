@@ -22,7 +22,7 @@
 
 // DOM-IGNORE-BEGIN
 /*******************************************************************************
-* Copyright (C) 2018 Microchip Technology Inc. and its subsidiaries.
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
 * Subject to your compliance with these terms, you may use Microchip software
 * and any derivatives exclusively with Microchip products. It is your
@@ -90,18 +90,6 @@
 */
 
 // *****************************************************************************
-/* User Reset type
-
-  Summary:
-    Identifies the type of reset.
-
-  Description:
-    This enums identifies either General, Backup, Watchdog, Software
-    or User Reset.
-
-  Remarks:
-    Refer to the specific device data sheet to determine availability.
-*/
 
 typedef uint32_t RSTC_RESET_CAUSE;
 
