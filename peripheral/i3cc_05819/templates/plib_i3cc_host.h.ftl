@@ -60,113 +60,114 @@
 bool ${I3CC_INSTANCE_NAME}_Host_IsBusy(void);
 void ${I3CC_INSTANCE_NAME}_Host_Abort(void);
 void ${I3CC_INSTANCE_NAME}_Host_Resume(void);
-void ${I3CC_INSTANCE_NAME}_Host_StatusEnable(I3C_PIO_INTR_STATUS pioIntrStatus);
-void ${I3CC_INSTANCE_NAME}_Host_StatusDisable(I3C_PIO_INTR_STATUS pioIntrStatus);
-void ${I3CC_INSTANCE_NAME}_Host_SignalEnable(I3C_PIO_INTR_SIGNAL pioIntrSignal);
-void ${I3CC_INSTANCE_NAME}_Host_SignalDisable(I3C_PIO_INTR_SIGNAL pioIntrSignal);
-uint32_t ${I3CC_INSTANCE_NAME}_Host_StatusGet(I3C_PIO_INTR_STATUS pioIntrStatus);
-uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueLevelGet(I3C_QUEUE_LVL qLvl);
-void ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3C_QUEUE_THLD qThresholdType, uint8_t threshold);
-uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueThresholdGet(I3C_QUEUE_THLD qThresholdType);
-void ${I3CC_INSTANCE_NAME}_Host_QueueReset(I3C_QUEUE_RESET qType);
+void ${I3CC_INSTANCE_NAME}_Host_StatusEnable(I3CC_PIO_INTR_STATUS pioIntrStatus);
+void ${I3CC_INSTANCE_NAME}_Host_StatusDisable(I3CC_PIO_INTR_STATUS pioIntrStatus);
+void ${I3CC_INSTANCE_NAME}_Host_SignalEnable(I3CC_PIO_INTR_SIGNAL pioIntrSignal);
+void ${I3CC_INSTANCE_NAME}_Host_SignalDisable(I3CC_PIO_INTR_SIGNAL pioIntrSignal);
+uint32_t ${I3CC_INSTANCE_NAME}_Host_StatusGet(I3CC_PIO_INTR_STATUS pioIntrStatus);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueLevelGet(I3CC_QUEUE_LVL qLvl);
+void ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD qThresholdType, uint8_t threshold);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueThresholdGet(I3CC_QUEUE_THLD qThresholdType);
+void ${I3CC_INSTANCE_NAME}_Host_QueueReset(I3CC_QUEUE_RESET qType);
 void ${I3CC_INSTANCE_NAME}_Host_SoftReset(void);
 void ${I3CC_INSTANCE_NAME}_Host_DATTableRead(void* pBuffer, uint8_t numDATEntries);
-void ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(DAT_TABLE_ENTRY_TYPE type);
+void ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(I3CC_DAT_TABLE_ENTRY_TYPE type);
 void ${I3CC_INSTANCE_NAME}_Host_Initialize(void);
 int8_t ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(uint8_t addr);
-bool ${I3CC_INSTANCE_NAME}_Host_DATEntrySet(uint8_t datIndex, DAT_TABLE_SETUP* datTableSetup);
-bool ${I3CC_INSTANCE_NAME}_Host_DATEntryGet(uint8_t datIndex, DAT_TABLE_ENTRY* datTableEntry);
-bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigSet(uint8_t dynamic_addr, IBI_SETUP* ibiSetup);
-bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigGet(uint8_t dynamic_addr, IBI_SETUP* ibiSetup);
+int8_t ${I3CC_INSTANCE_NAME}_Host_DATFreeIndexGet(void);
+bool ${I3CC_INSTANCE_NAME}_Host_DATEntrySet(uint8_t datIndex, I3CC_DAT_TABLE_SETUP* datTableSetup);
+bool ${I3CC_INSTANCE_NAME}_Host_DATEntryGet(uint8_t datIndex, I3CC_DAT_TABLE_ENTRY* datTableEntry);
+bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigSet(uint8_t dynamic_addr, I3CC_IBI_SETUP* ibiSetup);
+bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigGet(uint8_t dynamic_addr, I3CC_IBI_SETUP* ibiSetup);
 uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(uint8_t datIndex);
 uint8_t ${I3CC_INSTANCE_NAME}_Host_NumTargetsGet(void);
 bool ${I3CC_INSTANCE_NAME}_Host_IsIBICapable(uint8_t dynamic_addr);
 bool ${I3CC_INSTANCE_NAME}_Host_IBIHasPayload(uint8_t dynamic_addr);
 bool ${I3CC_INSTANCE_NAME}_Host_TargetHasMaxDataSpeedLimit(uint8_t dynamic_addr);
-bool ${I3CC_INSTANCE_NAME}_Host_DCTInfoGet(uint8_t dynamic_addr, DCT_TABLE_ENTRY* dctInfo);
-uint8_t ${I3CC_INSTANCE_NAME}_Host_DCTInfoGetAll(DCT_TABLE_ENTRY* dctInfo, uint8_t maxEntries);
-void ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsSet(I3C_XFER_FLAGS* xferFlags);
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DeviceDiscovery(void);
+bool ${I3CC_INSTANCE_NAME}_Host_DCTInfoGet(uint8_t dynamic_addr, I3CC_DCT_TABLE_ENTRY* dctInfo);
+uint8_t ${I3CC_INSTANCE_NAME}_Host_DCTInfoGetAll(I3CC_DCT_TABLE_ENTRY* dctInfo, uint8_t maxEntries);
+void ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsSet(I3CC_XFER_FLAGS* xferFlags);
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DeviceDiscovery(uint8_t nExpectedTargets);
 
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(
-    I3C_CCC  addrAssignCmd,
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(
+    I3CC_CCC  addrAssignCmd,
     uint8_t devIndex,
     uint8_t devCount
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
     uint8_t targetAddr,
     bool cp,
     uint8_t cmd,
     void* pDataBuffer,
     uint32_t numTxBytes,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(
     uint8_t targetAddr,
     bool cp,
     uint8_t cmd,
-    I3C_XFER_DIR dir,
+    I3CC_XFER_DIR dir,
     void* pDataBuffer,
     uint32_t numRxTxBytes,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
     uint8_t targetAddr,
-    I3C_XFER_OFFSET_LEN offsetLen,
+    I3CC_XFER_OFFSET_LEN offsetLen,
     uint16_t offsetVal,
-    I3C_XFER_DIR dir,
+    I3CC_XFER_DIR dir,
     void* pDataBuffer,
     uint32_t numRxTxBytes,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_BroadcastCCCXfer(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_BroadcastCCCXfer(
     uint8_t cmd,
-    I3C_XFER_DIR dir,
+    I3CC_XFER_DIR dir,
     void* pDataBuffer,
     uint32_t numRxTxBytes,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DirectCCCXfer(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DirectCCCXfer(
     uint8_t targetAddr,
     uint8_t cmd,
-    I3C_XFER_DIR dir,
+    I3CC_XFER_DIR dir,
     void* pDataBuffer,
     uint32_t numRxTxBytes,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_PrivateDataXfer(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_PrivateDataXfer(
     uint8_t targetAddr,
-    I3C_XFER_DIR dir,
+    I3CC_XFER_DIR dir,
     void* pDataBuffer,
     uint32_t numRxTxBytes,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Write(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Write(
     uint8_t targetAddr,
     void* pWrDataBuffer,
     uint32_t numTxBytes,
-    I3C_CCC cmd,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_CCC cmd,
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Read(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Read(
     uint8_t targetAddr,
     void* pRdDataBuffer,
     uint32_t numRxBytes,
-    I3C_CCC cmd,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_CCC cmd,
+    I3CC_XFER_FLAGS* xferFlags
 );
-I3C_XFER_ID ${I3CC_INSTANCE_NAME}_Host_WriteRead(
+I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_WriteRead(
     uint8_t targetAddr,
-    I3C_XFER_OFFSET_LEN offsetLen,
+    I3CC_XFER_OFFSET_LEN offsetLen,
     uint16_t offsetVal,
     void* pRdDataBuffer,
     uint32_t numRxBytes,
-    I3C_XFER_FLAGS* xferFlags
+    I3CC_XFER_FLAGS* xferFlags
 );
 
-void ${I3CC_INSTANCE_NAME}_Host_CallbackRegister(I3C_CALLBACK callback_fn);
+void ${I3CC_INSTANCE_NAME}_Host_CallbackRegister(I3CC_CALLBACK callback_fn);
 
-void ${I3CC_INSTANCE_NAME}_Host_PresentStateGet(I3C_PRESENT_STATE* currState);
+void ${I3CC_INSTANCE_NAME}_Host_PresentStateGet(I3CC_PRESENT_STATE* currState);
 
 #ifdef __cplusplus
 }
