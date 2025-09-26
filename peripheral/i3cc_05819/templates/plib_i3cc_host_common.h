@@ -67,21 +67,30 @@
 #endif
 // DOM-IGNORE-END
 
-#define I3CC_XFER_QUEUE_SIZE                    16
-#define I3CC_MAX_IBI_PAYLOAD_SIZE               256
-#define I3CC_SCRATCH_BUFFER_SIZE                16
-#define I3CC_XFER_ID_INVALID                    -1
+#define I3CC_XFER_QUEUE_SIZE                    16U
+#define I3CC_MAX_IBI_PAYLOAD_SIZE               256U
+#define I3CC_SCRATCH_BUFFER_SIZE                16U
+#define I3CC_XFER_ID_INVALID                    ((uint16_t)0xFFFF)
+#define I3CC_DAT_INDEX_INVALID                  ((uint8_t)0xFF)
 
 //This number should be less than or equal to the number of DAT Table entries available.
-#define I3CC_NUM_TARGET_DEV_SUPPORTED           5
+#define I3CC_NUM_TARGET_DEV_SUPPORTED           5U
+
+#define I3CC_BCR_MAX_DATA_SPEED_LIMITATION   (1U << 0U)
+#define I3CC_BCR_IBI_REQUEST_CAPABLE         (1U << 1U)
+#define I3CC_BCR_IBI_PAYLOAD                 (1U << 2U)
+#define I3CC_BCR_OFFLINE_CAPABLE             (1U << 3U)
+#define I3CC_BCR_BRIDGE_IDENTIFIER           (1U << 4U)
+#define I3CC_BCR_SDR_HDR_CAPABLE             (1U << 5U)
+#define I3CC_BCR_DEVICE_ROLE                 (1U << 6U)
 
 
 typedef enum
 {
     I3CC_EVENT_DEVICE_DISCOVERY,
     I3CC_EVENT_XFER_DONE_BROADCAST_CCC,
-    I3CC_EVENT_XFER_DONE_DIRECTED_CCC_READ,
-    I3CC_EVENT_XFER_DONE_DIRECTED_CCC_WRITE,
+    I3CC_EVENT_XFER_DONE_DIR_CCC_READ,
+    I3CC_EVENT_XFER_DONE_DIR_CCC_WRITE,
     I3CC_EVENT_XFER_DONE_PRIVATE_READ,
     I3CC_EVENT_XFER_DONE_PRIVATE_WRITE,
     I3CC_EVENT_IBI,
@@ -275,23 +284,23 @@ typedef enum
 
 typedef enum
 {
-    I3CC_QUEUE_THLD_TX_BUFFER_FREE_1_DWORD,
-    I3CC_QUEUE_THLD_TX_BUFFER_FREE_4_DWORD,
-    I3CC_QUEUE_THLD_TX_BUFFER_FREE_8_DWORD,
-    I3CC_QUEUE_THLD_TX_BUFFER_FREE_16_DWORD,
-    I3CC_QUEUE_THLD_TX_BUFFER_FREE_32_DWORD,
-    I3CC_QUEUE_THLD_TX_BUFFER_FREE_64_DWORD,
-}I3CC_QUEUE_THLD_TX_BUFFER;
+    I3CC_QUEUE_THLD_TX_BUF_FREE_1_DWORD,
+    I3CC_QUEUE_THLD_TX_BUF_FREE_4_DWORD,
+    I3CC_QUEUE_THLD_TX_BUF_FREE_8_DWORD,
+    I3CC_QUEUE_THLD_TX_BUF_FREE_16_DWORD,
+    I3CC_QUEUE_THLD_TX_BUF_FREE_32_DWORD,
+    I3CC_QUEUE_THLD_TX_BUF_FREE_64_DWORD,
+}I3CC_QUEUE_THLD_TX_BUF;
 
 typedef enum
 {
-    I3CC_QUEUE_THLD_RX_BUFFER_AVAIL_1_DWORD,
-    I3CC_QUEUE_THLD_RX_BUFFER_AVAIL_4_DWORD,
-    I3CC_QUEUE_THLD_RX_BUFFER_AVAIL_8_DWORD,
-    I3CC_QUEUE_THLD_RX_BUFFER_AVAIL_16_DWORD,
-    I3CC_QUEUE_THLD_RX_BUFFER_AVAIL_32_DWORD,
-    I3CC_QUEUE_THLD_RX_BUFFER_AVAIL_64_DWORD,
-}I3CC_QUEUE_THLD_RX_BUFFER;
+    I3CC_QUEUE_THLD_RX_BUF_AVAIL_1_DWORD,
+    I3CC_QUEUE_THLD_RX_BUF_AVAIL_4_DWORD,
+    I3CC_QUEUE_THLD_RX_BUF_AVAIL_8_DWORD,
+    I3CC_QUEUE_THLD_RX_BUF_AVAIL_16_DWORD,
+    I3CC_QUEUE_THLD_RX_BUF_AVAIL_32_DWORD,
+    I3CC_QUEUE_THLD_RX_BUF_AVAIL_64_DWORD,
+}I3CC_QUEUE_THLD_RX_BUF;
 
 typedef enum
 {
@@ -313,30 +322,22 @@ typedef enum
     I3CC_QUEUE_THLD_LVL_TX_START_64_DWORD,
 }I3CC_QUEUE_THLD_LVL_TX_START;
 
+#define I3CC_PIO_INTR_STATUS_TX_THLD        I3CC_PIO_INTR_STATUS_TX_THLD_STAT_Msk
+#define I3CC_PIO_INTR_STATUS_RX_THLD        I3CC_PIO_INTR_STATUS_RX_THLD_STAT_Msk
+#define I3CC_PIO_INTR_STATUS_IBI_THLD       I3CC_PIO_INTR_STATUS_IBI_STATUS_THLD_STAT_Msk
+#define I3CC_PIO_INTR_STATUS_CMD_THLD       I3CC_PIO_INTR_STATUS_CMD_QUEUE_READY_STAT_Msk
+#define I3CC_PIO_INTR_STATUS_RESP_THLD      I3CC_PIO_INTR_STATUS_RESP_READY_STAT_Msk
+#define I3CC_PIO_INTR_STATUS_TFR_ABORT_THLD I3CC_PIO_INTR_STATUS_TRANSFER_ABORT_STAT_Msk
+#define I3CC_PIO_INTR_STATUS_TFR_ERR_THLD   I3CC_PIO_INTR_STATUS_TRANSFER_ERR_STAT_Msk
+#define I3CC_PIO_INTR_STATUS_ALL            I3CC_PIO_INTR_STATUS_ENABLE_Msk
 
-typedef enum
-{
-    I3CC_PIO_INTR_STATUS_TX_THLD = I3CC_PIO_INTR_STATUS_TX_THLD_STAT_Msk,
-    I3CC_PIO_INTR_STATUS_RX_THLD = I3CC_PIO_INTR_STATUS_RX_THLD_STAT_Msk,
-    I3CC_PIO_INTR_STATUS_IBI_THLD = I3CC_PIO_INTR_STATUS_IBI_STATUS_THLD_STAT_Msk,
-    I3CC_PIO_INTR_STATUS_CMD_THLD = I3CC_PIO_INTR_STATUS_CMD_QUEUE_READY_STAT_Msk,
-    I3CC_PIO_INTR_STATUS_RESP_THLD = I3CC_PIO_INTR_STATUS_RESP_READY_STAT_Msk,
-    I3CC_PIO_INTR_STATUS_TFR_ABORT_THLD = I3CC_PIO_INTR_STATUS_TRANSFER_ABORT_STAT_Msk,
-    I3CC_PIO_INTR_STATUS_TFR_ERR_THLD = I3CC_PIO_INTR_STATUS_TRANSFER_ERR_STAT_Msk,
-    I3CC_PIO_INTR_STATUS_ALL = I3CC_PIO_INTR_STATUS_ENABLE_Msk,
-}I3CC_PIO_INTR_STATUS;
-
-typedef enum
-{
-    I3CC_PIO_INTR_SIGNAL_TX_THLD = I3CC_PIO_INTR_SIGNAL_ENABLE_TX_THLD_SIGNAL_EN_Msk,
-    I3CC_PIO_INTR_SIGNAL_RX_THLD = I3CC_PIO_INTR_SIGNAL_ENABLE_RX_THLD_SIGNAL_EN_Msk,
-    I3CC_PIO_INTR_SIGNAL_IBI_THLD = I3CC_PIO_INTR_SIGNAL_ENABLE_IBI_STATUS_THLD_SIGNAL_EN_Msk,
-    I3CC_PIO_INTR_SIGNAL_CMD_THLD = I3CC_PIO_INTR_SIGNAL_ENABLE_CMD_QUEUE_READY_SIGNAL_EN_Msk,
-    I3CC_PIO_INTR_SIGNAL_RESP_THLD = I3CC_PIO_INTR_SIGNAL_ENABLE_RESP_READY_SIGNAL_EN_Msk,
-    I3CC_PIO_INTR_SIGNAL_TFR_ABORT_THLD = I3CC_PIO_INTR_SIGNAL_ENABLE_TRANSFER_ABORT_SIGNAL_EN_Msk,
-    I3CC_PIO_INTR_SIGNAL_TFR_ERR_THLD = I3CC_PIO_INTR_SIGNAL_ENABLE_TRANSFER_ERR_SIGNAL_EN_Msk,
-
-}I3CC_PIO_INTR_SIGNAL;
+#define I3CC_PIO_INTR_SIGNAL_TX_THLD        I3CC_PIO_INTR_SIGNAL_ENABLE_TX_THLD_SIGNAL_EN_Msk
+#define I3CC_PIO_INTR_SIGNAL_RX_THLD        I3CC_PIO_INTR_SIGNAL_ENABLE_RX_THLD_SIGNAL_EN_Msk
+#define I3CC_PIO_INTR_SIGNAL_IBI_THLD       I3CC_PIO_INTR_SIGNAL_ENABLE_IBI_STATUS_THLD_SIGNAL_EN_Msk
+#define I3CC_PIO_INTR_SIGNAL_CMD_THLD       I3CC_PIO_INTR_SIGNAL_ENABLE_CMD_QUEUE_READY_SIGNAL_EN_Msk
+#define I3CC_PIO_INTR_SIGNAL_RESP_THLD      I3CC_PIO_INTR_SIGNAL_ENABLE_RESP_READY_SIGNAL_EN_Msk
+#define I3CC_PIO_INTR_SIGNAL_TFR_ABORT_THLD I3CC_PIO_INTR_SIGNAL_ENABLE_TRANSFER_ABORT_SIGNAL_EN_Msk
+#define I3CC_PIO_INTR_SIGNAL_TFR_ERR_THLD   I3CC_PIO_INTR_SIGNAL_ENABLE_TRANSFER_ERR_SIGNAL_EN_Msk
 
 /*-----------------------------------------*/
 typedef enum
@@ -357,59 +358,59 @@ typedef enum
 
 typedef enum
 {
-    I3CC_CURRENT_XFER_STATE_IDLE = 0x00,        /* Host Controller is in the Idle */
-    I3CC_CURRENT_XFER_STATE_START = 0x01,       /* START Generation State*/
-    I3CC_CURRENT_XFER_STATE_RESTART = 0x02,     /* RESTART Generation State*/
-    I3CC_CURRENT_XFER_STATE_STOP = 0x03,        /* STOP Generation State */
-    I3CC_CURRENT_XFER_STATE_START_HOLD = 0x04,  /* START Hold Generation for the Target-initiated START state */
-    I3CC_CURRENT_XFER_STATE_BCAST_WRITE = 0x05, /* Broadcast Write Address Header(7'h7E,W) Generation State */
-    I3CC_CURRENT_XFER_STATE_BCAST_READ = 0x06,  /* Broadcast Read Address Header(7'h7E,R) Generation State */
-    I3CC_CURRENT_XFER_STATE_DAA = 0x07,         /* Dynamic Address Assignment State */
-    I3CC_CURRENT_XFER_STATE_ADDR = 0x08,        /* Target Address Generation State */
-    I3CC_CURRENT_XFER_STATE_CCC = 0x0B,         /* CCC Byte Generation State */
-    I3CC_CURRENT_XFER_STATE_HDR = 0x0C,         /* HDR Command Generation State */
-    I3CC_CURRENT_XFER_STATE_WR = 0x0D,          /* Write Data Transfer State */
-    I3CC_CURRENT_XFER_STATE_RD = 0x0E,          /* Read Data Transfer State */
-    I3CC_CURRENT_XFER_STATE_IBI_ADDR_RD = 0x0F, /* In-Band Interrupt Address Read Data State */
-    I3CC_CURRENT_XFER_STATE_IBI_DIS = 0x10,     /* In-Band Interrupt Auto-Disable State */
-    I3CC_CURRENT_XFER_STATE_HDR_DDR_CRC = 0x11, /* HDR-DDR CRC Data Generation/Receive State */
-    I3CC_CURRENT_XFER_STATE_CLOCK_EXT = 0x12,   /* Clock Extension State */
-    I3CC_CURRENT_XFER_STATE_HALT = 0x13,        /* Halt State */
-    I3CC_CURRENT_XFER_STATE_IBI_READ = 0x14,    /* In-Band Interrupt (IBI) Read Data State */
+    I3CC_CUR_XFER_STATE_IDLE = 0x00,        /* Host Controller is in the Idle */
+    I3CC_CUR_XFER_STATE_START = 0x01,       /* START Generation State*/
+    I3CC_CUR_XFER_STATE_RESTART = 0x02,     /* RESTART Generation State*/
+    I3CC_CUR_XFER_STATE_STOP = 0x03,        /* STOP Generation State */
+    I3CC_CUR_XFER_STATE_START_HOLD = 0x04,  /* START Hold Generation for the Target-initiated START state */
+    I3CC_CUR_XFER_STATE_BCAST_WRITE = 0x05, /* Broadcast Write Address Header(7'h7E,W) Generation State */
+    I3CC_CUR_XFER_STATE_BCAST_READ = 0x06,  /* Broadcast Read Address Header(7'h7E,R) Generation State */
+    I3CC_CUR_XFER_STATE_DAA = 0x07,         /* Dynamic Address Assignment State */
+    I3CC_CUR_XFER_STATE_ADDR = 0x08,        /* Target Address Generation State */
+    I3CC_CUR_XFER_STATE_CCC = 0x0B,         /* CCC Byte Generation State */
+    I3CC_CUR_XFER_STATE_HDR = 0x0C,         /* HDR Command Generation State */
+    I3CC_CUR_XFER_STATE_WR = 0x0D,          /* Write Data Transfer State */
+    I3CC_CUR_XFER_STATE_RD = 0x0E,          /* Read Data Transfer State */
+    I3CC_CUR_XFER_STATE_IBI_ADDR_RD = 0x0F, /* In-Band Interrupt Address Read Data State */
+    I3CC_CUR_XFER_STATE_IBI_DIS = 0x10,     /* In-Band Interrupt Auto-Disable State */
+    I3CC_CUR_XFER_STATE_HDR_DDR_CRC = 0x11, /* HDR-DDR CRC Data Generation/Receive State */
+    I3CC_CUR_XFER_STATE_CLOCK_EXT = 0x12,   /* Clock Extension State */
+    I3CC_CUR_XFER_STATE_HALT = 0x13,        /* Halt State */
+    I3CC_CUR_XFER_STATE_IBI_READ = 0x14,    /* In-Band Interrupt (IBI) Read Data State */
 
-}I3CC_CURRENT_XFER_STATE;
+}I3CC_CUR_XFER_STATE;
 
 typedef enum
 {
-    I3CC_CURRENT_XFER_TYPE_IDLE = 0x00,             /* Idle */
-    I3CC_CURRENT_XFER_TYPE_BCAST_WRITE = 0x01,      /* Broadcast CCC Write Transfer*/
-    I3CC_CURRENT_XFER_TYPE_TARGET_WRITE = 0x02,     /* Directed CCC Write Transfer */
-    I3CC_CURRENT_XFER_TYPE_TARGET_READ = 0x03,      /* Directed CCC Read Transfer */
-    I3CC_CURRENT_XFER_TYPE_ENTDAA = 0x04,           /* ENTDAA Address Assignment Transfer */
-    I3CC_CURRENT_XFER_TYPE_SETDASA = 0x05,          /* SETDASA Address Assignment Transfer */
-    I3CC_CURRENT_XFER_TYPE_I3C_SDR_WRITE = 0x06,    /* Private I3C SDR Write Transfer */
-    I3CC_CURRENT_XFER_TYPE_I3C_SDR_READ = 0x07,     /* Private I3C SDR Read Transfer */
-    I3CC_CURRENT_XFER_TYPE_I2C_SDR_WRITE = 0x08,    /* Private I2C SDR Write Transfer */
-    I3CC_CURRENT_XFER_TYPE_I2C_SDR_READ = 0x09,     /* Private I2C SDR Read Transfer */
-    I3CC_CURRENT_XFER_TYPE_HDR_TS_WRITE = 0x0A,     /* Private HDR Ternary Symbol (TS) Write Transfer */
-    I3CC_CURRENT_XFER_TYPE_HDR_TS_READ = 0x0B,      /* Private HDR Ternary Symbol (TS) Read Transfer */
-    I3CC_CURRENT_XFER_TYPE_HDR_DDR_WRITE = 0x0C,    /* Private HDR Double-Data Rate (DDR) Write Transfer */
-    I3CC_CURRENT_XFER_TYPE_HDR_DDR_READ = 0x0D,     /* Private HDR Double-Data Rate (DDR) Read Transfer */
-    I3CC_CURRENT_XFER_TYPE_IBI = 0x0E,              /* In-Band Interrupt Transfer */
-    I3CC_CURRENT_XFER_TYPE_HALTED = 0x0F,           /* Host Controller is in the Halt State, waiting for the application to resume */
-}I3CC_CURRENT_XFER_TYPE;
+    I3CC_CUR_XFER_TYPE_IDLE = 0x00,             /* Idle */
+    I3CC_CUR_XFER_TYPE_BCAST_WRITE = 0x01,      /* Broadcast CCC Write Transfer*/
+    I3CC_CUR_XFER_TYPE_TARGET_WRITE = 0x02,     /* Directed CCC Write Transfer */
+    I3CC_CUR_XFER_TYPE_TARGET_READ = 0x03,      /* Directed CCC Read Transfer */
+    I3CC_CUR_XFER_TYPE_ENTDAA = 0x04,           /* ENTDAA Address Assignment Transfer */
+    I3CC_CUR_XFER_TYPE_SETDASA = 0x05,          /* SETDASA Address Assignment Transfer */
+    I3CC_CUR_XFER_TYPE_I3C_SDR_WRITE = 0x06,    /* Private I3C SDR Write Transfer */
+    I3CC_CUR_XFER_TYPE_I3C_SDR_READ = 0x07,     /* Private I3C SDR Read Transfer */
+    I3CC_CUR_XFER_TYPE_I2C_SDR_WRITE = 0x08,    /* Private I2C SDR Write Transfer */
+    I3CC_CUR_XFER_TYPE_I2C_SDR_READ = 0x09,     /* Private I2C SDR Read Transfer */
+    I3CC_CUR_XFER_TYPE_HDR_TS_WRITE = 0x0A,     /* Private HDR Ternary Symbol (TS) Write Transfer */
+    I3CC_CUR_XFER_TYPE_HDR_TS_READ = 0x0B,      /* Private HDR Ternary Symbol (TS) Read Transfer */
+    I3CC_CUR_XFER_TYPE_HDR_DDR_WRITE = 0x0C,    /* Private HDR Double-Data Rate (DDR) Write Transfer */
+    I3CC_CUR_XFER_TYPE_HDR_DDR_READ = 0x0D,     /* Private HDR Double-Data Rate (DDR) Read Transfer */
+    I3CC_CUR_XFER_TYPE_IBI = 0x0E,              /* In-Band Interrupt Transfer */
+    I3CC_CUR_XFER_TYPE_HALTED = 0x0F,           /* Host Controller is in the Halt State, waiting for the application to resume */
+}I3CC_CUR_XFER_TYPE;
 
 typedef struct
 {
-    uint32_t cmd_attr       : 3;
-    uint32_t tid            : 4;
-    uint32_t cmd            : 8;
-    uint32_t                : 1;
-    uint32_t dev_index      : 5;
-    uint32_t                : 5;
-    uint32_t dev_count      : 4;
-    uint32_t roc            : 1;
-    uint32_t toc            : 1;
+    unsigned int cmd_attr       : 3;
+    unsigned int tid            : 4;
+    unsigned int cmd            : 8;
+    unsigned int                : 1;
+    unsigned int dev_index      : 5;
+    unsigned int                : 5;
+    unsigned int dev_count      : 4;
+    unsigned int roc            : 1;
+    unsigned int toc            : 1;
 }I3CC_ADDR_ASSIGN_CMD0_BITS;
 
 typedef struct
@@ -432,25 +433,25 @@ typedef struct
 /*-----------------------------------------*/
 typedef struct
 {
-    uint32_t cmd_attr       : 3;
-    uint32_t tid            : 4;
-    uint32_t cmd            : 8;
-    uint32_t cp             : 1;
-    uint32_t dev_index      : 5;
-    uint32_t                : 2;
-    uint32_t byte_count     : 3;
-    uint32_t mode           : 3;
-    uint32_t rnw            : 1;
-    uint32_t roc            : 1;
-    uint32_t toc            : 1;
+    unsigned int cmd_attr       : 3;
+    unsigned int tid            : 4;
+    unsigned int cmd            : 8;
+    unsigned int cp             : 1;
+    unsigned int dev_index      : 5;
+    unsigned int                : 2;
+    unsigned int byte_count     : 3;
+    unsigned int mode           : 3;
+    unsigned int rnw            : 1;
+    unsigned int roc            : 1;
+    unsigned int toc            : 1;
 }I3CC_IMMD_XFER_CMD0_BITS;
 
 typedef struct
 {
-    uint8_t data_byte1      : 8;
-    uint8_t data_byte2      : 8;
-    uint8_t data_byte3      : 8;
-    uint8_t data_byte4      : 8;
+    uint8_t data_byte1;
+    uint8_t data_byte2;
+    uint8_t data_byte3;
+    uint8_t data_byte4;
 }I3CC_IMMD_XFER_CMD1_BITS;
 
 typedef union
@@ -474,23 +475,23 @@ typedef struct
 /*-----------------------------------------*/
 typedef struct
 {
-    uint32_t cmd_attr       : 3;
-    uint32_t tid            : 4;
-    uint32_t cmd            : 8;
-    uint32_t cp             : 1;
-    uint32_t dev_index      : 5;
-    uint32_t                : 5;
-    uint32_t mode           : 3;
-    uint32_t rnw            : 1;
-    uint32_t roc            : 1;
-    uint32_t toc            : 1;
+    unsigned int cmd_attr       : 3;
+    unsigned int tid            : 4;
+    unsigned int cmd            : 8;
+    unsigned int cp             : 1;
+    unsigned int dev_index      : 5;
+    unsigned int                : 5;
+    unsigned int mode           : 3;
+    unsigned int rnw            : 1;
+    unsigned int roc            : 1;
+    unsigned int toc            : 1;
 }I3CC_RGLR_DATA_XFER_CMD0_BITS;
 
 typedef struct
 {
-    uint32_t def_byte       : 8;
-    uint32_t                : 8;
-    uint32_t data_length    : 16;
+    unsigned int def_byte       : 8;
+    unsigned int                : 8;
+    unsigned int data_length    : 16;
 }I3CC_RGLR_DATA_XFER_CMD1_BITS;
 
 typedef union
@@ -514,25 +515,25 @@ typedef struct
 /*-----------------------------------------*/
 typedef struct
 {
-    uint32_t cmd_attr           : 3;
-    uint32_t tid                : 4;
-    uint32_t cmd                : 8;
-    uint32_t cp                 : 1;
-    uint32_t dev_index          : 5;
-    uint32_t                    : 1;
-    uint32_t data_length_pos    : 2;
-    uint32_t first_phase_mode   : 1;
-    uint32_t suboffset_8_16_bit : 1;
-    uint32_t mode               : 3;
-    uint32_t rnw                : 1;
-    uint32_t roc                : 1;
-    uint32_t toc                : 1;
+    unsigned int cmd_attr           : 3;
+    unsigned int tid                : 4;
+    unsigned int cmd                : 8;
+    unsigned int cp                 : 1;
+    unsigned int dev_index          : 5;
+    unsigned int                    : 1;
+    unsigned int data_length_pos    : 2;
+    unsigned int first_phase_mode   : 1;
+    unsigned int suboffset_8_16_bit : 1;
+    unsigned int mode               : 3;
+    unsigned int rnw                : 1;
+    unsigned int roc                : 1;
+    unsigned int toc                : 1;
 }I3CC_COMBO_DATA_XFER_CMD0_BITS;
 
 typedef struct
 {
-    uint32_t offset_suboffset   : 16;
-    uint32_t data_length        : 16;
+    unsigned int offset_suboffset   : 16;
+    unsigned int data_length        : 16;
 }I3CC_COMBO_DATA_XFER_CMD1_BITS;
 
 typedef union
@@ -575,15 +576,15 @@ typedef union
 /*-----------------------------------------*/
 typedef struct
 {
-    uint32_t data_length        : 8;
-    uint32_t ibi_id             : 8;
-    uint32_t chunks             : 8;
-    uint32_t last_status        : 1;
-    uint32_t ts                 : 1;
-    uint32_t hw_context         : 3;
-    uint32_t status_type        : 1;
-    uint32_t error              : 1;
-    uint32_t ibi_ack_status     : 1;
+    unsigned int data_length        : 8;
+    unsigned int ibi_id             : 8;
+    unsigned int chunks             : 8;
+    unsigned int last_status        : 1;
+    unsigned int ts                 : 1;
+    unsigned int hw_context         : 3;
+    unsigned int status_type        : 1;
+    unsigned int error              : 1;
+    unsigned int ibi_ack_status     : 1;
 }I3CC_IBI_STATUS_DESC_BITS;
 
 typedef union
@@ -595,10 +596,10 @@ typedef union
 /*-----------------------------------------*/
 typedef struct
 {
-    uint32_t data_length        : 16;
-    uint32_t                    : 8;
-    uint32_t tid                : 4;
-    uint32_t err_status         : 4;
+    unsigned int data_length        : 16;
+    unsigned int                    : 8;
+    unsigned int tid                : 4;
+    unsigned int err_status         : 4;
 }I3CC_RESPONSE_DESC_BITS;
 
 typedef union
@@ -610,27 +611,27 @@ typedef union
 /*-----------------------------------------*/
 typedef struct
 {
-    uint32_t static_addr       : 7;
-    uint32_t                   : 5;
-    uint32_t ibi_payload       : 1;
-    uint32_t ibi_reject        : 1;
-    uint32_t crr_reject        : 1;
-    uint32_t ts                : 1;
-    uint32_t dynamic_addr      : 7;
-    uint32_t parity            : 1;
-    uint32_t                   : 2;
-    uint32_t ring_id           : 3;
-    uint32_t dev_nack_retry_cnt : 2;
-    uint32_t dev_type          : 1;
+    unsigned int static_addr       : 7;
+    unsigned int                   : 5;
+    unsigned int ibi_payload       : 1;
+    unsigned int ibi_reject        : 1;
+    unsigned int crr_reject        : 1;
+    unsigned int ts                : 1;
+    unsigned int dynamic_addr      : 7;
+    unsigned int parity            : 1;
+    unsigned int                   : 2;
+    unsigned int ring_id           : 3;
+    unsigned int dev_nack_retry_cnt : 2;
+    unsigned int dev_type          : 1;
 }I3CC_DAT_TABLE_WORD0_BITS;
 
 typedef struct
 {
-    uint32_t autocmd_mask      : 8;
-    uint32_t autocmd_value     : 8;
-    uint32_t autocmd_mode      : 3;
-    uint32_t autocmd_hdr_code  : 8;
-    uint32_t                   : 5;
+    unsigned int autocmd_mask      : 8;
+    unsigned int autocmd_value     : 8;
+    unsigned int autocmd_mode      : 3;
+    unsigned int autocmd_hdr_code  : 8;
+    unsigned int                   : 5;
 }I3CC_DAT_TABLE_WORD1_BITS;
 
 typedef union
@@ -651,32 +652,13 @@ typedef struct
     I3CC_DAT_TABLE_WORD1             word1;
 }I3CC_DAT_TABLE_ENTRY;
 
-/*-----------------------------------------*/
-typedef struct
-{
-    uint8_t max_data_spped_limitation   : 1;
-    uint8_t ibi_request_capable         : 1;
-    uint8_t ibi_payload                 : 1;
-    uint8_t offline_capable             : 1;
-    uint8_t bridge_identifier           : 1;
-    uint8_t sdr_hdr_capable             : 1;
-    uint8_t device_role                 : 2;
-}I3CC_BCR_BITS;
-
-typedef union
-{
-    I3CC_BCR_BITS           bits;
-    uint8_t                 byte;
-}I3CC_BCR;
-
 typedef struct
 {
     uint8_t                 pid[6];
     uint8_t                 dcr;
-    I3CC_BCR                bcr;
+    uint8_t                 bcr;
 }I3CC_PID_BCR_DCR;
 
-/*-----------------------------------------*/
 typedef struct
 {
     uint32_t                pid_high;
@@ -684,16 +666,19 @@ typedef struct
     uint16_t                reserved1;
 
     uint8_t                 dcr;
-    I3CC_BCR                bcr;
+    uint8_t                 bcr;
     uint16_t                reserved2;
 
     uint8_t                 dynamic_addr;
     uint8_t                 reserved3[3];
+}I3CC_DCT_TABLE_FIELDS;
+
+typedef union
+{
+    I3CC_DCT_TABLE_FIELDS       DCTFields;
+    uint32_t                    words[4];
 }I3CC_DCT_TABLE_ENTRY;
 
-
-
-/*-----------------------------------------*/
 typedef struct
 {
     I3CC_DCT_TABLE_ENTRY        DCTInfo;
@@ -706,7 +691,6 @@ typedef struct
     I3CC_DEVICE_INFO        devInfo[I3CC_NUM_TARGET_DEV_SUPPORTED];
     uint8_t                 numValidEntries;
 }I3CC_DEV_INFO;
-/*-----------------------------------------*/
 
 typedef struct
 {
@@ -755,8 +739,8 @@ typedef struct
 {
     volatile I3CC_DAT_TABLE_ENTRY*  DATTablePtr;
     volatile I3CC_DCT_TABLE_ENTRY*  DCTTablePtr;
-    uint32_t                        DATTableSize;
-    uint32_t                        DCTTableSize;
+    uint8_t                         DATTableSize;
+    uint8_t                         DCTTableSize;
     uint32_t                        RXQ_SizeDW;
     uint32_t                        TXQ_SizeDW;
     uint32_t                        CRQ_SizeDW;
@@ -876,7 +860,7 @@ typedef struct
     uint32_t                pid_high;
     uint16_t                pid_low;
     uint8_t                 dcr;
-    I3CC_BCR                bcr;
+    uint8_t                 bcr;
 }I3CC_TARGET_INFO;
 
 typedef struct
@@ -898,8 +882,8 @@ typedef struct
 
 typedef struct
 {
-    I3CC_CURRENT_XFER_STATE     currXferState;
-    I3CC_CURRENT_XFER_TYPE      currXferType;
+    I3CC_CUR_XFER_STATE         currXferState;
+    I3CC_CUR_XFER_TYPE          currXferType;
     uint8_t                     currentTID;
     uint8_t                     SDASignalLevel;
 }I3CC_PRESENT_STATE;

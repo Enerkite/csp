@@ -73,16 +73,18 @@
 #include <string.h>
 #include "peripheral/${INT_CONTROLLER?lower_case}/plib_${INT_CONTROLLER?lower_case}.h"
 
+#define I3CC_DEV_INFO_INDEX_INVALID             ((uint8_t)0xFF)
+
 static I3CC_HOST ${I3CC_INSTANCE_NAME?lower_case}_host;
 static I3CC_XFER_QUEUE xfer_queue[I3CC_XFER_QUEUE_SIZE];
 
 #define BITMASK(bitfield)               (bitfield##_Msk)
 #define BITPOS(bitfield)                (bitfield##_Pos)
-#define SET_BITS(reg, bitfield, val)    (reg = ((reg & ~BITMASK(bitfield)) | (val << BITPOS(bitfield))))
-#define CLR_BITS(reg, bitfield)         (reg = (reg & ~BITMASK(bitfield)))
-#define GET_BITS(reg, bitfield)         ((reg & BITMASK(bitfield)) >> BITPOS(bitfield))
-#define WORD_TO_BYTE(val)               ((uint32_t)val << 2U)
-#define BYTE_TO_WORD(val)               (val >> 2U)
+#define SET_BITS(reg, bitfield, val)    ((reg) = (((reg) & ~BITMASK(bitfield)) | (((uint32_t)val) << BITPOS(bitfield))))
+#define CLR_BITS(reg, bitfield)         ((reg) = ((reg) & ~BITMASK(bitfield)))
+#define GET_BITS(reg, bitfield)         (((reg) & BITMASK(bitfield)) >> BITPOS(bitfield))
+#define WORD_TO_BYTE(val)               ((uint32_t)(val) << 2U)
+#define BYTE_TO_WORD(val)               ((val) >> 2U)
 
 #define I3CC_ENTER_CRITICAL(int_src)                     ${INT_CONTROLLER}_INT_SourceDisable(int_src)
 #define I3CC_EXIT_CRITICAL(int_src, status)              ${INT_CONTROLLER}_INT_SourceRestore(int_src, status)
@@ -100,13 +102,17 @@ static void ${I3CC_INSTANCE_NAME}_Host_CmdZeroInit(I3CC_CMD_DESC* cmdDesc)
 
 static I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_XferIdGet(void)
 {
-    ${I3CC_INSTANCE_NAME?lower_case}_host.xfer_cntr += 1;
+    ${I3CC_INSTANCE_NAME?lower_case}_host.xfer_cntr += 1U;
+    if (${I3CC_INSTANCE_NAME?lower_case}_host.xfer_cntr == I3CC_XFER_ID_INVALID)
+    {
+        ${I3CC_INSTANCE_NAME?lower_case}_host.xfer_cntr = 0U;
+    }
     return ${I3CC_INSTANCE_NAME?lower_case}_host.xfer_cntr;
 }
 
 static uint8_t ${I3CC_INSTANCE_NAME}_Host_XferTIDGet(I3CC_XFER_ID xfer_id)
 {
-    return (uint8_t)(xfer_id & 0x0F);
+    return (uint8_t)(xfer_id & 0x0FU);
 }
 
 static I3CC_XFER_QUEUE* ${I3CC_INSTANCE_NAME}_Host_GetFreeQElement(I3CC_XFER_QUEUE* qPool, uint32_t qPoolSize)
@@ -133,7 +139,7 @@ static bool ${I3CC_INSTANCE_NAME}_Host_AddBackQ(I3CC_XFER_QUEUE** qHead, I3CC_XF
     else
     {
         I3CC_XFER_QUEUE* pQueue = *qHead;
-        while (pQueue->next)
+        while (pQueue->next != NULL)
         {
             pQueue = pQueue->next;
         }
@@ -194,54 +200,54 @@ static bool ${I3CC_INSTANCE_NAME}_Host_IsQEmpty(I3CC_XFER_QUEUE* qHead)
 /* The input threshold must be in double words */
 static uint8_t ${I3CC_INSTANCE_NAME}_Host_GetThreshold_Floor(uint32_t thldDW)
 {
-    int8_t low = 0;        //Corresponding to index for 1
-    int8_t high = 5;       //Corresponding to index for 64
-    int8_t mid;
+    uint8_t low = 0;        //Corresponding to index for 1
+    uint8_t high = 7;       //Corresponding to index for 256
+    uint8_t mid;
     uint32_t curr_val;
-    uint32_t ans = 0;
-    uint16_t possible_values[] = {1, 4, 8, 16, 32, 64};
+    uint8_t ans = 0;
+    uint32_t possible_values[] = {1, 4, 8, 16, 32, 64, 128, 256};
 
     while (low <= high)
     {
-        mid = (low+high)/2;
+        mid = (low+high)/2U;
         curr_val = possible_values[mid];
         if (curr_val <= thldDW)
         {
             /* Return the index. For example, if 16, then return 3 and so on.. */
             ans = mid;
-            low = mid+1;
+            low = mid + 1U;
         }
         else
         {
-            high = mid-1;
+            high = mid - 1U;
         }
     }
     return ans;
 }
 
-void ${I3CC_INSTANCE_NAME}_Host_StatusEnable(I3CC_PIO_INTR_STATUS pioIntrStatus)
+void ${I3CC_INSTANCE_NAME}_Host_StatusEnable(uint32_t pioIntrStatusMsk)
 {
-    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS_ENABLE |= pioIntrStatus;
+    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS_ENABLE |= pioIntrStatusMsk;
 }
 
-void ${I3CC_INSTANCE_NAME}_Host_StatusDisable(I3CC_PIO_INTR_STATUS pioIntrStatus)
+void ${I3CC_INSTANCE_NAME}_Host_StatusDisable(uint32_t pioIntrStatusMsk)
 {
-    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS_ENABLE &= ~(pioIntrStatus);
+    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS_ENABLE &= ~(pioIntrStatusMsk);
 }
 
-void ${I3CC_INSTANCE_NAME}_Host_SignalEnable(I3CC_PIO_INTR_SIGNAL pioIntrSignal)
+void ${I3CC_INSTANCE_NAME}_Host_SignalEnable(uint32_t pioIntrSignalMsk)
 {
-    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_SIGNAL_ENABLE |= pioIntrSignal;
+    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_SIGNAL_ENABLE |= pioIntrSignalMsk;
 }
 
-void ${I3CC_INSTANCE_NAME}_Host_SignalDisable(I3CC_PIO_INTR_SIGNAL pioIntrSignal)
+void ${I3CC_INSTANCE_NAME}_Host_SignalDisable(uint32_t pioIntrSignalMsk)
 {
-    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_SIGNAL_ENABLE &= ~(pioIntrSignal);
+    ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_SIGNAL_ENABLE &= ~(pioIntrSignalMsk);
 }
 
-uint32_t ${I3CC_INSTANCE_NAME}_Host_StatusGet(I3CC_PIO_INTR_STATUS pioIntrStatus)
+uint32_t ${I3CC_INSTANCE_NAME}_Host_StatusGet(uint32_t pioIntrStatusMsk)
 {
-    return (${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS & pioIntrStatus);
+    return (${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS & pioIntrStatusMsk);
 }
 
 uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueLevelGet(I3CC_QUEUE_LVL qLvl)
@@ -251,24 +257,25 @@ uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueLevelGet(I3CC_QUEUE_LVL qLvl)
     switch(qLvl)
     {
         case I3CC_QUEUE_LVL_COMMAND_FREE_CNT:
-            level = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_CMD_QUEUE_FREE_LVL);
+            level = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_CMD_QUEUE_FREE_LVL);
             break;
         case I3CC_QUEUE_LVL_RESPONSE_CNT:
-            level = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_RESPONSE_BUFFER_LVL);
+            level = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_RESPONSE_BUFFER_LVL);
             break;
         case I3CC_QUEUE_LVL_IBI_BUF_CNT:
-            level = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_IBI_BUFFER_LVL);
+            level = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_IBI_BUFFER_LVL);
             break;
         case I3CC_QUEUE_LVL_IBI_STATUS_CNT:
-            level = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_IBI_STATUS_CNT);
+            level = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_STATUS_LEVEL, I3CC_QUEUE_STATUS_LEVEL_IBI_STATUS_CNT);
             break;
         case I3CC_QUEUE_LVL_TX_BUF_FREE_CNT:
-            level = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_STATUS_LEVEL, I3CC_DATA_BUFFER_STATUS_LEVEL_TX_BUF_FREE_LVL);
+            level = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_STATUS_LEVEL, I3CC_DATA_BUFFER_STATUS_LEVEL_TX_BUF_FREE_LVL);
             break;
         case I3CC_QUEUE_LVL_RX_BUF_CNT:
-            level = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_STATUS_LEVEL, I3CC_DATA_BUFFER_STATUS_LEVEL_RX_BUF_LVL);
+            level = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_STATUS_LEVEL, I3CC_DATA_BUFFER_STATUS_LEVEL_RX_BUF_LVL);
             break;
         default:
+            /* default case, return */
             break;
     }
 
@@ -304,6 +311,7 @@ void ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD qThresholdType
             SET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_IBI_DATA_SEGMENT_SIZE, threshold);
             break;
         default:
+            /* default case, return */
             break;
     }
 }
@@ -315,30 +323,31 @@ uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueThresholdGet(I3CC_QUEUE_THLD qThresholdT
     switch(qThresholdType)
     {
         case I3CC_QUEUE_THLD_CMD_EMPTY:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_CMD_EMPTY_BUF_THLD);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_CMD_EMPTY_BUF_THLD);
             break;
         case I3CC_QUEUE_THLD_RESPONSE_READY:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_RESP_BUF_THLD);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_RESP_BUF_THLD);
             break;
         case I3CC_QUEUE_THLD_IBI_STATUS:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_IBI_STATUS_THLD);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_IBI_STATUS_THLD);
             break;
         case I3CC_QUEUE_THLD_TX_BUFFER_FREE:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_TX_BUF_THLD);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_TX_BUF_THLD);
             break;
         case I3CC_QUEUE_THLD_RX_BUFFER_AVAILABLE:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_RX_BUF_THLD);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_RX_BUF_THLD);
             break;
         case I3CC_QUEUE_THLD_TX_START:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_TX_START_THLD);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_TX_START_THLD);
             break;
         case I3CC_QUEUE_THLD_RX_START:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_RX_START_THLD);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_DATA_BUFFER_THLD_CTRL, I3CC_DATA_BUFFER_THLD_CTRL_RX_START_THLD);
             break;
         case I3CC_QUEUE_THLD_IBI_DATA_SIZE:
-            threshold = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_IBI_DATA_SEGMENT_SIZE);
+            threshold = (uint8_t)GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_THLD_CTRL, I3CC_QUEUE_THLD_CTRL_IBI_DATA_SEGMENT_SIZE);
             break;
         default:
+            /* default case, return */
             break;
     }
 
@@ -347,9 +356,9 @@ uint8_t ${I3CC_INSTANCE_NAME}_Host_QueueThresholdGet(I3CC_QUEUE_THLD qThresholdT
 
 void ${I3CC_INSTANCE_NAME}_Host_QueueReset(I3CC_QUEUE_RESET qType)
 {
-    ${I3CC_INSTANCE_NAME}_REGS->I3CC_RESET_CONTROL = qType;
+    ${I3CC_INSTANCE_NAME}_REGS->I3CC_RESET_CONTROL = (uint32_t)qType;
 
-    while (${I3CC_INSTANCE_NAME}_REGS->I3CC_RESET_CONTROL & qType)
+    while ((${I3CC_INSTANCE_NAME}_REGS->I3CC_RESET_CONTROL & (uint32_t)qType) != 0U)
     {
         /* Wait for the queue reset to complete */
     }
@@ -359,7 +368,7 @@ void ${I3CC_INSTANCE_NAME}_Host_SoftReset(void)
 {
     ${I3CC_INSTANCE_NAME}_REGS->I3CC_RESET_CONTROL = I3CC_RESET_CONTROL_SOFT_RST_Msk;
 
-    while (${I3CC_INSTANCE_NAME}_REGS->I3CC_RESET_CONTROL & I3CC_RESET_CONTROL_SOFT_RST_Msk)
+    while ((${I3CC_INSTANCE_NAME}_REGS->I3CC_RESET_CONTROL & I3CC_RESET_CONTROL_SOFT_RST_Msk) != 0U)
     {
         /* Wait for the queue reset to complete */
     }
@@ -383,13 +392,12 @@ void ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(I3CC_DAT_TABLE_ENTRY_TYPE typ
     bool init = false;
     for (uint8_t i = 0; i < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize; i++)
     {
-        init = false;
         DATTableEntry.word0.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[i].word0.word;
-        if ((type == I3CC_DAT_TABLE_ENTRY_TYPE_I3C) && (DATTableEntry.word0.bits.dev_type == I3CC_DAT_TABLE_DEV_TYPE_I3C))
+        if ((type == I3CC_DAT_TABLE_ENTRY_TYPE_I3C) && (DATTableEntry.word0.bits.dev_type == (uint8_t)I3CC_DAT_TABLE_DEV_TYPE_I3C))
         {
             init = true;
         }
-        else if ((type == I3CC_DAT_TABLE_ENTRY_TYPE_I2C) && (DATTableEntry.word0.bits.dev_type == I3CC_DAT_TABLE_DEV_TYPE_I2C))
+        else if ((type == I3CC_DAT_TABLE_ENTRY_TYPE_I2C) && (DATTableEntry.word0.bits.dev_type == (uint8_t)I3CC_DAT_TABLE_DEV_TYPE_I2C))
         {
             init = true;
         }
@@ -397,8 +405,12 @@ void ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(I3CC_DAT_TABLE_ENTRY_TYPE typ
         {
             init = true;
         }
+        else
+        {
+            init = false;
+        }
 
-        if (init == true)
+        if (init)
         {
             DATTableEntry.word0.bits.static_addr = 0;
             DATTableEntry.word0.bits.dynamic_addr = 0;
@@ -411,9 +423,9 @@ void ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(I3CC_DAT_TABLE_ENTRY_TYPE typ
 void ${I3CC_INSTANCE_NAME}_Host_Initialize(void)
 {
     uint32_t DAT_TableOffset;
-    uint32_t DAT_TableSize;
+    uint8_t DAT_TableSize;
     uint32_t DCT_TableOffset;
-    uint32_t DCT_TableSize;
+    uint8_t DCT_TableSize;
     uint32_t PIO_Offset;
 
     ${I3CC_INSTANCE_NAME}_Host_SoftReset();
@@ -427,24 +439,24 @@ void ${I3CC_INSTANCE_NAME}_Host_Initialize(void)
     ${I3CC_INSTANCE_NAME}_REGS->I3CC_SCL_I2C_FM_TIMING = I3CC_SCL_I2C_FM_TIMING_I2C_FM_LCNT(${SCL_FM_LCNT}) | I3CC_SCL_I2C_FM_TIMING_I2C_FM_HCNT(${SCL_FM_HCNT});
 
     DAT_TableOffset = ${I3CC_INSTANCE_NAME}_REGS->I3CC_DAT_SECTION_OFFSET & I3CC_DAT_SECTION_OFFSET_TABLE_OFFSET_Msk;
-    DAT_TableSize = (${I3CC_INSTANCE_NAME}_REGS->I3CC_DAT_SECTION_OFFSET & I3CC_DAT_SECTION_OFFSET_TABLE_SIZE_Msk) >> I3CC_DAT_SECTION_OFFSET_TABLE_SIZE_Pos;
+    DAT_TableSize = (uint8_t)((${I3CC_INSTANCE_NAME}_REGS->I3CC_DAT_SECTION_OFFSET & I3CC_DAT_SECTION_OFFSET_TABLE_SIZE_Msk) >> I3CC_DAT_SECTION_OFFSET_TABLE_SIZE_Pos);
 
-    if (DAT_TableOffset == 0)
+    if (DAT_TableOffset == 0U)
     {
         //printf("DAT Table not supported in hardware\r\n");
     }
 
     DCT_TableOffset = ${I3CC_INSTANCE_NAME}_REGS->I3CC_DCT_SECTION_OFFSET & I3CC_DCT_SECTION_OFFSET_TABLE_OFFSET_Msk;
-    DCT_TableSize = (${I3CC_INSTANCE_NAME}_REGS->I3CC_DCT_SECTION_OFFSET & I3CC_DCT_SECTION_OFFSET_TABLE_SIZE_Msk) >> I3CC_DCT_SECTION_OFFSET_TABLE_SIZE_Pos;
+    DCT_TableSize = (uint8_t)((${I3CC_INSTANCE_NAME}_REGS->I3CC_DCT_SECTION_OFFSET & I3CC_DCT_SECTION_OFFSET_TABLE_SIZE_Msk) >> I3CC_DCT_SECTION_OFFSET_TABLE_SIZE_Pos);
 
-    if (DCT_TableOffset == 0)
+    if (DCT_TableOffset == 0U)
     {
         //printf("DCT Table not supported in hardware\r\n");
     }
 
     PIO_Offset = (${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_SECTION_OFFSET & I3CC_PIO_SECTION_OFFSET_SECTION_OFFSET_Msk);
 
-    if (PIO_Offset == 0)
+    if (PIO_Offset == 0U)
     {
         //printf("PIO not supported\r\n");
     }
@@ -452,14 +464,14 @@ void ${I3CC_INSTANCE_NAME}_Host_Initialize(void)
     ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr = (I3CC_DAT_TABLE_ENTRY*)((uint32_t)${I3CC_INSTANCE_NAME}_REGS + DAT_TableOffset);
     ${I3CC_INSTANCE_NAME?lower_case}_host.DCTTablePtr = (I3CC_DCT_TABLE_ENTRY*)((uint32_t)${I3CC_INSTANCE_NAME}_REGS + DCT_TableOffset);
 
-    ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize = DAT_TableSize >> 1; //Each DAT entry is 2 32-bit words. The DAT Table size is specified as number of 32-bit words.
-    ${I3CC_INSTANCE_NAME?lower_case}_host.DCTTableSize = DCT_TableSize >> 2; //Each DCT entry is 4 32-bit words. The DCT Table size is specified as number of 32-bit words.
+    ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize = DAT_TableSize >> 1U; //Each DAT entry is 2 32-bit words. The DAT Table size is specified as number of 32-bit words.
+    ${I3CC_INSTANCE_NAME?lower_case}_host.DCTTableSize = DCT_TableSize >> 2U; //Each DCT entry is 4 32-bit words. The DCT Table size is specified as number of 32-bit words.
 
     ${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_SIZE, I3CC_QUEUE_SIZE_RX_DATA_BUFFER_SIZE);
-    ${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW = (1 << (${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW + 1));
+    ${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW = ((uint32_t)1UL << (${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW + 1U));
 
     ${I3CC_INSTANCE_NAME?lower_case}_host.TXQ_SizeDW = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_SIZE, I3CC_QUEUE_SIZE_TX_DATA_BUFFER_SIZE);
-    ${I3CC_INSTANCE_NAME?lower_case}_host.TXQ_SizeDW = (1 << (${I3CC_INSTANCE_NAME?lower_case}_host.TXQ_SizeDW + 1));
+    ${I3CC_INSTANCE_NAME?lower_case}_host.TXQ_SizeDW = ((uint32_t)1UL << (${I3CC_INSTANCE_NAME?lower_case}_host.TXQ_SizeDW + 1U));
 
     ${I3CC_INSTANCE_NAME?lower_case}_host.CRQ_SizeDW = GET_BITS(${I3CC_INSTANCE_NAME}_REGS->I3CC_QUEUE_SIZE, I3CC_QUEUE_SIZE_CR_QUEUE_SIZE);
 
@@ -496,16 +508,16 @@ void ${I3CC_INSTANCE_NAME}_Host_Initialize(void)
     2. The data length number of locations to be empty in the receive buffer, if data length is smaller
     than the receive buffer size
     */
-    ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD_RX_START, ${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW);
+    ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD_RX_START, ${I3CC_INSTANCE_NAME}_Host_GetThreshold_Floor(${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW));
 
     /* Fix the threshold to 1/2 RX queue size, irrespective of the transfer length. If the transfer length is less than threshold then
        the response event will occur. In the response event read out the available data from the RX buffer.
     */
-    ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD_RX_BUFFER_AVAILABLE, ${I3CC_INSTANCE_NAME}_Host_GetThreshold_Floor(${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW >> 2U));
+    ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD_RX_BUFFER_AVAILABLE, ${I3CC_INSTANCE_NAME}_Host_GetThreshold_Floor(${I3CC_INSTANCE_NAME?lower_case}_host.RXQ_SizeDW >> 1U));
 
     ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD_IBI_STATUS, 0);
 
-    ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD_IBI_DATA_SIZE, ${I3CC_INSTANCE_NAME?lower_case}_host.IBIStatusQ_Size - 1);
+    ${I3CC_INSTANCE_NAME}_Host_QueueThresholdSet(I3CC_QUEUE_THLD_IBI_DATA_SIZE, (uint8_t)(${I3CC_INSTANCE_NAME?lower_case}_host.IBIStatusQ_Size - 1U));
 
     ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(I3CC_DAT_TABLE_ENTRY_TYPE_ALL);
 
@@ -535,20 +547,20 @@ static uint8_t ${I3CC_INSTANCE_NAME}_Host_AddressWithParity(uint8_t dynamic_addr
     uint8_t addr = dynamic_addr;
     uint8_t parity = 1;
 
-    while (addr)
+    while (addr != 0U)
     {
-        parity = !parity;
-        addr = addr & (addr-1);
+        parity ^= 1U;
+        addr = addr & (addr-1U);
     }
 
     return parity;
 }
 
-int8_t ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(uint8_t addr)
+uint8_t ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(uint8_t addr)
 {
     I3CC_DAT_TABLE_ENTRY datTableEntry;
 
-    for (int8_t i = 0; i < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize; i++)
+    for (uint8_t i = 0; i < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize; i++)
     {
         datTableEntry.word0.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[i].word0.word;
 
@@ -559,35 +571,35 @@ int8_t ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(uint8_t addr)
     }
 
     /* If dynamic address is not found, look for a static address */
-    for (int8_t i = 0; i < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize; i++)
+    for (uint8_t i = 0; i < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize; i++)
     {
         datTableEntry.word0.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[i].word0.word;
 
-        if ((datTableEntry.word0.bits.dev_type == I3CC_DAT_TABLE_DEV_TYPE_I2C) && (datTableEntry.word0.bits.static_addr == addr))
+        if ((datTableEntry.word0.bits.dev_type == (uint8_t)I3CC_DAT_TABLE_DEV_TYPE_I2C) && (datTableEntry.word0.bits.static_addr == addr))
         {
             return i;
         }
     }
 
-    return -1;
+    return I3CC_DAT_INDEX_INVALID;
 }
 
-int8_t ${I3CC_INSTANCE_NAME}_Host_DATFreeIndexGet(void)
+uint8_t ${I3CC_INSTANCE_NAME}_Host_DATFreeIndexGet(void)
 {
     I3CC_DAT_TABLE_ENTRY datTableEntry;
-    
-    for (int8_t i = 0; i < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize; i++)
+
+    for (uint8_t i = 0; i < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize; i++)
     {
         datTableEntry.word0.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[i].word0.word;
 
         /* If both dynamic and static address are 0, consider it to be free */
-        if ((datTableEntry.word0.bits.dynamic_addr == 0) && (datTableEntry.word0.bits.static_addr == 0))
+        if ((datTableEntry.word0.bits.dynamic_addr == 0U) && (datTableEntry.word0.bits.static_addr == 0U))
         {
             return i;
         }
     }
-    
-    return -1;
+
+    return I3CC_DAT_INDEX_INVALID;
 }
 
 /* Application must call this routine to setup the DAT table - basic fields - prior to sending
@@ -606,8 +618,8 @@ bool ${I3CC_INSTANCE_NAME}_Host_DATEntrySet(uint8_t datIndex, I3CC_DAT_TABLE_SET
     datTableEntry.word0.bits.static_addr = datTableSetup->static_addr;
     datTableEntry.word0.bits.dynamic_addr = datTableSetup->dynamic_addr;
     datTableEntry.word0.bits.parity = ${I3CC_INSTANCE_NAME}_Host_AddressWithParity(datTableSetup->dynamic_addr);
-    datTableEntry.word0.bits.crr_reject = datTableSetup->crr_reject;
-    datTableEntry.word0.bits.dev_type = datTableSetup->devType;
+    datTableEntry.word0.bits.crr_reject = (uint8_t)datTableSetup->crr_reject;
+    datTableEntry.word0.bits.dev_type = (uint8_t)datTableSetup->devType;
     datTableEntry.word0.bits.dev_nack_retry_cnt = datTableSetup->nak_retry_count;
 
     ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.word = datTableEntry.word0.word;
@@ -630,18 +642,18 @@ bool ${I3CC_INSTANCE_NAME}_Host_DATEntryGet(uint8_t datIndex, I3CC_DAT_TABLE_ENT
 
 bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigSet(uint8_t dynamic_addr, I3CC_IBI_SETUP* ibiSetup)
 {
-    if (ibiSetup)
+    if (ibiSetup != NULL)
     {
-        int8_t datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(dynamic_addr);
+        uint8_t datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(dynamic_addr);
 
-        if (datIndex != -1)
+        if (datIndex != I3CC_DAT_INDEX_INVALID)
         {
             I3CC_DAT_TABLE_ENTRY datTableEntry = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex];
 
-            datTableEntry.word0.bits.ibi_reject = ibiSetup->ibi_reject;
+            datTableEntry.word0.bits.ibi_reject = (uint8_t)ibiSetup->ibi_reject;
             datTableEntry.word1.bits.autocmd_mask = ibiSetup->autocmd_mask;
             datTableEntry.word1.bits.autocmd_value = ibiSetup->autocmd_value;
-            datTableEntry.word1.bits.autocmd_mode = ibiSetup->autocmd_mode;
+            datTableEntry.word1.bits.autocmd_mode = (uint8_t)ibiSetup->autocmd_mode;
 
             ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0 = datTableEntry.word0;
             ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word1 = datTableEntry.word1;
@@ -655,18 +667,18 @@ bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigSet(uint8_t dynamic_addr, I3CC_IBI_SETU
 
 bool ${I3CC_INSTANCE_NAME}_Host_IBIConfigGet(uint8_t dynamic_addr, I3CC_IBI_SETUP* ibiSetup)
 {
-    if (ibiSetup)
+    if (ibiSetup != NULL)
     {
-        int8_t datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(dynamic_addr);
+        uint8_t datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(dynamic_addr);
 
-        if (datIndex != -1)
+        if (datIndex != I3CC_DAT_INDEX_INVALID)
         {
             I3CC_DAT_TABLE_ENTRY datTableEntry = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex];
 
-            ibiSetup->ibi_reject = datTableEntry.word0.bits.ibi_reject;
+            ibiSetup->ibi_reject = (bool)datTableEntry.word0.bits.ibi_reject;
             ibiSetup->autocmd_mask = datTableEntry.word1.bits.autocmd_mask;
             ibiSetup->autocmd_value = datTableEntry.word1.bits.autocmd_value;
-            ibiSetup->autocmd_mode = datTableEntry.word1.bits.autocmd_mode;
+            ibiSetup->autocmd_mode = (I3CC_XFER_MODE)datTableEntry.word1.bits.autocmd_mode;
             return true;
         }
     }
@@ -680,7 +692,7 @@ uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(uint8_t datIndex)
 
     datTableEntry.word0.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.word;
 
-    if (datTableEntry.word0.bits.dev_type == I3CC_DAT_TABLE_DEV_TYPE_I2C)
+    if (datTableEntry.word0.bits.dev_type == (uint8_t)I3CC_DAT_TABLE_DEV_TYPE_I2C)
     {
         return datTableEntry.word0.bits.static_addr;
     }
@@ -690,25 +702,23 @@ uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(uint8_t datIndex)
     }
 }
 
-static int8_t ${I3CC_INSTANCE_NAME}_Host_DATTableUpdate(volatile I3CC_DAT_TABLE_ENTRY* pDATEntry, I3CC_DCT_TABLE_ENTRY* pDCTInfo)
+static void ${I3CC_INSTANCE_NAME}_Host_DATTableUpdate(volatile I3CC_DAT_TABLE_ENTRY* pDATEntry, I3CC_DCT_TABLE_ENTRY* pDCTInfo)
 {
     I3CC_DAT_TABLE_ENTRY tableEntry = {0};
-    uint8_t ibi_request_capable = pDCTInfo->bcr.bits.ibi_request_capable;
-    uint8_t ibi_payload = pDCTInfo->bcr.bits.ibi_payload;
+    uint8_t ibi_request_capable = (pDCTInfo->DCTFields.bcr & I3CC_BCR_IBI_REQUEST_CAPABLE) != 0U? 1U : 0U;
+    uint8_t ibi_payload = (pDCTInfo->DCTFields.bcr & I3CC_BCR_IBI_PAYLOAD) != 0U? 1U : 0U;
 
-    tableEntry.word0 = pDATEntry->word0;
-    tableEntry.word0.bits.ibi_reject = ibi_request_capable == 1? 0 : 1;
+    tableEntry.word0.word = pDATEntry->word0.word;
+    tableEntry.word0.bits.ibi_reject = ibi_request_capable == 1U? 0U : 1U;
     tableEntry.word0.bits.ibi_payload = ibi_payload;
 
     /* Disable auto-command (i.e. generation of repeated start + read after IBI is read). */
-    tableEntry.word1 = pDATEntry->word1;
-    tableEntry.word1.bits.autocmd_mask = 0x00;
-    tableEntry.word1.bits.autocmd_value = 0xff;
+    tableEntry.word1.word = pDATEntry->word1.word;
+    tableEntry.word1.bits.autocmd_mask = 0x00U;
+    tableEntry.word1.bits.autocmd_value = 0xffU;
 
     pDATEntry->word0.word = tableEntry.word0.word;
     pDATEntry->word1.word = tableEntry.word1.word;
-
-    return true;
 }
 
 static bool ${I3CC_INSTANCE_NAME}_Host_CMDPortWrite(I3CC_CMD_DESC* cmdDesc)
@@ -733,15 +743,17 @@ static uint32_t ${I3CC_INSTANCE_NAME}_Host_DataPortWrite(void* pTxData, uint32_t
     uint32_t nBytesToWrite = (txQFreeEntries < data_length) ? txQFreeEntries : data_length;
 
     if ((pTxData == NULL) || (data_length == 0U))
-        return 0;
-
-    while ((numBytesQueued + 4) <= nBytesToWrite)
     {
-        ${I3CC_INSTANCE_NAME}_REGS->I3CC_XFER_DATA_PORT = ((uint32_t*)pTxData)[numBytesQueued/4];
-        numBytesQueued += 4;
+        return 0;
     }
 
-    if (nBytesToWrite % 4)
+    while ((numBytesQueued + 4U) <= nBytesToWrite)
+    {
+        ${I3CC_INSTANCE_NAME}_REGS->I3CC_XFER_DATA_PORT = ((uint32_t*)pTxData)[numBytesQueued/4U];
+        numBytesQueued += 4U;
+    }
+
+    if ((nBytesToWrite % 4U) != 0U)
     {
         for (uint32_t j = 0; j < (nBytesToWrite - numBytesQueued); j++)
         {
@@ -783,14 +795,14 @@ static uint32_t ${I3CC_INSTANCE_NAME}_Host_DataPortRead(void* pRxData, uint32_t 
 
     uint32_t nBytesToRead = (rxQAvailableEntries > data_length) ? data_length : rxQAvailableEntries;
 
-    while ((numBytesRead + 4) <= nBytesToRead)
+    while ((numBytesRead + 4U) <= nBytesToRead)
     {
         uint32_t data = ${I3CC_INSTANCE_NAME}_REGS->I3CC_XFER_DATA_PORT;
-        ((uint32_t*)pRxData)[numBytesRead/4] = data;
-        numBytesRead += 4;
+        ((uint32_t*)pRxData)[numBytesRead/4U] = data;
+        numBytesRead += 4U;
     }
 
-    if (nBytesToRead % 4)
+    if ((nBytesToRead % 4U) != 0U)
     {
         dword = ${I3CC_INSTANCE_NAME}_REGS->I3CC_XFER_DATA_PORT;
 
@@ -817,7 +829,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_DCT_IndexReset(void)
 
 static uint8_t ${I3CC_INSTANCE_NAME}_Host_DCT_IndexGet(void)
 {
-    return GET_BITS( ${I3CC_INSTANCE_NAME}_REGS->I3CC_DCT_SECTION_OFFSET, I3CC_DCT_SECTION_OFFSET_TABLE_INDEX);
+    return (uint8_t)GET_BITS( ${I3CC_INSTANCE_NAME}_REGS->I3CC_DCT_SECTION_OFFSET, I3CC_DCT_SECTION_OFFSET_TABLE_INDEX);
 }
 
 static uint8_t ${I3CC_INSTANCE_NAME}_Host_DCT_NumEntriesGet(uint8_t initialIndex)
@@ -847,16 +859,16 @@ static uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoNumFreeSlotsGet(void)
     {
         if (${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].inUse == false)
         {
-            freeSlotsCntr += 1;
+            freeSlotsCntr += 1U;
         }
     }
 
     return freeSlotsCntr;
 }
 
-static int8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoAcquireSlotAny(void)
+static uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoAcquireSlotAny(void)
 {
-    for (int8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
+    for (uint8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
     {
         if (${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].inUse == false)
         {
@@ -865,60 +877,61 @@ static int8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoAcquireSlotAny(void)
         }
     }
 
-    return -1;
+    return I3CC_DEV_INFO_INDEX_INVALID;
 }
 
-static int8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(uint8_t dynamic_addr)
+static uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(uint8_t dynamic_addr)
 {
-    for (int8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
+    for (uint8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
     {
-        if ((${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].DCTInfo.dynamic_addr == dynamic_addr) && (${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].inUse == true))
+        if ((${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].DCTInfo.DCTFields.dynamic_addr == dynamic_addr) && (${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].inUse == true))
         {
             return i;
         }
     }
 
-    return -1;
+    return I3CC_DEV_INFO_INDEX_INVALID;
 }
 
-static int8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoReleaseSlot(uint8_t dynamic_addr)
+static uint8_t ${I3CC_INSTANCE_NAME}_Host_DeviceInfoReleaseSlot(uint8_t dynamic_addr)
 {
-    for (int8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
+    for (uint8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
     {
-        if (${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].DCTInfo.dynamic_addr == dynamic_addr)
+        if (${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].DCTInfo.DCTFields.dynamic_addr == dynamic_addr)
         {
             ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].inUse = false;
+            ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.numValidEntries -= 1U;
+
             return i;
         }
     }
 
-    return -1;
+    return I3CC_DEV_INFO_INDEX_INVALID;
 }
 
-static bool ${I3CC_INSTANCE_NAME}_Host_DeviceInfoReleaseSlotsAll(void)
+static bool ${I3CC_INSTANCE_NAME}_Host_DeviceInfoFreeSlotsAll(void)
 {
-    for (int8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
+    for (uint8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
     {
         ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[i].inUse = false;
     }
+
+    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.numValidEntries = 0U;
 
     return true;
 }
 
 static bool ${I3CC_INSTANCE_NAME}_Host_DCT_Read(I3CC_DCT_TABLE_ENTRY* pSwDCT, volatile I3CC_DCT_TABLE_ENTRY* pHwDCT)
 {
-    volatile uint32_t* pDCTEntryHw = (volatile uint32_t*)pHwDCT;
-    uint32_t* pDCTEntrySw = (uint32_t*)pSwDCT;
-
-    if (pDCTEntryHw == NULL || pDCTEntrySw == NULL)
+    if (pHwDCT == NULL || pSwDCT == NULL)
     {
         return false;
     }
 
-    /* Copy 128 bits (4 32-bit words) of DCT information from HW DCT register to SW DCT array */
-    for (uint32_t j = 0; j < 4; j++)
+    /* Copy 128 bits (4, 32-bit words) of DCT information from HW DCT register to SW DCT array */
+    for (uint8_t i = 0; i < 4U; i++)
     {
-        *pDCTEntrySw++ = *pDCTEntryHw++;
+        pSwDCT->words[i] = pHwDCT->words[i];
     }
 
     return true;
@@ -926,11 +939,12 @@ static bool ${I3CC_INSTANCE_NAME}_Host_DCT_Read(I3CC_DCT_TABLE_ENTRY* pSwDCT, vo
 
 bool ${I3CC_INSTANCE_NAME}_Host_IsIBICapable(uint8_t dynamic_addr)
 {
-    int8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(dynamic_addr);
+    uint8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(dynamic_addr);
 
-    if (devInfoIndex != -1)
+    if (devInfoIndex != I3CC_DEV_INFO_INDEX_INVALID)
     {
-        return ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.bcr.bits.ibi_request_capable == 1? true : false;
+        uint8_t bcr = ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.bcr;
+        return (bcr & I3CC_BCR_IBI_REQUEST_CAPABLE) != 0U ? true : false;
     }
 
     return false;
@@ -938,11 +952,12 @@ bool ${I3CC_INSTANCE_NAME}_Host_IsIBICapable(uint8_t dynamic_addr)
 
 bool ${I3CC_INSTANCE_NAME}_Host_IBIHasPayload(uint8_t dynamic_addr)
 {
-    int8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(dynamic_addr);
+    uint8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(dynamic_addr);
 
-    if (devInfoIndex != -1)
+    if (devInfoIndex != I3CC_DEV_INFO_INDEX_INVALID)
     {
-        return ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.bcr.bits.ibi_payload == 1? true : false;
+        uint8_t bcr = ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.bcr;
+        return (bcr & I3CC_BCR_IBI_PAYLOAD) != 0U ? true : false;
     }
 
     return false;
@@ -950,11 +965,12 @@ bool ${I3CC_INSTANCE_NAME}_Host_IBIHasPayload(uint8_t dynamic_addr)
 
 bool ${I3CC_INSTANCE_NAME}_Host_TargetHasMaxDataSpeedLimit(uint8_t dynamic_addr)
 {
-    int8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(dynamic_addr);
+    uint8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(dynamic_addr);
 
-    if (devInfoIndex != -1)
+    if (devInfoIndex != I3CC_DEV_INFO_INDEX_INVALID)
     {
-        return ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.bcr.bits.max_data_spped_limitation == 1? true : false;
+        uint8_t bcr = ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.bcr;
+        return (bcr & I3CC_BCR_MAX_DATA_SPEED_LIMITATION) != 0U ? true : false;
     }
 
     return false;
@@ -965,11 +981,13 @@ bool ${I3CC_INSTANCE_NAME}_Host_DCTInfoGet(uint8_t dynamic_addr, I3CC_DCT_TABLE_
 {
     I3CC_DEVICE_INFO* devInfo = ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo;
     if (dctInfo == NULL)
+    {
         return false;
+    }
 
     for (uint8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
     {
-        if (devInfo[i].inUse == true && devInfo[i].DCTInfo.dynamic_addr == dynamic_addr)
+        if (devInfo[i].inUse == true && devInfo[i].DCTInfo.DCTFields.dynamic_addr == dynamic_addr)
         {
             *dctInfo = devInfo[i].DCTInfo;
             return true;
@@ -984,13 +1002,20 @@ uint8_t ${I3CC_INSTANCE_NAME}_Host_DCTInfoGetAll(I3CC_DCT_TABLE_ENTRY* dctInfo, 
     uint8_t j = 0;
 
     if (dctInfo == NULL)
+    {
         return 0;
+    }
 
-    for (uint8_t i = 0; ((i < I3CC_NUM_TARGET_DEV_SUPPORTED) && (j < maxEntries)); i++)
+    for (uint8_t i = 0; i < I3CC_NUM_TARGET_DEV_SUPPORTED; i++)
     {
         if (devInfo[i].inUse == true)
         {
             dctInfo[j++] = devInfo[i].DCTInfo;
+
+            if (j >= maxEntries)
+            {
+                break;
+            }
         }
     }
 
@@ -1007,25 +1032,28 @@ static bool ${I3CC_INSTANCE_NAME}_Host_DCTEntriesSave(void)
     I3CC_DEV_INFO* device_info = &${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo;
     uint32_t devInfoAvailFreeEntries = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoNumFreeSlotsGet();
     uint8_t numDCTEntriesAvailable = ${I3CC_INSTANCE_NAME}_Host_DCT_NumEntriesGet(0);
-    uint8_t numDCTEntriesToRead = numDCTEntriesAvailable > devInfoAvailFreeEntries ? devInfoAvailFreeEntries : numDCTEntriesAvailable;
+    uint8_t numDCTEntriesToRead = (uint8_t)((uint32_t)numDCTEntriesAvailable > devInfoAvailFreeEntries ? devInfoAvailFreeEntries : numDCTEntriesAvailable);
 
     for (uint32_t i = 0; i < numDCTEntriesToRead; i++)
     {
         /* Get a free slot in the device Info array */
-        int8_t devInfoSlot = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoAcquireSlotAny();
-        if (devInfoSlot == -1)
+        uint8_t devInfoSlot = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoAcquireSlotAny();
+        if (devInfoSlot == I3CC_DEV_INFO_INDEX_INVALID)
+        {
             break;
+        }
 
         /* Read the next DCT and update the DAT table */
         /* Copy DCT information from HW registers to SW array */
-        
-        ${I3CC_INSTANCE_NAME}_Host_DCT_Read(&device_info->devInfo[devInfoSlot].DCTInfo, &${I3CC_INSTANCE_NAME?lower_case}_host.DCTTablePtr[i]);
+
+        (void)${I3CC_INSTANCE_NAME}_Host_DCT_Read(&device_info->devInfo[devInfoSlot].DCTInfo, &${I3CC_INSTANCE_NAME?lower_case}_host.DCTTablePtr[i]);
 
         /* Next pass the DCT information stored in SW array to update the corresponding device's DAT entry in DAT table*/
         /* First get the DAT index corresponding to the dynamic address in the DCT information */
 
-        int8_t datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(device_info->devInfo[devInfoSlot].DCTInfo.dynamic_addr);
-        if (datIndex == -1)
+        uint8_t datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(device_info->devInfo[devInfoSlot].DCTInfo.DCTFields.dynamic_addr);
+
+        if (datIndex == I3CC_DAT_INDEX_INVALID)
         {
             /* DAT table does not have matching device entry. Free the Device Info slot. */
             device_info->devInfo[devInfoSlot].inUse = false;
@@ -1035,7 +1063,7 @@ static bool ${I3CC_INSTANCE_NAME}_Host_DCTEntriesSave(void)
             ${I3CC_INSTANCE_NAME}_Host_DATTableUpdate(&${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex], &device_info->devInfo[devInfoSlot].DCTInfo);
             /* Update the DAT Index corresponding to this device for quick access */
             device_info->devInfo[devInfoSlot].DATIndex = datIndex;
-            device_info->numValidEntries += 1;
+            device_info->numValidEntries += 1U;
         }
     }
 
@@ -1045,7 +1073,9 @@ static bool ${I3CC_INSTANCE_NAME}_Host_DCTEntriesSave(void)
 void ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsSet(I3CC_XFER_FLAGS* xferFlags)
 {
     if (xferFlags == NULL)
+    {
         return;
+    }
 
     ${I3CC_INSTANCE_NAME?lower_case}_host.xferFlagsGlobal.i3cXferMode.mode = xferFlags->i3cXferMode.mode;
     ${I3CC_INSTANCE_NAME?lower_case}_host.xferFlagsGlobal.i3cXferMode.toc = xferFlags->i3cXferMode.toc;
@@ -1055,7 +1085,7 @@ void ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsSet(I3CC_XFER_FLAGS* xferFlags)
 
 static I3CC_XFER_MODE ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsGet(I3CC_DAT_TABLE_DEV_TYPE devType, I3CC_XFER_FLAGS* xferFlags)
 {
-    if (xferFlags)
+    if (xferFlags != NULL)
     {
         return (devType == I3CC_DAT_TABLE_DEV_TYPE_I3C)? xferFlags->i3cXferMode.mode : xferFlags->i2cXferMode.mode;
     }
@@ -1073,7 +1103,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(
     uint8_t devCount
 )
 {
-    if ((devIndex + devCount) > ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize)
+    if (((uint32_t)devIndex + devCount) > ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize)
     {
         return I3CC_XFER_ID_INVALID;
     }
@@ -1105,13 +1135,13 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(
 
     I3CC_ADDR_ASSIGN_CMD0_BITS* addr_assign_cmd0_bits = &qElement->xfer_info.cmd.addr_assign_cmd.cmd_word0.bits;
 
-    addr_assign_cmd0_bits->cmd_attr = I3CC_CMD_DESC_TYPE_ADDR_ASSIGN;
-    addr_assign_cmd0_bits->cmd = addrAssignCmd;
+    addr_assign_cmd0_bits->cmd_attr = (uint8_t)I3CC_CMD_DESC_TYPE_ADDR_ASSIGN;
+    addr_assign_cmd0_bits->cmd = (uint8_t)addrAssignCmd;
 
     addr_assign_cmd0_bits->dev_index = devIndex;
     addr_assign_cmd0_bits->dev_count = devCount;
-    addr_assign_cmd0_bits->roc = true;
-    addr_assign_cmd0_bits->toc = true;
+    addr_assign_cmd0_bits->roc = (uint8_t)true;
+    addr_assign_cmd0_bits->toc = (uint8_t)true;
 
     /* Save the command information with the driver */
     I3CC_XFER_INFO* xfer_info = &qElement->xfer_info;
@@ -1126,7 +1156,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(
 
     bool isQEmpty = ${I3CC_INSTANCE_NAME}_Host_IsQEmpty(${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head);
 
-    ${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
+    (void)${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
 
     if (isQEmpty == true)
     {
@@ -1142,9 +1172,9 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(
 I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
     uint8_t targetAddr,
     bool cp,
-    uint8_t cmd,
+    I3CC_CCC cmd,
     void* pDataBuffer,
-    uint32_t numTxBytes,
+    uint8_t numTxBytes,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
@@ -1154,23 +1184,23 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
     }
 
     bool i3cInterruptStatus = I3CC_ENTER_CRITICAL(I3CC_IRQn);
-    int8_t datIndex = 0;
+    uint8_t datIndex = 0;
     I3CC_DAT_TABLE_DEV_TYPE devType = I3CC_DAT_TABLE_DEV_TYPE_I3C;
 
-    bool directed_ccc = (cp == true) && (cmd > 0x7F);
+    bool directed_ccc = (cp == true) && ((uint8_t)cmd > 0x7FU);
     bool private_xfer = (cp == false);
 
     if (directed_ccc || private_xfer)
     {
         datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(targetAddr);
-        if (datIndex == -1)
+        if (datIndex == I3CC_DAT_INDEX_INVALID)
         {
             I3CC_EXIT_CRITICAL(I3CC_IRQn, i3cInterruptStatus);
             return I3CC_XFER_ID_INVALID;
         }
         else
         {
-            devType = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.bits.dev_type;
+            devType = (I3CC_DAT_TABLE_DEV_TYPE)${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.bits.dev_type;
         }
     }
 
@@ -1189,22 +1219,22 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
 
     I3CC_IMMD_XFER_CMD0_BITS* immd_xfer_bits = &qElement->xfer_info.cmd.immd_xfer_cmd.cmd_word0.bits;
 
-    immd_xfer_bits->cmd_attr = I3CC_CMD_DESC_TYPE_IMMEDIATE_XFER;
-    immd_xfer_bits->cmd = cmd;
+    immd_xfer_bits->cmd_attr = (uint8_t)I3CC_CMD_DESC_TYPE_IMMEDIATE_XFER;
+    immd_xfer_bits->cmd = (uint8_t)cmd;
     immd_xfer_bits->cp = cp ? 1U : 0U;
     immd_xfer_bits->dev_index = datIndex;
     immd_xfer_bits->byte_count = numTxBytes;
-    immd_xfer_bits->rnw = I3CC_XFER_DIR_WR;
-    immd_xfer_bits->roc = true;
-    immd_xfer_bits->toc = true;
+    immd_xfer_bits->rnw = (uint8_t)I3CC_XFER_DIR_WR;
+    immd_xfer_bits->roc = (uint8_t)true;
+    immd_xfer_bits->toc = (uint8_t)true;
 
     if (cp == true)
     {
-        immd_xfer_bits->mode = I3CC_XFER_MODE_I3C_SDR0;
+        immd_xfer_bits->mode = (uint8_t)I3CC_XFER_MODE_I3C_SDR0;
     }
     else
     {
-        immd_xfer_bits->mode = ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsGet(devType, xferFlags);
+        immd_xfer_bits->mode = (uint8_t)${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsGet(devType, xferFlags);
     }
 
     uint8_t* pDataByte = (uint8_t*)&qElement->xfer_info.cmd.immd_xfer_cmd.cmd_word1.word;
@@ -1227,7 +1257,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
 
     bool isQEmpty = ${I3CC_INSTANCE_NAME}_Host_IsQEmpty(${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head);
 
-    ${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
+    (void)${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
 
     if (isQEmpty == true)
     {
@@ -1244,31 +1274,31 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(
 I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(
     uint8_t targetAddr,
     bool cp,
-    uint8_t cmd,
+    I3CC_CCC cmd,
     I3CC_XFER_DIR dir,
     void* pDataBuffer,
-    uint32_t numRxTxBytes,
+    uint16_t numRxTxBytes,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
     bool i3cInterruptStatus = I3CC_ENTER_CRITICAL(I3CC_IRQn);
 
-    int8_t datIndex = 0;
-    bool directed_ccc = (cp == true) && (cmd > 0x7F);
+    uint8_t datIndex = 0;
+    bool directed_ccc = (cp == true) && ((uint8_t)cmd > 0x7FU);
     bool private_xfer = (cp == false);
     I3CC_DAT_TABLE_DEV_TYPE devType = I3CC_DAT_TABLE_DEV_TYPE_I3C;
 
     if (directed_ccc || private_xfer)
     {
         datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(targetAddr);
-        if (datIndex == -1)
+        if (datIndex == I3CC_DAT_INDEX_INVALID)
         {
             I3CC_EXIT_CRITICAL(I3CC_IRQn, i3cInterruptStatus);
             return I3CC_XFER_ID_INVALID;
         }
         else
         {
-            devType = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.bits.dev_type;
+            devType = (I3CC_DAT_TABLE_DEV_TYPE)${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.bits.dev_type;
         }
     }
 
@@ -1294,23 +1324,23 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(
     I3CC_RGLR_DATA_XFER_CMD0_BITS* rglr_xfer_word0_bits = &qElement->xfer_info.cmd.rglr_data_xfer_cmd.cmd_word0.bits;
     I3CC_RGLR_DATA_XFER_CMD1_BITS* rglr_xfer_word1_bits = &qElement->xfer_info.cmd.rglr_data_xfer_cmd.cmd_word1.bits;
 
-    rglr_xfer_word0_bits->cmd_attr = I3CC_CMD_DESC_TYPE_RGLR_DATA_XFER;
-    rglr_xfer_word0_bits->cmd = cmd;
+    rglr_xfer_word0_bits->cmd_attr = (uint8_t)I3CC_CMD_DESC_TYPE_RGLR_DATA_XFER;
+    rglr_xfer_word0_bits->cmd = (uint8_t)cmd;
     rglr_xfer_word0_bits->cp = cp ? 1U : 0U;
     rglr_xfer_word0_bits->dev_index = datIndex;
-    rglr_xfer_word0_bits->rnw = dir;
-    rglr_xfer_word0_bits->roc = true;
-    rglr_xfer_word0_bits->toc = true;
+    rglr_xfer_word0_bits->rnw = (uint8_t)dir;
+    rglr_xfer_word0_bits->roc = (uint8_t)true;
+    rglr_xfer_word0_bits->toc = (uint8_t)true;
 
     rglr_xfer_word1_bits->data_length = numRxTxBytes;
 
     if (cp == true)
     {
-        rglr_xfer_word0_bits->mode = I3CC_XFER_MODE_I3C_SDR0;
+        rglr_xfer_word0_bits->mode = (uint8_t)I3CC_XFER_MODE_I3C_SDR0;
     }
     else
     {
-        rglr_xfer_word0_bits->mode = ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsGet(devType, xferFlags);
+        rglr_xfer_word0_bits->mode = (uint8_t)${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsGet(devType, xferFlags);
     }
 
     I3CC_XFER_INFO* xfer_info = &qElement->xfer_info;
@@ -1325,7 +1355,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(
 
     bool isQEmpty = ${I3CC_INSTANCE_NAME}_Host_IsQEmpty(${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head);
 
-    ${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
+    (void)${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
 
     if (isQEmpty)
     {
@@ -1337,7 +1367,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(
             ${I3CC_INSTANCE_NAME}_Host_SignalEnable(I3CC_PIO_INTR_SIGNAL_TX_THLD);
         }
         /* Start the transfer by queuing in the command */
-        ${I3CC_INSTANCE_NAME}_Host_CMDPortWrite(&qElement->xfer_info.cmd);
+        (void)${I3CC_INSTANCE_NAME}_Host_CMDPortWrite(&qElement->xfer_info.cmd);
     }
 
     I3CC_EXIT_CRITICAL(I3CC_IRQn, i3cInterruptStatus);
@@ -1351,24 +1381,24 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
     uint16_t offsetVal,
     I3CC_XFER_DIR dir,
     void* pDataBuffer,
-    uint32_t numRxTxBytes,
+    uint16_t numRxTxBytes,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
     bool i3cInterruptStatus = I3CC_ENTER_CRITICAL(I3CC_IRQn);
 
-    int8_t datIndex = 0;
+    uint8_t datIndex = 0;
     I3CC_DAT_TABLE_DEV_TYPE devType = I3CC_DAT_TABLE_DEV_TYPE_I3C;
 
     datIndex = ${I3CC_INSTANCE_NAME}_Host_DATTableIndexGet(targetAddr);
-    if (datIndex == -1)
+    if (datIndex == I3CC_DAT_INDEX_INVALID)
     {
         I3CC_EXIT_CRITICAL(I3CC_IRQn, i3cInterruptStatus);
         return I3CC_XFER_ID_INVALID;
     }
     else
     {
-        devType = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.bits.dev_type;
+        devType = (I3CC_DAT_TABLE_DEV_TYPE)${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.bits.dev_type;
     }
 
     I3CC_XFER_QUEUE* qElement = ${I3CC_INSTANCE_NAME}_Host_GetFreeQElement(${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_pool, ${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_pool_size);
@@ -1385,17 +1415,17 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
     I3CC_COMBO_DATA_XFER_CMD0_BITS* combo_xfer_word0_bits = &qElement->xfer_info.cmd.combo_data_xfer_cmd.cmd_word0.bits;
     I3CC_COMBO_DATA_XFER_CMD1_BITS* combo_xfer_word1_bits = &qElement->xfer_info.cmd.combo_data_xfer_cmd.cmd_word1.bits;
 
-    combo_xfer_word0_bits->cmd_attr = I3CC_CMD_DESC_TYPE_COMBO_XFER;
-    combo_xfer_word0_bits->dev_index = datIndex;
+    combo_xfer_word0_bits->cmd_attr = (uint8_t)I3CC_CMD_DESC_TYPE_COMBO_XFER;
+    combo_xfer_word0_bits->dev_index = (uint8_t)datIndex;
     combo_xfer_word0_bits->data_length_pos = 0;
     combo_xfer_word0_bits->first_phase_mode = 1;
-    combo_xfer_word0_bits->suboffset_8_16_bit = offsetLen;
+    combo_xfer_word0_bits->suboffset_8_16_bit = (uint8_t)offsetLen;
 
-    combo_xfer_word0_bits->rnw = dir;
-    combo_xfer_word0_bits->roc = true;
-    combo_xfer_word0_bits->toc = true;
+    combo_xfer_word0_bits->rnw = (uint8_t)dir;
+    combo_xfer_word0_bits->roc = (uint8_t)true;
+    combo_xfer_word0_bits->toc = (uint8_t)true;
 
-    combo_xfer_word0_bits->mode = ${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsGet(devType, xferFlags);
+    combo_xfer_word0_bits->mode = (uint8_t)${I3CC_INSTANCE_NAME}_Host_GlobalXferFlagsGet(devType, xferFlags);
 
     combo_xfer_word1_bits->offset_suboffset = offsetVal;
     combo_xfer_word1_bits->data_length = numRxTxBytes;
@@ -1413,7 +1443,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
     /* Before adding the request to the queue, check if it is empty or not */
     bool isQEmpty = ${I3CC_INSTANCE_NAME}_Host_IsQEmpty(${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head);
 
-    ${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
+    (void)${I3CC_INSTANCE_NAME}_Host_AddBackQ(&${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head, qElement);
 
     if (isQEmpty)
     {
@@ -1425,7 +1455,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
             ${I3CC_INSTANCE_NAME}_Host_SignalEnable(I3CC_PIO_INTR_SIGNAL_TX_THLD);
         }
         /* Start the transfer by queuing in the command */
-        ${I3CC_INSTANCE_NAME}_Host_CMDPortWrite(&qElement->xfer_info.cmd);
+        (void)${I3CC_INSTANCE_NAME}_Host_CMDPortWrite(&qElement->xfer_info.cmd);
     }
 
     I3CC_EXIT_CRITICAL(I3CC_IRQn, i3cInterruptStatus);
@@ -1434,35 +1464,35 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_ComboDataXferCmd(
 }
 
 I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_BroadcastCCCXfer(
-    uint8_t cmd,
+    I3CC_CCC cmd,
     I3CC_XFER_DIR dir,
     void* pDataBuffer,
-    uint32_t numRxTxBytes,
+    uint16_t numRxTxBytes,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
-    if (dir == I3CC_XFER_DIR_WR && numRxTxBytes <= 4)
+    if (dir == I3CC_XFER_DIR_WR && numRxTxBytes <= 4U)
     {
-        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(0, true, cmd, pDataBuffer, numRxTxBytes, xferFlags);
+        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(0U, true, cmd, pDataBuffer, (uint8_t)numRxTxBytes, xferFlags);
     }
     else
     {
-        return ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(0, true, cmd, dir, pDataBuffer, numRxTxBytes, xferFlags);
+        return ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(0U, true, cmd, dir, pDataBuffer, numRxTxBytes, xferFlags);
     }
 }
 
 I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DirectCCCXfer(
     uint8_t targetAddr,
-    uint8_t cmd,
+    I3CC_CCC cmd,
     I3CC_XFER_DIR dir,
     void* pDataBuffer,
-    uint32_t numRxTxBytes,
+    uint16_t numRxTxBytes,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
-    if (dir == I3CC_XFER_DIR_WR && numRxTxBytes <= 4)
+    if ((dir == I3CC_XFER_DIR_WR) && (numRxTxBytes <= 4U))
     {
-        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(targetAddr, true, cmd, pDataBuffer, numRxTxBytes, xferFlags);
+        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(targetAddr, true, cmd, pDataBuffer, (uint8_t)numRxTxBytes, xferFlags);
     }
     else
     {
@@ -1474,31 +1504,31 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_PrivateDataXfer(
     uint8_t targetAddr,
     I3CC_XFER_DIR dir,
     void* pDataBuffer,
-    uint32_t numRxTxBytes,
+    uint16_t numRxTxBytes,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
-    if (dir == I3CC_XFER_DIR_WR && numRxTxBytes <= 4)
+    if (dir == I3CC_XFER_DIR_WR && numRxTxBytes <= 4U)
     {
-        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(targetAddr, false, 0, pDataBuffer, numRxTxBytes, xferFlags);
+        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(targetAddr, false, (I3CC_CCC)0U, pDataBuffer, (uint8_t)numRxTxBytes, xferFlags);
     }
     else
     {
-        return ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(targetAddr, false, 0, dir, pDataBuffer, numRxTxBytes, xferFlags);
+        return ${I3CC_INSTANCE_NAME}_Host_RegularDataXferCmd(targetAddr, false, (I3CC_CCC)0U, dir, pDataBuffer, numRxTxBytes, xferFlags);
     }
 }
 
 I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Write(
     uint8_t targetAddr,
     void* pWrDataBuffer,
-    uint32_t numTxBytes,
+    uint16_t numTxBytes,
     I3CC_CCC cmd,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
-    if (numTxBytes <= 4)
+    if (numTxBytes <= 4U)
     {
-        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(targetAddr, (cmd != I3CC_CCC_NONE)? true : false, cmd, pWrDataBuffer, numTxBytes, xferFlags);
+        return ${I3CC_INSTANCE_NAME}_Host_ImmediateDataXferCmd(targetAddr, (cmd != I3CC_CCC_NONE)? true : false, cmd, pWrDataBuffer, (uint8_t)numTxBytes, xferFlags);
     }
     else
     {
@@ -1509,7 +1539,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Write(
 I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_Read(
     uint8_t targetAddr,
     void* pRdDataBuffer,
-    uint32_t numRxBytes,
+    uint16_t numRxBytes,
     I3CC_CCC cmd,
     I3CC_XFER_FLAGS* xferFlags
 )
@@ -1522,7 +1552,7 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_WriteRead(
     I3CC_XFER_OFFSET_LEN offsetLen,
     uint16_t offsetVal,
     void* pRdDataBuffer,
-    uint32_t numRxBytes,
+    uint16_t numRxBytes,
     I3CC_XFER_FLAGS* xferFlags
 )
 {
@@ -1532,26 +1562,28 @@ I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_WriteRead(
 I3CC_XFER_ID ${I3CC_INSTANCE_NAME}_Host_DeviceDiscovery(uint8_t nExpectedTargets)
 {
     I3CC_DAT_TABLE_SETUP DATSetup;
-    
+
     uint8_t nDATEntries = nExpectedTargets > ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize ? ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize : nExpectedTargets;
-    
-    if (nDATEntries == 0)
+
+    if (nDATEntries == 0U)
+    {
         return I3CC_XFER_ID_INVALID;
+    }
 
     DATSetup.static_addr = 0;
     DATSetup.dynamic_addr = 0x08;
     DATSetup.devType = I3CC_DAT_TABLE_DEV_TYPE_I3C;
     DATSetup.crr_reject = true;
     DATSetup.nak_retry_count = 0;
-    
+
 
     for (uint8_t i = 0; i < nDATEntries; i++)
     {
-        ${I3CC_INSTANCE_NAME}_Host_DATEntrySet(i, &DATSetup);
-        DATSetup.dynamic_addr += 1;
+        (void)${I3CC_INSTANCE_NAME}_Host_DATEntrySet(i, &DATSetup);
+        DATSetup.dynamic_addr += 1U;
     }
 
-    I3CC_XFER_ID xferID = ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(I3CC_CCC_ENTDAA_B, 0, nDATEntries);
+    I3CC_XFER_ID xferID = ${I3CC_INSTANCE_NAME}_Host_AddressAssignmentCmd(I3CC_CCC_ENTDAA_B, 0U, nDATEntries);
 
     return xferID;
 }
@@ -1566,12 +1598,14 @@ void ${I3CC_INSTANCE_NAME}_Host_PresentStateGet(I3CC_PRESENT_STATE* currState)
     uint32_t presentState = ${I3CC_INSTANCE_NAME}_REGS->I3CC_PRESENT_STATE_DEBUG;
 
     if (currState == NULL)
+    {
         return;
+    }
 
-    currState->currXferState = GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_CM_TFR_ST_STATUS);
-    currState->currXferType = GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_CM_TFR_STATUS);
-    currState->currentTID = GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_CMD_TID);
-    currState->SDASignalLevel = GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_SCL_LINE_SIGNAL_LEVEL);
+    currState->currXferState = (I3CC_CUR_XFER_STATE)((uint32_t)GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_CM_TFR_ST_STATUS));
+    currState->currXferType = (I3CC_CUR_XFER_TYPE)((uint32_t)GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_CM_TFR_STATUS));
+    currState->currentTID = (uint8_t)GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_CMD_TID);
+    currState->SDASignalLevel = (uint8_t)GET_BITS(presentState, I3CC_PRESENT_STATE_DEBUG_SCL_LINE_SIGNAL_LEVEL);
 }
 
 static void ${I3CC_INSTANCE_NAME}_Host_WriteHandler(void)
@@ -1627,6 +1661,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_IBIHandler(void)
     uint32_t numIBIStatusEntries = ${I3CC_INSTANCE_NAME}_Host_QueueLevelGet(I3CC_QUEUE_LVL_IBI_STATUS_CNT);
     uint32_t nBytesRead;
     uint32_t ibi_data;
+    uint8_t* ibiPayload;
 
     for (uint32_t i = 0; i < numIBIStatusEntries; i++)
     {
@@ -1635,23 +1670,27 @@ static void ${I3CC_INSTANCE_NAME}_Host_IBIHandler(void)
 
         nBytesRead = 0;
 
-        while ((nBytesRead + 4) <= ibiStatus->bits.data_length)
+        while ((nBytesRead + 4U) <= ibiStatus->bits.data_length)
         {
             ibi_data = ${I3CC_INSTANCE_NAME}_REGS->I3CC_IBI_PORT;
-            *((uint32_t*)&${I3CC_INSTANCE_NAME?lower_case}_host.ibiInfo.ibiPayload[nBytesRead]) = ibi_data;
-            nBytesRead += 4;
+            ibiPayload = &${I3CC_INSTANCE_NAME?lower_case}_host.ibiInfo.ibiPayload[nBytesRead];
+
+            ibiPayload[nBytesRead++] = (uint8_t)(ibi_data & 0xFFU);
+            ibiPayload[nBytesRead++] = (uint8_t)(ibi_data >> 8U)  & 0xFFU;
+            ibiPayload[nBytesRead++] = (uint8_t)(ibi_data >> 16U) & 0xFFU;
+            ibiPayload[nBytesRead++] = (uint8_t)(ibi_data >> 24U) & 0xFFU;
         }
 
         if (nBytesRead < ibiStatus->bits.data_length)
         {
             ibi_data = ${I3CC_INSTANCE_NAME}_REGS->I3CC_IBI_PORT;
-            for (uint32_t i = 0; i < ibiStatus->bits.data_length - nBytesRead; i++)
+            for (uint32_t j = 0; j < ibiStatus->bits.data_length - nBytesRead; j++)
             {
-                ${I3CC_INSTANCE_NAME?lower_case}_host.ibiInfo.ibiPayload[nBytesRead + i] = ((uint8_t*)&ibi_data)[i];
+                ${I3CC_INSTANCE_NAME?lower_case}_host.ibiInfo.ibiPayload[nBytesRead + j] = ((uint8_t*)&ibi_data)[j];
             }
         }
     }
-    if ((${I3CC_INSTANCE_NAME?lower_case}_host.ibiInfo.ibiStatusDescriptor.bits.ibi_id >> 1U) == 0x02)
+    if ((${I3CC_INSTANCE_NAME?lower_case}_host.ibiInfo.ibiStatusDescriptor.bits.ibi_id >> 1U) == 0x02U)
     {
         I3CC_EVENT_DATA_HOTJOIN* hotjoinEvent = &eventData.hotjoinEvent;
         hotjoinEvent->status_desc.word = ${I3CC_INSTANCE_NAME?lower_case}_host.ibiInfo.ibiStatusDescriptor.word;
@@ -1672,7 +1711,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_IBIHandler(void)
         evData = (void*)ibiEventData;
     }
 
-    if (${I3CC_INSTANCE_NAME?lower_case}_host.callback)
+    if (${I3CC_INSTANCE_NAME?lower_case}_host.callback != NULL)
     {
         ${I3CC_INSTANCE_NAME?lower_case}_host.callback(event, evData);
     }
@@ -1706,7 +1745,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
             I3CC_CCC ccc = xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.cmd;
             I3CC_EVENT_DATA_DEVICE_DISCOVERY* devDiscoveryInfo = &eventData.devDiscoveryInfo;
             devDiscoveryInfo->errStatus = errStatus;
-            devDiscoveryInfo->nDevicesCnt = xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.dev_count -  xfer_info->responseDesc.bits.data_length;
+            devDiscoveryInfo->nDevicesCnt = (uint8_t)(xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.dev_count -  xfer_info->responseDesc.bits.data_length);
             devDiscoveryInfo->ccc = ccc;
             devDiscoveryInfo->xferId = xfer_info->xfer_id;
 
@@ -1717,15 +1756,15 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
              * ENTDAA procedure is more than the number of devices on the bus. Basically, all the devices on the bus have been assigned a dynamic address
              * and now there are no devices available for dynamic address assignment and hence the broadcast address 0x7E is NAK'd which results in address
              * header error (0x04). In this case, the driver still needs to update the DCT entries for the devices that were found on the bus. */
-            if (xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.cmd == I3CC_CCC_ENTDAA_B)
+            if (xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.cmd == (uint8_t)I3CC_CCC_ENTDAA_B)
             {
-                ${I3CC_INSTANCE_NAME}_Host_DCTEntriesSave();
+                (void)${I3CC_INSTANCE_NAME}_Host_DCTEntriesSave();
             }
 
             /* If the transfer is successful, perform additional operations based on the command type */
-            if (xfer_info->responseDesc.bits.err_status == 0)
+            if (xfer_info->responseDesc.bits.err_status == 0U)
             {
-                if (xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.cmd == I3CC_CCC_SETDASA_D)
+                if (xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.cmd == (uint8_t)I3CC_CCC_SETDASA_D)
                 {
                     /* For SETDASA (assign DA using SA), the PID, BCR and DCR must be read using individual commands.
                      * The driver internally schedules these reads once the SETDASA command completes.
@@ -1733,9 +1772,9 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                     uint8_t datIndex = xfer_info->cmd.addr_assign_cmd.cmd_word0.bits.dev_index;
                     for (uint8_t i = 0; i < devDiscoveryInfo->nDevicesCnt; i++)
                     {
-                        ${I3CC_INSTANCE_NAME}_Host_Read(${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(datIndex), (void*)${I3CC_INSTANCE_NAME?lower_case}_host.scratchBuffer, 6, I3CC_CCC_GETPID_D, NULL);
-                        ${I3CC_INSTANCE_NAME}_Host_Read(${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(datIndex), (void*)${I3CC_INSTANCE_NAME?lower_case}_host.scratchBuffer, 1, I3CC_CCC_GETBCR_D, NULL);
-                        ${I3CC_INSTANCE_NAME}_Host_Read(${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(datIndex), (void*)${I3CC_INSTANCE_NAME?lower_case}_host.scratchBuffer, 1, I3CC_CCC_GETDCR_D, NULL);
+                        (void)${I3CC_INSTANCE_NAME}_Host_Read(${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(datIndex), (void*)${I3CC_INSTANCE_NAME?lower_case}_host.scratchBuffer, 6, I3CC_CCC_GETPID_D, NULL);
+                        (void)${I3CC_INSTANCE_NAME}_Host_Read(${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(datIndex), (void*)${I3CC_INSTANCE_NAME?lower_case}_host.scratchBuffer, 1, I3CC_CCC_GETBCR_D, NULL);
+                        (void)${I3CC_INSTANCE_NAME}_Host_Read(${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(datIndex), (void*)${I3CC_INSTANCE_NAME?lower_case}_host.scratchBuffer, 1, I3CC_CCC_GETDCR_D, NULL);
                     }
                 }
             }
@@ -1753,7 +1792,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
              * Hence taking Regular Descriptor to extract cp and cmd values */
             I3CC_RGLR_DATA_XFER_CMD0* cmd_word0 = &xfer_info->cmd.rglr_data_xfer_cmd.cmd_word0;
 
-            bool cp = cmd_word0->bits.cp;
+            bool cp = (bool)cmd_word0->bits.cp;
             uint8_t cmd = cmd_word0->bits.cmd;
             uint8_t devId = ${I3CC_INSTANCE_NAME}_Host_DeviceAddrGet(cmd_word0->bits.dev_index);
 
@@ -1794,7 +1833,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
             {
                 I3CC_CCC ccc = xfer_info->cmd.rglr_data_xfer_cmd.cmd_word0.bits.cmd;
                 // CCC broadcast/directed read/write transfers
-                if (cmd & 0x80)
+                if ((cmd & 0x80U) != 0U)
                 {
                     // CCC directed read/write transfers
                     if (xfer_info->xfer_dir == I3CC_XFER_DIR_RD)
@@ -1810,7 +1849,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                         directCCCRdEventData->readBuffer = xfer_info->pDataBuffer;
                         directCCCRdEventData->xferId = xfer_info->xfer_id;
 
-                        event = I3CC_EVENT_XFER_DONE_DIRECTED_CCC_READ;
+                        event = I3CC_EVENT_XFER_DONE_DIR_CCC_READ;
                         evData = (void*)directCCCRdEventData;
                     }
                     else
@@ -1827,7 +1866,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                         directCCCWrEventData->writeBuffer = xfer_info->pDataBuffer;
                         directCCCWrEventData->xferId = xfer_info->xfer_id;
 
-                        event = I3CC_EVENT_XFER_DONE_DIRECTED_CCC_WRITE;
+                        event = I3CC_EVENT_XFER_DONE_DIR_CCC_WRITE;
                         evData = (void*)directCCCWrEventData;
                     }
                 }
@@ -1848,14 +1887,14 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                 }
 
                 /* Based on the command and if the response status is success, perform additional operations */
-                if (xfer_info->responseDesc.bits.err_status == 0)
+                if (xfer_info->responseDesc.bits.err_status == 0U)
                 {
                     /* Special check for the RSTDAA command.
                      * After RSTDAA, free the device info slots as application must perform a fresh device discovery on the bus
                      */
                     if (ccc == I3CC_CCC_RSTDAA_B)
                     {
-                        (void) ${I3CC_INSTANCE_NAME}_Host_DeviceInfoReleaseSlotsAll();
+                        (void) ${I3CC_INSTANCE_NAME}_Host_DeviceInfoFreeSlotsAll();
                         ${I3CC_INSTANCE_NAME}_Host_DATTableInitialize(I3CC_DAT_TABLE_ENTRY_TYPE_I3C);
                     }
                     else if (ccc == I3CC_CCC_RSTDAA_D)
@@ -1870,13 +1909,13 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                         if (datIndex < ${I3CC_INSTANCE_NAME?lower_case}_host.DATTableSize)
                         {
                             uint8_t dynamic_addr = (xfer_info->cmd.immd_xfer_cmd.cmd_word1.bits.data_byte1 >> 1);
-                            int8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(devId);
+                            uint8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(devId);
                             I3CC_DAT_TABLE_ENTRY datTableEntry;
                             datTableEntry.word0.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.word;
 
-                            if (devInfoIndex != -1)
+                            if (devInfoIndex != I3CC_DEV_INFO_INDEX_INVALID)
                             {
-                                ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.dynamic_addr = dynamic_addr;
+                                ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.dynamic_addr = dynamic_addr;
                             }
                             datTableEntry.word0.bits.dynamic_addr = dynamic_addr;
                             datTableEntry.word0.bits.parity = ${I3CC_INSTANCE_NAME}_Host_AddressWithParity(dynamic_addr);
@@ -1887,27 +1926,27 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                     {
                         if (xfer_info->pDataBuffer != NULL)
                         {
-                            int8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(devId);
-                            if (devInfoIndex == -1)
+                            uint8_t devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoSlotGet(devId);
+                            if (devInfoIndex == I3CC_DEV_INFO_INDEX_INVALID)
                             {
                                 devInfoIndex = ${I3CC_INSTANCE_NAME}_Host_DeviceInfoAcquireSlotAny();
                             }
-                            if (devInfoIndex != -1)
+                            if (devInfoIndex != I3CC_DEV_INFO_INDEX_INVALID)
                             {
                                 if (ccc == I3CC_CCC_GETBCR_D)
                                 {
-                                    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.bcr.byte = ((uint8_t*)xfer_info->pDataBuffer)[0];
+                                    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.bcr = ((uint8_t*)xfer_info->pDataBuffer)[0];
 
-                                    int datIndex = xfer_info->cmd.rglr_data_xfer_cmd.cmd_word0.bits.dev_index;
+                                    uint8_t datIndex = xfer_info->cmd.rglr_data_xfer_cmd.cmd_word0.bits.dev_index;
 
                                     I3CC_DAT_TABLE_ENTRY DATTableEntry;
-                                    I3CC_BCR bcr = ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.bcr;
+                                    uint8_t bcr = ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.bcr;
 
                                     DATTableEntry.word0.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word0.word;
                                     DATTableEntry.word1.word = ${I3CC_INSTANCE_NAME?lower_case}_host.DATTablePtr[datIndex].word1.word;
 
-                                    DATTableEntry.word0.bits.ibi_reject = bcr.bits.ibi_request_capable == 1? 0: 1;
-                                    DATTableEntry.word0.bits.ibi_payload = bcr.bits.ibi_payload;
+                                    DATTableEntry.word0.bits.ibi_reject = (bcr & I3CC_BCR_IBI_REQUEST_CAPABLE) != 0U ? 0U: 1U;
+                                    DATTableEntry.word0.bits.ibi_payload = (bcr & I3CC_BCR_IBI_PAYLOAD) != 0U ? 1U: 0U;
 
                                     /* Disable auto-command (i.e. generation of repeated start + read after IBI is read). */
                                     DATTableEntry.word1.bits.autocmd_mask = 0x00;
@@ -1918,15 +1957,27 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                                 }
                                 else if (ccc == I3CC_CCC_GETDCR_D)
                                 {
-                                    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.dcr = ((uint8_t*)xfer_info->pDataBuffer)[0];
+                                    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.dcr = ((uint8_t*)xfer_info->pDataBuffer)[0];
                                 }
                                 else
                                 {
-                                    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.pid_low = ((uint16_t*)xfer_info->pDataBuffer)[0];
-                                    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.pid_high = *((uint32_t*)&((uint8_t*)xfer_info->pDataBuffer)[2]);
+                                    ${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.pid_low = ((uint16_t*)xfer_info->pDataBuffer)[0];
+
+                                    uint8_t* pid_high  = (uint8_t*)&${I3CC_INSTANCE_NAME?lower_case}_host.deviceInfo.devInfo[devInfoIndex].DCTInfo.DCTFields.pid_high;
+
+                                    uint8_t* pid_val = &((uint8_t*)xfer_info->pDataBuffer)[2];
+
+                                    for (uint8_t i = 0; i < 4U; i++)
+                                    {
+                                        *pid_high++ = *pid_val++;
+                                    }
                                 }
                             }
                         }
+                    }
+                    else
+                    {
+                        /* Do nothing */
                     }
                 }
             }
@@ -1936,12 +1987,12 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
          * NAK'd by the slave. The hardware does not automatically flush the TX queue in case a write fails. The end result is that this data ends up getting transmitted
          * for the subsequent write command which is obviously incorrect. Hence, always flush out the TX queue before giving a callback to the application. */
 
-        if ((xfer_info->responseDesc.bits.err_status != 0) && ((xfer_info->cmd_desc_type == I3CC_CMD_DESC_TYPE_COMBO_XFER) || (xfer_info->xfer_dir == I3CC_XFER_DIR_WR)))
+        if ((xfer_info->responseDesc.bits.err_status != 0U) && ((xfer_info->cmd_desc_type == I3CC_CMD_DESC_TYPE_COMBO_XFER) || (xfer_info->xfer_dir == I3CC_XFER_DIR_WR)))
         {
             ${I3CC_INSTANCE_NAME}_Host_QueueReset(I3CC_QUEUE_RESET_TX);
         }
 
-        if (${I3CC_INSTANCE_NAME?lower_case}_host.callback && event != I3CC_EVENT_NONE)
+        if (${I3CC_INSTANCE_NAME?lower_case}_host.callback != NULL && event != I3CC_EVENT_NONE)
         {
             ${I3CC_INSTANCE_NAME?lower_case}_host.callback(event, evData);
         }
@@ -1962,7 +2013,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
             /* Get the next command at the top of the queue */
             qTop = ${I3CC_INSTANCE_NAME?lower_case}_host.xfer_queue_head;
 
-            if (qTop)
+            if (qTop != NULL)
             {
                 xfer_info = &qTop->xfer_info;
 
@@ -1979,7 +2030,7 @@ static void ${I3CC_INSTANCE_NAME}_Host_ResponseHandler(void)
                     ${I3CC_INSTANCE_NAME}_Host_SignalEnable(I3CC_PIO_INTR_SIGNAL_TX_THLD);
                 }
                 /* Start the transfer by queuing in the command */
-                ${I3CC_INSTANCE_NAME}_Host_CMDPortWrite(&xfer_info->cmd);
+                (void)${I3CC_INSTANCE_NAME}_Host_CMDPortWrite(&xfer_info->cmd);
             }
             else
             {
@@ -1993,25 +2044,25 @@ void ${I3CC_INSTANCE_NAME}_InterruptHandler(void)
 {
     uint32_t intr_status = ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS;
 
-    if (intr_status & I3CC_PIO_INTR_STATUS_IBI_STATUS_THLD_STAT_Msk)
+    if ((intr_status & I3CC_PIO_INTR_STATUS_IBI_STATUS_THLD_STAT_Msk) != 0U)
     {
         ${I3CC_INSTANCE_NAME}_Host_IBIHandler();
     }
-    if (intr_status & I3CC_PIO_INTR_STATUS_RX_THLD_STAT_Msk)
+    if ((intr_status & I3CC_PIO_INTR_STATUS_RX_THLD_STAT_Msk) != 0U)
     {
         /* Handle Read */
         ${I3CC_INSTANCE_NAME}_Host_ReadHandler();
     }
-    if (intr_status & I3CC_PIO_INTR_STATUS_TX_THLD_STAT_Msk)
+    if ((intr_status & I3CC_PIO_INTR_STATUS_TX_THLD_STAT_Msk) != 0U)
     {
         /* Handle Write */
         ${I3CC_INSTANCE_NAME}_Host_WriteHandler();
     }
-    if (intr_status & I3CC_PIO_INTR_STATUS_RESP_READY_STAT_Msk)
+    if ((intr_status & I3CC_PIO_INTR_STATUS_RESP_READY_STAT_Msk) != 0U)
     {
         ${I3CC_INSTANCE_NAME}_Host_ResponseHandler();
     }
-    if (intr_status & I3CC_PIO_INTR_STATUS_TRANSFER_ERR_STAT_Msk)
+    if ((intr_status & I3CC_PIO_INTR_STATUS_TRANSFER_ERR_STAT_Msk) != 0U)
     {
         /* Clear the Error bit (W1C) to allow for normal operation on the I3C bus */
         ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS |= I3CC_PIO_INTR_STATUS_TRANSFER_ERR_STAT_Msk;
@@ -2023,7 +2074,7 @@ void ${I3CC_INSTANCE_NAME}_InterruptHandler(void)
         }
     }
 
-    if (intr_status & I3CC_PIO_INTR_STATUS_TRANSFER_ABORT_STAT_Msk)
+    if ((intr_status & I3CC_PIO_INTR_STATUS_TRANSFER_ABORT_STAT_Msk) != 0U)
     {
         ${I3CC_INSTANCE_NAME}_REGS->I3CC_PIO_INTR_STATUS |= I3CC_PIO_INTR_STATUS_TRANSFER_ABORT_STAT_Msk;
 
