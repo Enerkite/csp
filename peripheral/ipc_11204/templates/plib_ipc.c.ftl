@@ -69,7 +69,7 @@ void  ${IPC_INSTANCE_NAME}_Initialize(void)
 </#if>
 <#if IPC_WRITE_PROTECT>
     /* Enable write protect */
-    ${IPC_INSTANCE_NAME}_REGS->IPC_WPMR = (IPC_WPMR_WPKEY_PASSWD | IPC_WPMR_Msk);
+    ${IPC_INSTANCE_NAME}_REGS->IPC_WPMR = (IPC_WPMR_WPKEY_PASSWD | IPC_WPITEN_Msk);
 </#if>
 }
 </#if>
