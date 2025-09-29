@@ -87,7 +87,6 @@ static uint32_t ${CRC_INSTANCE_NAME}_BitReverse( uint32_t num, uint32_t bits)
 
 void ${CRC_INSTANCE_NAME}_CRCSetup(CRC_SETUP CRCSetup)
 {
-    uint8_t temp = (gCRCSetup.polynomial_length - 1U);
     gCRCSetup.reverse_crc_input     = CRCSetup.reverse_crc_input;
     gCRCSetup.polynomial_length     = CRCSetup.polynomial_length;
     gCRCSetup.polynomial            = CRCSetup.polynomial;
@@ -105,7 +104,7 @@ void ${CRC_INSTANCE_NAME}_CRCSetup(CRC_SETUP CRCSetup)
         CRCCONbits.LENDIAN = 1;
     }
 
-    CRCCONbits.PLEN = temp;
+    CRCCONbits.PLEN = (gCRCSetup.polynomial_length - 1U);;
 
     CRCCONbits.ON = 1;
 
