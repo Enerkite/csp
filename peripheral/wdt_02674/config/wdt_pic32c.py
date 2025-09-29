@@ -167,6 +167,22 @@ def updateWDTAllowedWindowPeriodVisibleProperty(symbol, event):
             symbol.setVisible(True)
         else:
             symbol.setVisible(False)
+            
+def DSWDTClockWarning(symbol, event):
+    dswdtFreq = Database.getSymbolValue("core", "DSWDT_CLOCK_FREQUENCY")
+    dswdtEnable = Database.getSymbolValue("core", "CONFIG_DSWDTEN")
+
+    if dswdtEnable == "OFF":
+        symbol.setVisible(False)
+        return
+    else:
+        symbol.setVisible(True)
+
+    if dswdtFreq is None or dswdtFreq == 0:
+        symbol.setLabel("DSWDT Clock frequency is 0, configure the clock")
+    else:
+        symbol.setLabel("")
+
 
 ###################################################################################################
 #############################################  WDT  ###############################################
@@ -277,6 +293,11 @@ dswdtSym_TimeOutPeriod.setDefaultValue(getDSWDTTimeOutPeriod())
 dswdtSym_TimeOutPeriod.setReadOnly(True)
 dswdtSym_TimeOutPeriod.setVisible(False)
 dswdtSym_TimeOutPeriod.setDependencies(updateDSWDTTimeOutPeriodVisibleProperty, ["CONFIG_DSWDTEN","DSWDT_CLOCK_FREQUENCY", "CONFIG_DSWDTPS"])
+
+#DSWDT Clock warning
+dswdtSym_Info = coreComponent.createCommentSymbol("DSWDT_WARNING", dswdtMenu)
+dswdtSym_Info.setLabel("")  
+dswdtSym_Info.setDependencies(DSWDTClockWarning, ["CONFIG_DSWDTEN", "DSWDT_CLOCK_FREQUENCY"])
 ###################################################################################################
 ####################################### Code Generation  ##########################################
 ###################################################################################################
