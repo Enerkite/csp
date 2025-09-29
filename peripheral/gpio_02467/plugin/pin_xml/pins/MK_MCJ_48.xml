@@ -72,9 +72,6 @@
       <function name="FLT14" />
     </pin>
     <pin name="RA0">
-       <modifiers>
-         <modifier value="5V" />
-      </modifiers>
       <number package="1" pin="9" />
       <number package="2" pin="9" />
       <function name="OA2OUT" />
