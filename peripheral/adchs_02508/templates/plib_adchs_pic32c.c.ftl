@@ -389,18 +389,6 @@ void __attribute__((used)) ADCHS_InterruptHandler( void )
 
     uintptr_t context;
 
-    <#if ADCCON2__EOSIEN == true>
-    if (((${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2 & ADCHS_ADCCON2_EOSIEN_Msk) != 0U) &&
-        (((${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2 & ADCHS_ADCCON2_EOSRDY_Msk))!= 0U))
-    {
-        if (${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn != NULL)
-        {
-            context = ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.context;
-            ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn(context);
-        }
-    }
-    </#if>
-
     <#if ADCHS_INTERRUPT == true>
     /* Check pending events and call callback if registered */
     for(i = 0U; i < ${ADCHS_NUM_SIGNALS - 1}U; i++)
@@ -444,3 +432,22 @@ void __attribute__((used)) ADCHS_InterruptHandler( void )
     </#list>
 }
 </#if>
+
+<#if ADCCON2__EOSIEN == true>
+void __attribute__((used)) ${ADCHS_INSTANCE_NAME}_EOS_InterruptHandler(void)
+{
+    uint32_t status = ${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2;
+
+    /* Clear EOS Ready flag */
+    ${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2 &= ~ADCHS_ADCCON2_EOSRDY_Msk;
+
+    if (${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn != NULL)
+    {
+        uintptr_t context = ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.context;
+        ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn(context);
+    }
+
+    (void)status;
+}
+</#if>
+
