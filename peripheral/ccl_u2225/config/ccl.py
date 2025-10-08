@@ -53,7 +53,7 @@ def cclEvsysUserNamesPopulate(instanceName):
     for id in range(0, len(usersNode.getChildren())):
         if usersValues[id].getAttribute("module-instance") == instanceName:
             evsys_usersNamesList.append(usersValues[id].getAttribute("name"))
-
+            
 def cclEvsysGenNameGet(genNameMatchList):
     global evsys_generatorsNamesList
 
@@ -273,6 +273,24 @@ def findLimit(regBaseName):
                     minValue = index
     return minValue
 
+def findSequenceLimit(regBaseName):
+    '''
+    Finds the highest with a given base name, and returns that value.  Goal is to find
+    upper limit, as that can vary from device to device.
+    '''
+    minValue = 0
+    registerPath = cclATDFRegisterPath("CCL", regBaseName)
+    registerNode = ATDF.getNode(registerPath)
+    if registerNode is not None:
+        if registerNode.getAttribute('count'):
+            minValue = int(registerNode.getAttribute('count'))
+        else:    
+            Seq_selection = registerNode.getChildren()
+            for index, ii in enumerate(Seq_selection):
+                if(ii.getAttribute('name') == "SEQSEL" + str(index)):
+                    minValue += 1
+    return minValue
+    
 def hideMenu_clearValues(menu, event):
     '''
     This callback serves two purposes:
@@ -319,11 +337,18 @@ def hideMenu_clearValues(menu, event):
                 cclLuctrlLutei[lutBlock].setReadOnly(False)
                 cclLuctrlLutei[lutBlock].setValue(0)
                 cclLuctrlLutei[lutBlock].clearValue()
-            if(int(cclLuctrlInvei[lutBlock].getKeyValue(int(cclLuctrlInvei[lutBlock].getValue())))!=0):
-                cclLuctrlInvei[lutBlock].setReadOnly(True)
-                cclLuctrlInvei[lutBlock].setReadOnly(False)
-                cclLuctrlInvei[lutBlock].setValue(0)
-                cclLuctrlInvei[lutBlock].clearValue()
+            if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"LUTCTRL\"]/bitfield@[name=\"LUTINV\"]") is not None:
+                if(int(cclLuctrlLutinv[lutBlock].getKeyValue(int(cclLuctrlLutinv[lutBlock].getValue())))!=0):
+                    cclLuctrlLutinv[lutBlock].setReadOnly(True)
+                    cclLuctrlLutinv[lutBlock].setReadOnly(False)
+                    cclLuctrlLutinv[lutBlock].setValue(0)
+                    cclLuctrlLutinv[lutBlock].clearValue()
+            if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"LUTCTRL\"]/bitfield@[name=\"INVEI\"]") is not None:
+                if(int(cclLuctrlInvei[lutBlock].getKeyValue(int(cclLuctrlInvei[lutBlock].getValue())))!=0):
+                    cclLuctrlInvei[lutBlock].setReadOnly(True)
+                    cclLuctrlInvei[lutBlock].setReadOnly(False)
+                    cclLuctrlInvei[lutBlock].setValue(0)
+                    cclLuctrlInvei[lutBlock].clearValue()
             if(cclLuctrlTruth[lutBlock].getValue()!=0):
                 cclLuctrlTruth[lutBlock].setReadOnly(True)
                 cclLuctrlTruth[lutBlock].setReadOnly(False)
@@ -382,6 +407,9 @@ def cclCalcLUTCTRL(symbol, event):
     elif(bitfieldName == 'INVEI'):
         regValue &= ~int(cclLuctrlInvei_mask,16)
         regValue += int(cclLuctrlInvei[lutBlock].getKeyValue(int(cclLuctrlInvei[lutBlock].getValue()))) << findLsb(int(cclLuctrlInvei_mask,16))
+    elif(bitfieldName == 'LUTINV'):
+        regValue &= ~int(cclLuctrlLutinv_mask,16)
+        regValue += int(cclLuctrlLutinv[lutBlock].getKeyValue(int(cclLuctrlLutinv[lutBlock].getValue()))) << findLsb(int(cclLuctrlLutinv_mask,16))    
     elif(bitfieldName == 'LUTEI'):
         regValue &= ~int(cclLuctrlLutei_mask,16)
         regValue += int(cclLuctrlLutei[lutBlock].getKeyValue(int(cclLuctrlLutei[lutBlock].getValue()))) << findLsb(int(cclLuctrlLutei_mask,16))
@@ -401,6 +429,14 @@ def cclCalcSEQCTRL(symbol, event):
     regValue += int(cclSeqctrlSeqsel[seqBlock].getKeyValue(int(cclSeqctrlSeqsel[seqBlock].getValue()))) << findLsb(int(cclSeqctrlSeqsel_mask,16))
     cclsym_SEQCTRL[int(event["id"][7])].setValue(regValue,2)
 
+def cclCalcSEQCTRL_SEQSEL(symbol, event):
+    # Callback for setting SEQCTRLx register values
+    seqBlock = int(event["id"][16],16)  # block number is at position 16
+    regValue = cclsym_SEQCTRL_SEQSEL.getValue()
+    regValue &= ~int(cclSeqctrl_Seqsel_mask[seqBlock],16)
+    regValue += int(cclSeqctrlSeqsel[seqBlock].getKeyValue(int(cclSeqctrlSeqsel[seqBlock].getValue()))) << findLsb(int(cclSeqctrl_Seqsel_mask[seqBlock],16))
+    cclsym_SEQCTRL_SEQSEL.setValue(regValue)
+    
 def cclCalcCTRL(symbol, event):
     # Callback for setting CTRL register values
     bitfieldName = event["id"][(int(event["id"].find('__'))+2):]   # last part of event id is the bitfield name
@@ -443,10 +479,12 @@ def updateShiftValues():
     global cclLuctrlInsel1_mask
     global cclLuctrlInsel2_mask
     global cclLuctrlInvei_mask
+    global cclLuctrlLutinv_mask
     global cclLuctrlLutei_mask
     global cclLuctrlLuteo_mask
     global cclLuctrlTruth_mask
     global cclSeqctrlSeqsel_mask
+    global cclSeqctrl_Seqsel_mask
     global cclCtrlEnable_mask
     global cclCtrlRunstdby_mask
 
@@ -466,6 +504,8 @@ def updateShiftValues():
                 cclLuctrlInsel2_mask = ii['mask']
             elif(ii['bitfield']=='INVEI'):
                 cclLuctrlInvei_mask = ii['mask']
+            elif(ii['bitfield']=='LUTINV'):
+                cclLuctrlLutinv_mask = ii['mask']
             elif(ii['bitfield']=='LUTEI'):
                 cclLuctrlLutei_mask = ii['mask']
             elif(ii['bitfield']=='LUTEO'):
@@ -473,7 +513,13 @@ def updateShiftValues():
             elif(ii['bitfield']=='TRUTH'):
                 cclLuctrlTruth_mask = ii['mask']
         elif(ii['regname'][:7]=='SEQCTRL'):
-            cclSeqctrlSeqsel_mask = ii['mask']
+            if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"SEQCTRL\"]").getAttribute("count") is None:
+                if(ii['bitfield']=='SEQSEL0'):
+                    cclSeqctrl_Seqsel_mask[0] = ii['mask']
+                elif(ii['bitfield']=='SEQSEL1'):
+                    cclSeqctrl_Seqsel_mask[1] = ii['mask']
+            else:
+                cclSeqctrlSeqsel_mask = ii['mask']
         elif(ii['regname'][:4]=='CTRL'):
             if(ii['bitfield']=='ENABLE'):
                 cclCtrlEnable_mask = ii['mask']
@@ -598,6 +644,8 @@ def instantiateComponent(cclComponent):
     global cclLuctrlInsel2_mask
     global cclLuctrlInvei
     global cclLuctrlInvei_mask
+    global cclLuctrlLutinv
+    global cclLuctrlLutinv_mask
     global cclLuctrlLutei
     global cclLuctrlLuteo
     global cclLuctrlLuteo_mask
@@ -610,8 +658,10 @@ def instantiateComponent(cclComponent):
     global shiftDict
     global cclsym_CTRL
     global cclsym_SEQCTRL
+    global cclsym_SEQCTRL_SEQSEL
     global cclSeqctrlSeqsel
     global cclSeqctrlSeqsel_mask
+    global cclSeqctrl_Seqsel_mask
     global lutSize
     global seqSize
 
@@ -633,7 +683,11 @@ def instantiateComponent(cclComponent):
     cclEnable.setLabel("Enable CCL Module?")
 
     # CTRL register bitfields
-    regName = "CTRL"
+    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"CTRLA\"]") is not None:
+        regName = "CTRLA"
+    else:
+        regName = "CTRL"
+        
     fieldName = "ENABLE"
     cclCtrlEnable = addKeyValueSetFromATDFInitValue(cclComponent, 'CCL', regName, 0, fieldName, None, False)
     cclCtrlEnable.setDependencies(setEnable,[cclEnSymId])
@@ -657,7 +711,10 @@ def instantiateComponent(cclComponent):
     cclsym_CTRL.setVisible(False)
     cclsym_CTRL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ccl_u2225;register:CTRL")
     cclsym_CTRL.setLabel("CTRL register value")
-    cclsym_CTRL.setDependencies(cclCalcCTRL, ['CTRL0__RUNSTDBY','CTRL0__ENABLE'])
+    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"CTRLA\"]") is None:
+        cclsym_CTRL.setDependencies(cclCalcCTRL, ['CTRL0__RUNSTDBY','CTRL0__ENABLE'])
+    else:    
+        cclsym_CTRL.setDependencies(cclCalcCTRL, ['CTRLA0__RUNSTDBY','CTRLA0__ENABLE'])
 
     cclWarningCclClk = cclComponent.createMenuSymbol('GCLK_CCL_WARNING', cclEnable)
     cclWarningCclClk.setLabel("*** Warning: GCLK_CCL clock needs to be enabled under Peripheral Clock Configuration of Clock menu ***")
@@ -676,6 +733,7 @@ def instantiateComponent(cclComponent):
     cclLuctrlLuteo = []
     cclLuctrlLutei = []
     cclLuctrlInvei = []
+    cclLuctrlLutinv = []
     cclLuctrlTruth = []
     clccon_LUTCTRL_deplist = []
     cclSym_LUTCTRL = []
@@ -702,7 +760,8 @@ def instantiateComponent(cclComponent):
         cclLutctrlEnable[lut].setLabel("Enable LUT"+str(lut)+"?")
         cclLutctrlEnable[lut].setVisible(False)
         cclLutctrlEnable[lut].setDependencies(hideMenu_clearValues, [cclEnSymId])
-        addMask(regName, fieldName)
+        if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"LUTCTRL\"]/bitfield@[name=\"ENABLE\"]") != None:
+            addMask(regName, fieldName)
 
         fieldName = "INSEL0"
         cclLuctrlInsel0.append(lut)
@@ -760,12 +819,19 @@ def instantiateComponent(cclComponent):
         addMask(regName, fieldName)
         cclEvsysDep.append(regName + str(lut) + '__' + fieldName)
 
-        fieldName = "INVEI"
-        cclLuctrlInvei.append(lut)
-        cclLuctrlInvei[lut] = addKeyValueSetFromATDFInitValue(cclComponent, 'CCL', regName, lut, fieldName, cclLutctrlEnable[lut], False)
-        cclLuctrlInvei[lut].setDependencies(hideMenu_clearValues, [symLutctrlEnableName[lut]])
-        addMask(regName, fieldName)
-
+        if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"LUTCTRL\"]/bitfield@[name=\"INVEI\"]") != None:
+            fieldName = "INVEI"
+            cclLuctrlInvei.append(lut)
+            cclLuctrlInvei[lut] = addKeyValueSetFromATDFInitValue(cclComponent, 'CCL', regName, lut, fieldName, cclLutctrlEnable[lut], False)
+            cclLuctrlInvei[lut].setDependencies(hideMenu_clearValues, [symLutctrlEnableName[lut]])
+            addMask(regName, fieldName)
+        elif ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"LUTCTRL\"]/bitfield@[name=\"LUTINV\"]") != None:
+            fieldName = "LUTINV"
+            cclLuctrlLutinv.append(lut)
+            cclLuctrlLutinv[lut] = addKeyValueSetFromATDFInitValue(cclComponent, 'CCL', regName, lut, fieldName, cclLutctrlEnable[lut], False)
+            cclLuctrlLutinv[lut].setDependencies(hideMenu_clearValues, [symLutctrlEnableName[lut]])
+            addMask(regName, fieldName)
+        
         fieldName = "TRUTH"
         cclLuctrlTruth.append(lut)
         cclLuctrlTruth[lut] = cclComponent.createHexSymbol(regName+str(lut)+'__'+fieldName, cclLutctrlEnable[lut])
@@ -780,9 +846,15 @@ def instantiateComponent(cclComponent):
 
         # register LUTCTRLx value for ftl file
         clccon_LUTCTRL_deplist.append(lut)
-        clccon_LUTCTRL_deplist[lut] = [ regName+str(lut)+"__ENABLE", regName+str(lut)+"__FILTSEL", regName+str(lut)+"__EDGESEL",
+        if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"LUTCTRL\"]/bitfield@[name=\"ENABLE\"]") is not None:
+            clccon_LUTCTRL_deplist[lut] = [ regName+str(lut)+"__ENABLE", regName+str(lut)+"__FILTSEL", regName+str(lut)+"__EDGESEL",
                                 regName+str(lut)+"__INSEL0", regName+str(lut)+"__INSEL1", regName+str(lut)+"__INSEL2",
                                 regName+str(lut)+"__INVEI", regName+str(lut)+"__LUTEI", regName+str(lut)+"__LUTEO",
+                                regName+str(lut)+"__TRUTH" ]
+        elif ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"LUTCTRL\"]/bitfield@[name=\"ENABLE\"]") is None: 
+            clccon_LUTCTRL_deplist[lut] = [ regName+str(lut)+"__FILTSEL", regName+str(lut)+"__EDGESEL",
+                                regName+str(lut)+"__INSEL0", regName+str(lut)+"__INSEL1", regName+str(lut)+"__INSEL2",
+                                regName+str(lut)+"__LUTINV", regName+str(lut)+"__LUTEI", regName+str(lut)+"__LUTEO",
                                 regName+str(lut)+"__TRUTH" ]
         cclSym_LUTCTRL.append(lut)
         cclSym_LUTCTRL[lut] = cclComponent.createHexSymbol("CCL_LUTCTRL_REGVALUE"+str(lut), None)
@@ -794,55 +866,107 @@ def instantiateComponent(cclComponent):
     # SEQCTRLx bitfield
     cclSeqctrlSeqsel = []
     cclsym_SEQCTRL = []
-    seqSize = findLimit("SEQCTRL")
-    numSeqsPresent = cclComponent.createIntegerSymbol("NUM_SEQUENTIAL_BLOCKS", None)
-    numSeqsPresent.setVisible(False)
-    numSeqsPresent.setDefaultValue(seqSize)
+    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"SEQCTRL\"]").getAttribute("count")  is not None:
+        findLimit("SEQCTRL")
+        seqSize = findLimit("SEQCTRL")
+        numSeqsPresent = cclComponent.createIntegerSymbol("NUM_SEQUENTIAL_BLOCKS", None)
+        numSeqsPresent.setVisible(False)
+        numSeqsPresent.setDefaultValue(seqSize)
+    
+        for ii in range(0,seqSize):  # scan over all SEQCTRLx registers in device
+            regName = "SEQCTRL"
+            fieldName = "SEQSEL"
+            cclSeqctrlSeqsel.append(ii)
+            cclSeqctrlSeqsel[ii] = addKeyValueSetFromATDFInitValue(cclComponent, 'CCL', regName, ii, fieldName, cclEnable, True)
+            cclSeqctrlSeqsel[ii].setDependencies(hideSequentialSelection, cclSeqctrlDeplist)
+            addMask(regName, fieldName)
+            cclWarningCclClkDeplist.append(regName+'__'+fieldName)
+    
+            # warning message for if sequential logic enabled AND not having both LUT outputs going into it enabled
+            cclSeqctrlWarning.append(ii)
+            cclSeqctrlWarning[ii] = cclComponent.createMenuSymbol(fieldName+str(ii)+'_WARNING', cclEnable)
+            cclSeqctrlWarning[ii].setVisible(False)
+            cclSeqctrlWarning[ii].setLabel("*** Warning: both LUT outputs need to be enabled if using sequential logic block "+str(ii)+" ***")
+            cclSeqctrlWarning[ii].setDependencies(showWarningMenu, ["LUTCTRL"+str(2*ii)+"__ENABLE", "LUTCTRL"+str(2*ii+1)+"__ENABLE", "SEQCTRL"+str(ii)+"__SEQSEL"])
+    
+            # register SEQCTRLx value for ftl file
+            cclsym_SEQCTRL.append(ii)
+            cclsym_SEQCTRL[ii] = cclComponent.createHexSymbol("CCL_SEQCTRL_REGVALUE"+str(ii), None)
+            cclsym_SEQCTRL[ii].setVisible(False)
+            cclsym_SEQCTRL[ii].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ccl_u2225;register:SEQCTRL")
+            cclsym_SEQCTRL[ii].setLabel("SEQCTRL"+str(ii)+" register value")
+            cclsym_SEQCTRL[ii].setDependencies(cclCalcSEQCTRL, ['SEQCTRL'+str(ii)+'__SEQSEL'])
+            
+        # update bit shift values of individual bitfields - for use in register value computations that ftl file will use
+        updateShiftValues()
+        # since now have bit shifts of all bitfields, can now compute default values (based on atdf file 'initval' fields)
+        cclsym_CTRL.setDefaultValue(computeRegValue([cclCtrlEnable, cclCtrlRunstdby], [cclCtrlEnable_mask, cclCtrlRunstdby_mask]))
+        for lut in range(0,lutSize):  # scan over all LUTCTRLx registers available in device
+            cclSym_LUTCTRL[lut].setDefaultValue(computeRegValue([cclLutctrlEnable[lut], cclLuctrlInsel0[lut], cclLuctrlInsel1[lut], cclLuctrlInsel2[lut],
+                                                                cclLuctrlEdgesel[lut], cclLuctrlFiltsel[lut], cclLuctrlLuteo[lut], cclLuctrlLutei[lut],
+                                                                cclLuctrlInvei[lut], cclLuctrlTruth[lut]],
+                                                                [cclLutctrlEnable_mask, cclLuctrlInsel0_mask, cclLuctrlInsel1_mask, cclLuctrlInsel2_mask,
+                                                                cclLuctrlEdgesel_mask, cclLuctrlFiltsel_mask, cclLuctrlLuteo_mask, cclLuctrlLutei_mask,
+                                                                cclLuctrlInvei_mask, cclLuctrlTruth_mask]))
+        for ii in range(0,seqSize):  # scan over all SEQCTRLx registers in device
+            cclsym_SEQCTRL[ii].setDefaultValue(computeRegValue([cclSeqctrlSeqsel[ii]],[cclSeqctrlSeqsel_mask]))             #pending
 
-    for ii in range(0,seqSize):  # scan over all SEQCTRLx registers in device
-        regName = "SEQCTRL"
-        fieldName = "SEQSEL"
-        cclSeqctrlSeqsel.append(ii)
-        cclSeqctrlSeqsel[ii] = addKeyValueSetFromATDFInitValue(cclComponent, 'CCL', regName, ii, fieldName, cclEnable, True)
-        cclSeqctrlSeqsel[ii].setDependencies(hideSequentialSelection, cclSeqctrlDeplist)
-        addMask(regName, fieldName)
-        cclWarningCclClkDeplist.append(regName+'__'+fieldName)
-
-        # warning message for if sequential logic enabled AND not having both LUT outputs going into it enabled
-        cclSeqctrlWarning.append(ii)
-        cclSeqctrlWarning[ii] = cclComponent.createMenuSymbol(fieldName+str(ii)+'_WARNING', cclEnable)
-        cclSeqctrlWarning[ii].setVisible(False)
-        cclSeqctrlWarning[ii].setLabel("*** Warning: both LUT outputs need to be enabled if using sequential logic block "+str(ii)+" ***")
-        cclSeqctrlWarning[ii].setDependencies(showWarningMenu, ["LUTCTRL"+str(2*ii)+"__ENABLE", "LUTCTRL"+str(2*ii+1)+"__ENABLE", "SEQCTRL"+str(ii)+"__SEQSEL"])
-
-        # register SEQCTRLx value for ftl file
-        cclsym_SEQCTRL.append(ii)
-        cclsym_SEQCTRL[ii] = cclComponent.createHexSymbol("CCL_SEQCTRL_REGVALUE"+str(ii), None)
-        cclsym_SEQCTRL[ii].setVisible(False)
-        cclsym_SEQCTRL[ii].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ccl_u2225;register:SEQCTRL")
-        cclsym_SEQCTRL[ii].setLabel("SEQCTRL"+str(ii)+" register value")
-        cclsym_SEQCTRL[ii].setDependencies(cclCalcSEQCTRL, ['SEQCTRL'+str(ii)+'__SEQSEL'])
-
+    elif ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"SEQCTRL\"]").getAttribute("count")  is None:
+        seqSize = findSequenceLimit("SEQCTRL")
+        numSeqsPresent = cclComponent.createIntegerSymbol("NUM_SEQUENTIAL_BLOCKS", None)
+        numSeqsPresent.setVisible(False)
+        numSeqsPresent.setDefaultValue(seqSize)
+    
+        cclSeqctrl_Seqsel_mask = []
+        for ii in range(0,seqSize):
+            cclSeqctrl_Seqsel_mask.append(ii)
+            
+        for ii in range(0,seqSize):  # scan over all SEQCTRLx registers in device
+            regName = "SEQCTRL"
+            fieldName = "SEQSEL"+str(ii)
+            cclSeqctrlSeqsel.append(ii)
+            cclSeqctrlSeqsel[ii] = addKeyValueSetFromATDFInitValue(cclComponent, 'CCL', regName, ii, fieldName, cclEnable, True)
+            cclSeqctrlSeqsel[ii].setDependencies(hideSequentialSelection, cclSeqctrlDeplist)
+            addMask(regName, fieldName)
+            cclWarningCclClkDeplist.append(regName+'__'+fieldName)
+    
+            # warning message for if sequential logic enabled AND not having both LUT outputs going into it enabled
+            cclSeqctrlWarning.append(ii)
+            cclSeqctrlWarning[ii] = cclComponent.createMenuSymbol(fieldName+str(ii)+'_WARNING', cclEnable)
+            cclSeqctrlWarning[ii].setVisible(False)
+            cclSeqctrlWarning[ii].setLabel("*** Warning: both LUT outputs need to be enabled if using sequential logic block "+str(ii)+" ***")
+            cclSeqctrlWarning[ii].setDependencies(showWarningMenu, ["LUTCTRL"+str(2*ii)+"__ENABLE", "LUTCTRL"+str(2*ii+1)+"__ENABLE", "SEQCTRL"+str(ii)+"__SEQSEL"])
+    
+        # register SEQCTRL value for ftl file
+        cclsym_SEQCTRL_SEQSEL = cclComponent.createHexSymbol("CCL_SEQCTRL_REGVALUE", None)
+        cclsym_SEQCTRL_SEQSEL.setVisible(False)
+        cclsym_SEQCTRL_SEQSEL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ccl_u2225;register:SEQCTRL")
+        cclsym_SEQCTRL_SEQSEL.setLabel("SEQCTRL_SEQSEL register value")
+        cclsym_SEQCTRL_SEQSEL.setDependencies(cclCalcSEQCTRL_SEQSEL, ['SEQCTRL0__SEQSEL0', 'SEQCTRL1__SEQSEL1'])       
+            
+        # update bit shift values of individual bitfields - for use in register value computations that ftl file will use
+        updateShiftValues()
+        # since now have bit shifts of all bitfields, can now compute default values (based on atdf file 'initval' fields)
+        cclsym_CTRL.setDefaultValue(computeRegValue([cclCtrlEnable, cclCtrlRunstdby], [cclCtrlEnable_mask, cclCtrlRunstdby_mask]))
+        for lut in range(0,lutSize):  # scan over all LUTCTRLx registers available in device
+            cclSym_LUTCTRL[lut].setDefaultValue(computeRegValue([cclLuctrlInsel0[lut], cclLuctrlInsel1[lut], cclLuctrlInsel2[lut],
+                                                            cclLuctrlEdgesel[lut], cclLuctrlFiltsel[lut], cclLuctrlLuteo[lut], cclLuctrlLutei[lut],
+                                                            cclLuctrlLutinv[lut], cclLuctrlTruth[lut]],
+                                                            [cclLuctrlInsel0_mask, cclLuctrlInsel1_mask, cclLuctrlInsel2_mask,
+                                                            cclLuctrlEdgesel_mask, cclLuctrlFiltsel_mask, cclLuctrlLuteo_mask, cclLuctrlLutei_mask,
+                                                            cclLuctrlLutinv_mask, cclLuctrlTruth_mask]))
+        
+        #pending to verify
+        for ii in range(0,seqSize):  # scan over all SEQCTRLx register bitfields in device
+            cclsym_SEQCTRL_SEQSEL.setDefaultValue(computeRegValue([cclSeqctrlSeqsel[ii]],[cclSeqctrl_Seqsel_mask[ii]]))
+        #cclsym_SEQCTRL_SEQSEL.setDefaultValue(computeRegValue([cclSeqctrlSeqsel[0], cclSeqctrlSeqsel[1]],[cclSeqctrlSeqsel0_mask, cclSeqctrlSeqsel1_mask]))   
+        
     cclsym_EVESYS_CONFIGURE = cclComponent.createIntegerSymbol("CCL_EVESYS_CONFIGURE", None)
     cclsym_EVESYS_CONFIGURE.setVisible(False)
     cclsym_EVESYS_CONFIGURE.setDependencies(cclEvsysConfigure, cclEvsysDep)
 
     configName = Variables.get("__CONFIGURATION_NAME")
-
-    # update bit shift values of individual bitfields - for use in register value computations that ftl file will use
-    updateShiftValues()
-    # since now have bit shifts of all bitfields, can now compute default values (based on atdf file 'initval' fields)
-    cclsym_CTRL.setDefaultValue(computeRegValue([cclCtrlEnable, cclCtrlRunstdby], [cclCtrlEnable_mask, cclCtrlRunstdby_mask]))
-    for lut in range(0,lutSize):  # scan over all LUTCTRLx registers available in device
-        cclSym_LUTCTRL[lut].setDefaultValue(computeRegValue([cclLutctrlEnable[lut], cclLuctrlInsel0[lut], cclLuctrlInsel1[lut], cclLuctrlInsel2[lut],
-                                                            cclLuctrlEdgesel[lut], cclLuctrlFiltsel[lut], cclLuctrlLuteo[lut], cclLuctrlLutei[lut],
-                                                            cclLuctrlInvei[lut], cclLuctrlTruth[lut]],
-                                                            [cclLutctrlEnable_mask, cclLuctrlInsel0_mask, cclLuctrlInsel1_mask, cclLuctrlInsel2_mask,
-                                                            cclLuctrlEdgesel_mask, cclLuctrlFiltsel_mask, cclLuctrlLuteo_mask, cclLuctrlLutei_mask,
-                                                            cclLuctrlInvei_mask, cclLuctrlTruth_mask]))
-    for ii in range(0,seqSize):  # scan over all SEQCTRLx registers in device
-        cclsym_SEQCTRL[ii].setDefaultValue(computeRegValue([cclSeqctrlSeqsel[ii]],[cclSeqctrlSeqsel_mask]))
-
+    
     # dependencies are set so can link callback to them at this time
     cclWarningCclClkDeplist.append('core.CCL_CLOCK_ENABLE')
     cclWarningCclClk.setDependencies(cclWarning, cclWarningCclClkDeplist)

@@ -124,6 +124,7 @@ peripheral_ID_map = {
     "CCL_03718"    : "CCL_U2225",
     "CCL_04702"    : "CCL_U2225",
     "CCL_03628"    : "CCL_U2225",
+    "CCL_05277"    : "CCL_U2225",
     "CMCC_04727"   : "CMCC_U2015",
     "DMAC_04587"   : "DMAC_U2503",
     "DMAC_dma_u2223_v2" : "DMAC_U2223",
