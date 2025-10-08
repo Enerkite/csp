@@ -159,7 +159,8 @@ def updateUSARTConfigurationVisibleProperty(symbol, event):
             event['source'].getSymbolByID("USART_BAUD_ERROR_COMMENT").setVisible(desiredUSARTBaudRate == False and sercomSym_OperationMode.getSelectedKey() == "USART_INT")
 
     if event["id"] == "SERCOM_MODE":
-        symbol.setVisible(sercomSym_OperationMode.getSelectedKey() == "USART_INT")
+        if symbol.getID() != "USART_BAUD_ERROR_COMMENT":
+            symbol.setVisible(sercomSym_OperationMode.getSelectedKey() == "USART_INT")
 
 def updateUSARTBaudValueProperty(symbol, event):
 
