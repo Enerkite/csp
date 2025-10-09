@@ -270,9 +270,9 @@ def combineCMxMSKCONConfigValues(MySymbol, event):
     ocnenValue   = cmpSym_CMx_MSKCON_OCNEN[cmp_id].getValue() << 12
     ocenValue    = cmpSym_CMx_MSKCON_OCEN[cmp_id].getValue() << 13
     hlmsValue    = cmpSym_CMx_MSKCON_HLMS[cmp_id].getValue() << 15
-    selsrcaValue = cmpSym_CMx_MSKCON_SELSRCA[cmp_id].getValue() << 16
-    selsrcbValue = cmpSym_CMx_MSKCON_SELSRCB[cmp_id].getValue() << 20
-    selsrccValue = cmpSym_CMx_MSKCON_SELSRCC[cmp_id].getValue() << 24
+    selsrcaValue = int(cmpSym_CMx_MSKCON_SELSRCA[cmp_id].getSelectedValue(), 0) << 16
+    selsrcbValue = int(cmpSym_CMx_MSKCON_SELSRCB[cmp_id].getSelectedValue(), 0) << 20
+    selsrccValue = int(cmpSym_CMx_MSKCON_SELSRCC[cmp_id].getSelectedValue(), 0) << 24
 
     cmxmskconValue = aanenValue + aaenValue + abnenValue + abenValue + acnenValue + acenValue + pagsValue + nagsValue + oanenValue + oaenValue + obnenValue + obenValue + ocnenValue + ocenValue + hlmsValue + selsrcaValue + selsrcbValue + selsrccValue
 
