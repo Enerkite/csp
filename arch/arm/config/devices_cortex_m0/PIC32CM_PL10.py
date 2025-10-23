@@ -198,7 +198,7 @@ coreComponent.addPlugin("../peripheral/port_u2210/plugin/port_u2210.jar")
 
 # load clock manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_pic32cm_pl10/config/clk.py")
-#coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "CLK_PIC32CM_PL10", {"plugin_name": "Clock Configurator", "main_html_path": "csp/plugins/configurators/clock-configurators/clk_pic32cm_pl10_configurator/build/index.html"})
+coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "CLK_PIC32CM_PL10", {"plugin_name": "Clock Configurator", "main_html_path": "csp/plugins/configurators/clock-configurators/clk_pic32cm_pl10_configurator/build/index.html"})
 
 # load NVIC
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/nvic/config/nvic.py")
