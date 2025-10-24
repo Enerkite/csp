@@ -95,15 +95,15 @@ typedef void (* FLEXCOM_LIN_CALLBACK)(uintptr_t context );
 typedef struct
 {
     FLEXCOM_LIN_CALLBACK idCallback;
-    
+
     uintptr_t idContext;
-    
+
     FLEXCOM_LIN_CALLBACK tranferCallback;
-    
+
     uintptr_t tranferContext;
-    
+
     FLEXCOM_LIN_CALLBACK breakCallback;
-    
+
     uintptr_t breakContext;
 
 } FLEXCOM_LIN_CALLBACK_OBJECT;
@@ -152,7 +152,7 @@ bool ${FLEXCOM_INSTANCE_NAME}_USART_TransmitComplete( void );
 void ${FLEXCOM_INSTANCE_NAME}_USART_IrDA_DirectionSet(FLEXCOM_IRDA_DIR dir);
 
 </#if>
-<#if FLEXCOM_USART_MR_USART_MODE == "IS07816_T_0">
+<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
 void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_On( void );
 
 void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_Off( void );

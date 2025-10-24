@@ -53,7 +53,7 @@
 <#if core.CoreSysIntFile == true>
 #include "interrupts.h"
 </#if>
-<#if FLEXCOM_USART_MR_USART_MODE == "IS07816_T_0">
+<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
 #include "peripheral/pio/plib_pio.h"
 #include "definitions.h"
 
@@ -381,20 +381,20 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_Initialize( void )
     /* Setup transmitter timeguard register */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_TTGR = ${FLEXCOM_USART_TTGR};
 
-<#if FLEXCOM_USART_MR_USART_MODE == "IS07816_T_0">
+<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
     /* ISO7816 */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_FIDI = 372;
 
-    /* ISO7816 */   
+    /* ISO7816 */
     /* Configure ${FLEXCOM_INSTANCE_NAME} USART mode for ISO7816 */
     /* When operating in ISO7816, either in T = 0 or T = 1 modes, the character format is partially predefined.
-     * The configuration is forced to 8 data bits, and 1 or 2 stop bits, regardless of the values programmed in 
+     * The configuration is forced to 8 data bits, and 1 or 2 stop bits, regardless of the values programmed in
      * the FLEX_US_MR_CHRL, FLEX_US_MR_MODE9 and FLEX_US_MR_CHMODE fields.
      * FLEX_US_MR_MSBF can be used to transmit LSB or MSB first.
      * FLEX_US_MR_INVDATA can be used to transmit in Normal or Inverse mode. */
     /* T = 0 only (t=0) */
     /* ISO7816 */
-    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR = ( FLEX_US_MR_USART_MODE_${FLEXCOM_USART_MR_USART_MODE} | FLEX_US_MR_USCLKS_${FLEXCOM_USART_MR_USCLKS} | FLEX_US_MR_CHRL_8_BIT 
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR = ( FLEX_US_MR_USART_MODE_${FLEXCOM_USART_MR_USART_MODE} | FLEX_US_MR_USCLKS_${FLEXCOM_USART_MR_USCLKS} | FLEX_US_MR_CHRL_8_BIT
             | FLEX_US_MR_CLKO_Msk | FLEX_US_MR_PAR_EVEN | FLEX_US_MR_NBSTOP_1_BIT | FLEX_US_MR_OVER(0));
 
     /* Configure ${FLEXCOM_INSTANCE_NAME} USART Baud Rate */
@@ -888,7 +888,7 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_IrDA_DirectionSet(FLEXCOM_IRDA_DIR dir)
 }
 </#if>
 
-<#if FLEXCOM_USART_MR_USART_MODE == "IS07816_T_0">
+<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
 void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_On( void )
 {
     CARD_RESET_Set();
@@ -1002,7 +1002,7 @@ static uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(uint8_t *p_char_receive
         ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_TXDIS_Msk;
         usart_state = USART_RCV;
     }
-            
+
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RXEN_Msk;
 
     /* Wait USART ready for reception */
@@ -1020,13 +1020,13 @@ static uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(uint8_t *p_char_receive
     /* Receive a char */
     *p_char_received = (uint8_t) ${FLEXCOM_INSTANCE_NAME}_USART_ReadByte();
 
-    status = (${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & (FLEX_US_CSR_OVRE_Msk | FLEX_US_CSR_FRAME_Msk | FLEX_US_CSR_PARE_Msk 
+    status = (${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & (FLEX_US_CSR_OVRE_Msk | FLEX_US_CSR_FRAME_Msk | FLEX_US_CSR_PARE_Msk
             | FLEX_US_CSR_TIMEOUT_Msk | FLEX_US_CSR_NACK_Msk | FLEX_US_CSR_ITER_Msk));
 
     // Disable receiver
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RXDIS_Msk;
 
-    if (status != 0) 
+    if (status != 0)
     {
         printf("GetCharError:0x%08X ", (unsigned)${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR);
         return (0);
@@ -1083,10 +1083,10 @@ static uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(uint8_t uc_char)
     }
     /* Transmit a char */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_THR = uc_char;
-   
-    status = (${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & (FLEX_US_CSR_OVRE_Msk | FLEX_US_CSR_FRAME_Msk | FLEX_US_CSR_PARE_Msk 
+
+    status = (${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & (FLEX_US_CSR_OVRE_Msk | FLEX_US_CSR_FRAME_Msk | FLEX_US_CSR_PARE_Msk
             | FLEX_US_CSR_TIMEOUT_Msk | FLEX_US_CSR_NACK_Msk | FLEX_US_CSR_ITER_Msk));
-    if (status != 0) 
+    if (status != 0)
     {
         printf("SendCharError:0x%08X ", (unsigned)${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR);
         return (0);
@@ -1161,7 +1161,7 @@ uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Data_Read_Atr( uint8_t *p_atr )
             }
 
             uc_value = p_atr[response_length++] & 0xF0U;
-        } 
+        }
         else
         {
             uc_value = 0;
@@ -1248,7 +1248,7 @@ void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Decode_Atr(uint8_t * pAtr, uint8_t size)
     offset = 1;
     while (y)
     {
-        if (y & 0x10) 
+        if (y & 0x10)
         {    /* TA[i] */
             printf("  TA[%d] = 0x%X ", offset, pAtr[i]);
             if (offset == 1)
@@ -1290,7 +1290,7 @@ void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Decode_Atr(uint8_t * pAtr, uint8_t size)
             printf("  TD[%d] = 0x%X ", offset, pAtr[i]);
             printf("Protocol T = %d\n\r", (pAtr[i]&0x0F) );
             y = pAtr[i++] & 0xF0;
-        } 
+        }
         else
         {
             y = 0;
@@ -1311,8 +1311,8 @@ void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Decode_Atr(uint8_t * pAtr, uint8_t size)
     i = z;
     for (j = 0; j < y; j++)
     {
-        if ((pAtr[i] > 0x21) && (pAtr[i] < 0x7D)) 
-        {    
+        if ((pAtr[i] > 0x21) && (pAtr[i] < 0x7D))
+        {
             /* ASCII */
             printf("%c", pAtr[i]);
         }
