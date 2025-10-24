@@ -63,14 +63,98 @@
 <#if FLEXCOM_USART_MR_USART_MODE == "LIN_MASTER" || FLEXCOM_USART_MR_USART_MODE == "LIN_SLAVE">
 #ifndef FLEX_US_IER_LIN_FRAME_Msk
 #define FLEX_US_IER_LIN_FRAME_Msk   FLEX_US_IER_FRAME_Msk
+#endif
+#ifndef FLEX_US_IER_LIN_PARE_Msk
 #define FLEX_US_IER_LIN_PARE_Msk    FLEX_US_IER_PARE_Msk
+#endif
+#ifndef FLEX_US_IER_LIN_TIMEOUT_Msk
 #define FLEX_US_IER_LIN_TIMEOUT_Msk FLEX_US_IER_TIMEOUT_Msk
+#endif
+#ifndef FLEX_US_IDR_LIN_FRAME_Msk
 #define FLEX_US_IDR_LIN_FRAME_Msk   FLEX_US_IDR_FRAME_Msk
+#endif
+#ifndef FLEX_US_IDR_LIN_PARE_Msk
 #define FLEX_US_IDR_LIN_PARE_Msk    FLEX_US_IDR_PARE_Msk
+#endif
+#ifndef FLEX_US_IDR_LIN_TIMEOUT_Msk
 #define FLEX_US_IDR_LIN_TIMEOUT_Msk FLEX_US_IDR_TIMEOUT_Msk
+#endif
+#ifndef FLEX_US_CSR_LIN_FRAME_Msk
 #define FLEX_US_CSR_LIN_FRAME_Msk   FLEX_US_CSR_FRAME_Msk
+#endif
+#ifndef FLEX_US_CSR_LIN_PARE_Msk
 #define FLEX_US_CSR_LIN_PARE_Msk    FLEX_US_CSR_PARE_Msk
 #endif
+<#if __PROCESSOR?matches("SAM9X60.*")>
+/* These macros are not defined in the device header file */
+#ifndef FLEX_US_IER_LIN_LINBE_Msk
+    #define FLEX_US_IER_LIN_LINBE_Msk   (1U<<25)
+#endif
+#ifndef FLEX_US_IER_LIN_LINISFE_Msk
+    #define FLEX_US_IER_LIN_LINISFE_Msk (1U<<26)
+#endif
+#ifndef FLEX_US_IER_LIN_LINIPE_Msk
+    #define FLEX_US_IER_LIN_LINIPE_Msk  (1U<<27)
+#endif
+#ifndef FLEX_US_IER_LIN_LINCE_Msk
+    #define FLEX_US_IER_LIN_LINCE_Msk   (1U<<28)
+#endif
+#ifndef FLEX_US_IER_LIN_LINSNRE_Msk
+#define FLEX_US_IER_LIN_LINSNRE_Msk (1U<<29)
+#endif
+#ifndef FLEX_US_IER_LIN_LINSTE_Msk
+    #define FLEX_US_IER_LIN_LINSTE_Msk  (1U<<30)
+#endif
+#ifndef FLEX_US_IER_LIN_LINHTE_Msk
+    #define FLEX_US_IER_LIN_LINHTE_Msk  (1U<<31)
+#endif
+#ifndef FLEX_US_IER_LIN_LINID_Msk
+    #define FLEX_US_IER_LIN_LINID_Msk   (1U<<14)
+#endif
+#ifndef FLEX_US_IER_LIN_LINTC_Msk
+    #define FLEX_US_IER_LIN_LINTC_Msk   (1U<<15)
+#endif
+#ifndef FLEX_US_IDR_LIN_LINBK_Msk
+    #define FLEX_US_IDR_LIN_LINBK_Msk   (1U<<13)
+#endif
+#ifndef FLEX_US_IER_LIN_LINBK_Msk
+    #define FLEX_US_IER_LIN_LINBK_Msk   (1U<<13)
+#endif
+#ifndef FLEX_US_CSR_LIN_TIMEOUT_Msk
+    #define FLEX_US_CSR_LIN_TIMEOUT_Msk (1U<<8)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINBE_Msk
+    #define FLEX_US_CSR_LIN_LINBE_Msk   (1U<<25)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINISFE_Msk
+    #define FLEX_US_CSR_LIN_LINISFE_Msk (1U<<26)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINIPE_Msk
+    #define FLEX_US_CSR_LIN_LINIPE_Msk  (1U<<27)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINCE_Msk
+    #define FLEX_US_CSR_LIN_LINCE_Msk   (1U<<28)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINSNRE_Msk
+    #define FLEX_US_CSR_LIN_LINSNRE_Msk (1U<<29)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINSTE_Msk
+    #define FLEX_US_CSR_LIN_LINSTE_Msk  (1U<<30)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINHTE_Msk
+    #define FLEX_US_CSR_LIN_LINHTE_Msk  (1U<<31)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINBK_Msk
+    #define FLEX_US_CSR_LIN_LINBK_Msk   (1U<<13)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINID_Msk
+    #define FLEX_US_CSR_LIN_LINID_Msk   (1U<<14)
+#endif
+#ifndef FLEX_US_CSR_LIN_LINTC_Msk
+    #define FLEX_US_CSR_LIN_LINTC_Msk   (1U<<15)
+#endif
+</#if>
+
 
 /* Disable Read, Overrun, Parity and Framing error interrupts */
 #define ${FLEXCOM_INSTANCE_NAME}_USART_RX_INT_DISABLE()      ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_IDR = (FLEX_US_IDR_RXRDY_Msk |  FLEX_US_IDR_OVRE_Msk | FLEX_US_IDR_LIN_FRAME_Msk | FLEX_US_IDR_LIN_PARE_Msk | FLEX_US_IDR_LIN_TIMEOUT_Msk \
