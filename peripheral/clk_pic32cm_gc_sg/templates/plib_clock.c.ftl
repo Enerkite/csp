@@ -332,9 +332,15 @@ void CLOCK_Initialize (void)
     OSC32KCTRL_Initialize();
 
 <#list CLK_INIT_LIST?split("\n") as list_entry>
-<#if !list_entry?contains("DFLL") || GEN_CODE_DFLL>
+    <#if !list_entry?contains("DFLL")>
 ${list_entry}
-</#if>
+    </#if>
+</#list>
+
+<#list CLK_INIT_LIST?split("\n") as list_entry>
+    <#if list_entry?contains("DFLL") && GEN_CODE_DFLL>
+${list_entry}
+    </#if>
 </#list>
 
 <#list 2..GCLK_MAX_ID as i>
