@@ -152,7 +152,7 @@ bool ${FLEXCOM_INSTANCE_NAME}_USART_TransmitComplete( void );
 void ${FLEXCOM_INSTANCE_NAME}_USART_IrDA_DirectionSet(FLEXCOM_IRDA_DIR dir);
 
 </#if>
-<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
+<#if ["ISO7816_T_0", "IS07816_T_0"]?seq_contains(FLEXCOM_USART_MR_USART_MODE)>
 void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_On( void );
 
 void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_Off( void );

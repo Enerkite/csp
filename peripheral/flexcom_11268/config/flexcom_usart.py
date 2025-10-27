@@ -175,7 +175,7 @@ def symbolISO7816NoVisible(symbol, event):
     value  = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
 
     if flexcomSym_OperatingMode.getSelectedKey() == "USART":
-        if value == "ISO7816_T_0":
+        if value in ["ISO7816_T_0", "IS07816_T_0"]:
             symbol.setVisible(False)
         else :
             symbol.setVisible(True)
@@ -186,7 +186,7 @@ def symbolISO7816Visible(symbol, event):
     value  = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
 
     if flexcomSym_OperatingMode.getSelectedKey() == "USART":
-        if value == "ISO7816_T_0":
+        if value in ["ISO7816_T_0", "IS07816_T_0"]:
             symbol.setVisible(True)
         else :
             symbol.setVisible(False)
@@ -357,13 +357,13 @@ for index in range(len(flexcomSym_UsartMode_Values)):
 
     '''
     In old ATDFs, ISO7816 mode is incorrectly labelled as 'IS07816'(i.e. zero instead of letter O), newer devices correctly label the mode as ISO7816_*
-    Use the correct name. Since this is a key value set symbol, only the index is saved in the database, so changing the name here should not affect
+    Use the name as per atdf. Since this is a key value set symbol, only the index is saved in the database, so changing the name here should not affect
     compatibility.
     '''
-    flexcomSym_UsartMode_Key_Name = flexcomSym_UsartMode_Values[index].getAttribute("name").replace("IS07816", "ISO7816")
+    flexcomSym_UsartMode_Key_Name = flexcomSym_UsartMode_Values[index].getAttribute("name")
     flexcomSym_UsartMode_Key_Value = flexcomSym_UsartMode_Values[index].getAttribute("value")
     flexcomSym_UsartMode_Key_Description = flexcomSym_UsartMode_Values[index].getAttribute("caption")
-    if flexcomSym_UsartMode_Key_Name in ["NORMAL", "RS485", "HW_HANDSHAKING", "IRDA", "ISO7816_T_0", "LIN_SLAVE", "LIN_MASTER", "LON"]:
+    if flexcomSym_UsartMode_Key_Name in ["NORMAL", "RS485", "HW_HANDSHAKING", "IRDA", "ISO7816_T_0", "IS07816_T_0", "LIN_SLAVE", "LIN_MASTER", "LON"]:
         flexcomSym_UsartMode.addKey(flexcomSym_UsartMode_Key_Name, flexcomSym_UsartMode_Key_Value, flexcomSym_UsartMode_Key_Description)
 flexcomSym_UsartMode.setDisplayMode("Key")
 flexcomSym_UsartMode.setOutputMode("Key")

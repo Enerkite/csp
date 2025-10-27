@@ -53,7 +53,8 @@
 <#if core.CoreSysIntFile == true>
 #include "interrupts.h"
 </#if>
-<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
+<#assign ISO7816_T0_MODE_ID = ["ISO7816_T_0", "IS07816_T_0"]>
+<#if ISO7816_T0_MODE_ID?seq_contains(FLEXCOM_USART_MR_USART_MODE)>
 #include "peripheral/pio/plib_pio.h"
 #include "definitions.h"
 
@@ -381,7 +382,7 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_Initialize( void )
     /* Setup transmitter timeguard register */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_TTGR = ${FLEXCOM_USART_TTGR};
 
-<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
+<#if ISO7816_T0_MODE_ID?seq_contains(FLEXCOM_USART_MR_USART_MODE)>
     /* ISO7816 */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_FIDI = 372;
 
@@ -888,7 +889,7 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_IrDA_DirectionSet(FLEXCOM_IRDA_DIR dir)
 }
 </#if>
 
-<#if FLEXCOM_USART_MR_USART_MODE == "ISO7816_T_0">
+<#if ISO7816_T0_MODE_ID?seq_contains(FLEXCOM_USART_MR_USART_MODE)>
 void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_On( void )
 {
     CARD_RESET_Set();
