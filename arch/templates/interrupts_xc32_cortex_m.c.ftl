@@ -1,11 +1,11 @@
 
 <#assign WEAK_HANDLER_COUNT = LIST_SYSTEM_INTERRUPT_WEAK_HANDLERS?split("extern")?size - 1>
 <#if COMPILER_CHOICE == "XC32">
-/* MISRA C-2012 Rule 8.6 deviated below. Deviation record ID -  H3_MISRAC_2012_R_8_6_DR_1 */
+/* MISRA C-2023 Rule 8.6 deviated below. Deviation record ID -  H3_MISRAC_2023_R_8_6_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma coverity compliance deviate "MISRA C-2012 Rule 8.6" "H3_MISRAC_2012_R_8_6_DR_1"
+#pragma coverity compliance deviate "MISRA C-2023 Rule 8.6" "H3_MISRAC_2023_R_8_6_DR_1"
 </#if>
 extern uint32_t _stack;
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
@@ -56,23 +56,31 @@ void Dummy_Handler( void )
 }
 </#if>
 
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 8.6 deviated ${WEAK_HANDLER_COUNT} times.  Deviation record ID -  H3_MISRAC_2012_R_8_6_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 8.6 deviated ${WEAK_HANDLER_COUNT} times.  Deviation record ID -  H3_MISRAC_2023_R_8_6_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma coverity compliance block deviate:${WEAK_HANDLER_COUNT} "MISRA C-2012 Rule 8.6" "H3_MISRAC_2012_R_8_6_DR_1"
+#pragma coverity compliance block deviate:${WEAK_HANDLER_COUNT} "MISRA C-2023 Rule 8.6" "H3_MISRAC_2023_R_8_6_DR_1"
 </#if>
 /* Device vectors list dummy definition*/
 ${LIST_SYSTEM_INTERRUPT_WEAK_HANDLERS}
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 8.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 8.6"
 #pragma GCC diagnostic pop
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 
 /* Multiple handlers for vector */
 ${LIST_SYSTEM_INTERRUPT_MULTIPLE_HANDLERS}
+
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 2.8 deviated ${WEAK_HANDLER_COUNT} times.  Deviation record ID -  H3_MISRAC_2023_R_2_8_DR_1 */
+<#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma coverity compliance block deviate:1 "MISRA C-2023 Rule 2.8" "H3_MISRAC_2023_R_2_8_DR_1"
+</#if>
 
 <#if COMPILER_CHOICE == "XC32">
 __attribute__ ((section(".vectors"), used))
@@ -102,3 +110,11 @@ __root const H3DeviceVectors __vector_table=
 
 ${LIST_SYSTEM_INTERRUPT_HANDLERS}
 };
+
+<#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
+#pragma coverity compliance end_block "MISRA C-2023 Rule 2.8"
+#pragma GCC diagnostic pop
+</#if>
+/* MISRAC 2023 deviation block end */
+
+

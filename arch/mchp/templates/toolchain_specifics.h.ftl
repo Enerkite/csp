@@ -29,16 +29,16 @@
     <#lt>#define NO_INIT                        __attribute__((section(".no_init")))
     <#lt>#define SECTION(a)                     __attribute__((__section__(a)))
 
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.1 deviated 13 times. Deviation record ID -  H3_MISRAC_2012_R_21_1_DR_3 */
-/* MISRA C-2012 Rule 21.2 deviated 26 times. Deviation record ID -  H3_MISRAC_2012_R_21_2_DR_3 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.1 deviated 13 times. Deviation record ID -  H3_MISRAC_2023_R_21_1_DR_3 */
+/* MISRA C-2023 Rule 21.2 deviated 26 times. Deviation record ID -  H3_MISRAC_2023_R_21_2_DR_3 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma coverity compliance block \
-   (deviate:13 "MISRA C-2012 Rule 21.1" "H3_MISRAC_2012_R_21_1_DR_3")\
-   (deviate:26 "MISRA C-2012 Rule 21.2" "H3_MISRAC_2012_R_21_2_DR_3")
+   (deviate:13 "MISRA C-2023 Rule 21.1" "H3_MISRAC_2023_R_21_1_DR_3")\
+   (deviate:26 "MISRA C-2023 Rule 21.2" "H3_MISRAC_2023_R_21_2_DR_3")
 </#if>
     <#lt>#ifndef   __ASM
     <#lt>    #define __ASM                      __asm__
@@ -50,7 +50,7 @@
     <#lt>    #define __STATIC_INLINE            static __inline__
     <#lt>#endif
     <#lt>#ifndef   __STATIC_FORCEINLINE
-    <#lt>    #define __STATIC_FORCEINLINE      
+    <#lt>    #define __STATIC_FORCEINLINE
     <#lt>#endif
     <#lt>#ifndef   __NO_RETURN
     <#lt>    #define __NO_RETURN                __attribute__((__noreturn__))
@@ -71,13 +71,13 @@
     <#lt>    #define __PACKED_UNION             union __attribute__((packed, aligned(1)))
     <#lt>#endif
     <#lt>#ifndef   __COHERENT
-    <#lt>    #define __COHERENT                 
+    <#lt>    #define __COHERENT
     <#lt>#endif
     <#lt>#ifndef   __ALIGNED
     <#lt>    #define __ALIGNED(x)               __attribute__((aligned(x)))
     <#lt>#endif
     <#lt>#ifndef   __RESTRICT
-    <#lt>    #define __RESTRICT                 
+    <#lt>    #define __RESTRICT
     <#lt>#endif
 
     <#if CACHE_ALIGN?? >
@@ -95,7 +95,7 @@
     <#lt>#endif
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.1" "MISRA C-2012 Rule 21.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.1" "MISRA C-2023 Rule 21.2"
 #pragma GCC diagnostic pop
 </#if>
 

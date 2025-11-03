@@ -45,12 +45,12 @@
 </#if>
 
 /* Declaration of these functions are missing in stdio_s.h for ARM parts*/
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.2 deviated four times.  Deviation record ID -  H3_MISRAC_2012_R_21_2_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.2 deviated four times.  Deviation record ID -  H3_MISRAC_2023_R_21_2_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma coverity compliance block deviate:4 "MISRA C-2012 Rule 21.2" "H3_MISRAC_2012_R_21_2_DR_1"
+#pragma coverity compliance block deviate:4 "MISRA C-2023 Rule 21.2" "H3_MISRAC_2023_R_21_2_DR_1"
 </#if>
 
 <#if stdio_s??>
@@ -142,7 +142,7 @@ int write(int handle, void * buffer, size_t count)
 }
 
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2"
 #pragma GCC diagnostic pop
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */

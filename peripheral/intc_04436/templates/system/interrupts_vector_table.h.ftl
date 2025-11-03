@@ -17,8 +17,8 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 
 /* Following MISRA-C rules are deviated in the below code block */
-/* MISRA C-2012 Rule 21.2 - Deviation record ID - H3_MISRAC_2012_R_21_2_DR_1 */
-#pragma coverity compliance block deviate "MISRA C-2012 Rule 21.2"  "H3_MISRAC_2012_R_21_2_DR_1"
+/* MISRA C-2023 Rule 21.2 - Deviation record ID - H3_MISRAC_2023_R_21_2_DR_1 */
+#pragma coverity compliance block deviate "MISRA C-2023 Rule 21.2"  "H3_MISRAC_2023_R_21_2_DR_1"
 </#if>
 
 <#list INTC_VECTOR_MIN..INTC_VECTOR_MAX as i>
@@ -56,7 +56,7 @@ void _${.vars[INT_HANDLER]} (void);
     </#if>
 </#list>
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2"
 #pragma GCC diagnostic pop
 </#if>
 </#if>

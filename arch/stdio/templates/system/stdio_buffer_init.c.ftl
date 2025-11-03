@@ -20,12 +20,12 @@
  ********************************************************************************/
 static void STDIO_BufferModeSet(void)
 {
-    /* MISRAC 2012 deviation block start */
-    /* MISRA C-2012 Rule 21.6 deviated ${DEVIATE_COUNT} times in this file.  Deviation record ID -  H3_MISRAC_2012_R_21_6_DR_3 */
+    /* MISRAC 2023 deviation block start */
+    /* MISRA C-2023 Rule 21.6 deviated ${DEVIATE_COUNT} times in this file.  Deviation record ID -  H3_MISRAC_2023_R_21_6_DR_3 */
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunknown-pragmas"
-    #pragma coverity compliance block deviate "MISRA C-2012 Rule 21.6" "H3_MISRAC_2012_R_21_6_DR_3"
+    #pragma coverity compliance block deviate "MISRA C-2023 Rule 21.6" "H3_MISRAC_2023_R_21_6_DR_3"
 
 </#if>
 <#if !STDIN_BUFF_MODE>
@@ -38,10 +38,10 @@ static void STDIO_BufferModeSet(void)
     /* Make stdout unbuffered */
     setbuf(stdout, NULL);
 </#if>
-    /* MISRAC 2012 deviation block end */
+    /* MISRAC 2023 deviation block end */
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
 
-    #pragma coverity compliance end_block "MISRA C-2012 Rule 21.6"
+    #pragma coverity compliance end_block "MISRA C-2023 Rule 21.6"
     #pragma GCC diagnostic pop
 </#if>
 }

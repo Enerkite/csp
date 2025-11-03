@@ -5,8 +5,8 @@
     ${trapsFileLowerCase}.c
 
   Summary:
-    This is the generated source file for TRAPS  
- 
+    This is the generated source file for TRAPS
+
   Description:
     None
 
@@ -46,8 +46,8 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 
 /* Following MISRA-C rules are deviated in the below code block */
-/* MISRA C-2012 Rule 21.2 - Deviation record ID - H3_MISRAC_2012_R_21_2_DR_1 */
-#pragma coverity compliance block deviate "MISRA C-2012 Rule 21.2"  "H3_MISRAC_2012_R_21_2_DR_1"
+/* MISRA C-2023 Rule 21.2 - Deviation record ID - H3_MISRAC_2023_R_21_2_DR_1 */
+#pragma coverity compliance block deviate "MISRA C-2023 Rule 21.2"  "H3_MISRAC_2023_R_21_2_DR_1"
 </#if>
 <#if busErrorTrapAvailable == true>
 void _BusErrorTrap(void);
@@ -68,7 +68,7 @@ void _StackErrorTrap(void);
 void _IllegalInstructionTrap(void);
 </#if>
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2"
 </#if>
 
 #define ERROR_HANDLER __attribute__((weak,interrupt,no_auto_psv))
@@ -77,19 +77,19 @@ void _IllegalInstructionTrap(void);
 
 /* Address of instruction that caused the exception. */
 static uint32_t  exception_address;
- 
+
 /* Code identifying the cause of the exception. */
 static uint32_t  exception_code;
 
 // Section: Driver Interface Function Definitions
 
 //@brief Halts
-void __attribute__((weak)) ${trapsFileUpperCase}_halt_on_error(uint16_t code)  // 
+void __attribute__((weak)) ${trapsFileUpperCase}_halt_on_error(uint16_t code)  //
 {
     exception_code  = code;
-    
+
     exception_address = PCTRAP;
-    
+
     while(true)
     {
         #ifdef __DEBUG
@@ -106,8 +106,8 @@ inline static void use_failsafe_stack(void)
 {
     static uint8_t failsafe_stack[FAILSAFE_STACK_SIZE];
 
-    SET_STACK_POINTER(failsafe_stack);  
-    
+    SET_STACK_POINTER(failsafe_stack);
+
     /* Controls where the stack pointer limit is, relative to the end of the
     * failsafe stack
     */
@@ -117,8 +117,8 @@ inline static void use_failsafe_stack(void)
 
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 /* Following MISRA-C rules are deviated in the below code block */
-/* MISRA C-2012 Rule 21.2 - Deviation record ID - H3_MISRAC_2012_R_21_2_DR_1 */
-#pragma coverity compliance block deviate "MISRA C-2012 Rule 21.2"  "H3_MISRAC_2012_R_21_2_DR_1"
+/* MISRA C-2023 Rule 21.2 - Deviation record ID - H3_MISRAC_2023_R_21_2_DR_1 */
+#pragma coverity compliance block deviate "MISRA C-2023 Rule 21.2"  "H3_MISRAC_2023_R_21_2_DR_1"
 </#if>
 <#if busErrorTrapAvailable == true>
 /** Bus error.**/
@@ -170,7 +170,7 @@ void ERROR_HANDLER _GeneralTrap(void)
     <#if dmtTrapAvailable == true>
     if(INTCON5bits.DMTE == 1)
     {
-      ${dmtTrapStatusBit} = 0;  //Clear the trap flag 
+      ${dmtTrapStatusBit} = 0;  //Clear the trap flag
       TRAPS_halt_on_error(TRAPS_DMT_ERR);
     }
     </#if>
@@ -178,7 +178,7 @@ void ERROR_HANDLER _GeneralTrap(void)
     <#if softTrapAvailable == true>
     if(INTCON5bits.SOFT == 1)
     {
-      ${softTrapStatusBit} = 0;  //Clear the trap flag 
+      ${softTrapStatusBit} = 0;  //Clear the trap flag
       TRAPS_halt_on_error(TRAPS_SOFT_ERR);
     }
     </#if>
@@ -187,7 +187,7 @@ void ERROR_HANDLER _GeneralTrap(void)
     if(INTCON5bits.WDTE == 1)
     {
       ${wdtTrapStatusBit} = 0;  //Clear the trap flag
-      TRAPS_halt_on_error(TRAPS_WDT_ERR); 
+      TRAPS_halt_on_error(TRAPS_WDT_ERR);
     }
     </#if>
     while(true)
@@ -200,7 +200,7 @@ void ERROR_HANDLER _GeneralTrap(void)
 /** Math error.**/
 void ERROR_HANDLER _MathErrorTrap(void)
 {
-    ${mathErrorTrapStatusBit} = 0;  //Clear the trap flag        
+    ${mathErrorTrapStatusBit} = 0;  //Clear the trap flag
     TRAPS_halt_on_error(TRAPS_DIV0_ERR);
 }
 </#if>
@@ -213,9 +213,9 @@ void ERROR_HANDLER _StackErrorTrap(void)
      * means that we cannot trust the stack to operate correctly unless
      * we set the stack pointer to a safe place.
      */
-    use_failsafe_stack(); 
-    
-    ${stackErrorTrapStatusBit} = 0;  //Clear the trap flag         
+    use_failsafe_stack();
+
+    ${stackErrorTrapStatusBit} = 0;  //Clear the trap flag
     TRAPS_halt_on_error(TRAPS_STACK_ERR);
 }
 </#if>
@@ -224,11 +224,11 @@ void ERROR_HANDLER _StackErrorTrap(void)
 /** Illegal instruction.**/
 void ERROR_HANDLER _IllegalInstructionTrap(void)
 {
-    ${illegalInstructionTrapStatusBit} = 0;  //Clear the trap flag   
-    TRAPS_halt_on_error(TRAPS_ILLEGAL_INSTRUCTION); 
+    ${illegalInstructionTrapStatusBit} = 0;  //Clear the trap flag
+    TRAPS_halt_on_error(TRAPS_ILLEGAL_INSTRUCTION);
 }
 </#if>
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2"
 #pragma GCC diagnostic pop
 </#if>

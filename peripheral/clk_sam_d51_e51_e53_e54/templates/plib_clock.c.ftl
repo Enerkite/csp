@@ -311,14 +311,14 @@ static void GCLK${i}_Initialize(void)
 </#list>
 void CLOCK_Initialize (void)
 {
-    /* MISRAC 2012 deviation block start */
-    /* MISRA C-2012 Rule 2.2 deviated in this file.  Deviation record ID - H3_MISRAC_2012_R_2_2_DR_2 */
+    /* MISRAC 2023 deviation block start */
+    /* MISRA C-2023 Rule 2.2 deviated in this file.  Deviation record ID - H3_MISRAC_2023_R_2_2_DR_2 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
     <#if COMPILER_CHOICE == "XC32">
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunknown-pragmas"
     </#if>
-    #pragma coverity compliance block deviate "MISRA C-2012 Rule 2.2" "H3_MISRAC_2012_R_2_2_DR_2"
+    #pragma coverity compliance block deviate "MISRA C-2023 Rule 2.2" "H3_MISRAC_2023_R_2_2_DR_2"
 
 </#if>
 
@@ -331,12 +331,12 @@ void CLOCK_Initialize (void)
 ${CLK_INIT_LIST}
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-    #pragma coverity compliance end_block "MISRA C-2012 Rule 2.2"
+    #pragma coverity compliance end_block "MISRA C-2023 Rule 2.2"
     <#if COMPILER_CHOICE == "XC32">
     #pragma GCC diagnostic pop
     </#if>
 </#if>
-    /* MISRAC 2012 deviation block end */
+    /* MISRAC 2023 deviation block end */
 
 <#list 3..GCLK_MAX_ID as i>
     <#assign GCLK_ID_CHEN = "GCLK_ID_" + i + "_CHEN">

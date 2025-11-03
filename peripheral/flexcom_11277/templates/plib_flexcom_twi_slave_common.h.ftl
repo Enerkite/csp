@@ -65,14 +65,14 @@
 #endif
 // DOM-IGNORE-END
 
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 5.2 deviated 9 times.  Deviation record ID -  H3_MISRAC_2012_R_5_2_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 5.2 deviated 9 times.  Deviation record ID -  H3_MISRAC_2023_R_5_2_DR_1 */
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
     <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
     </#if>
-#pragma coverity compliance block deviate:9 "MISRA C-2012 Rule 5.2" "H3_MISRAC_2012_R_5_2_DR_1"
+#pragma coverity compliance block deviate:9 "MISRA C-2023 Rule 5.2" "H3_MISRAC_2023_R_5_2_DR_1"
 </#if>
 
 // *****************************************************************************
@@ -119,22 +119,22 @@ typedef enum
 {
 	/* Slave Access flag */
     FLEXCOM_TWI_SLAVE_STATUS_FLAG_SVACC     = TWI_SR_SVACC_Msk,
-	
+
 	/* End of slave access flag */
     FLEXCOM_TWI_SLAVE_STATUS_FLAG_EOSACC    = TWI_SR_EOSACC_Msk,
-    
+
 	/* TWI transfer direction is read */
 	FLEXCOM_TWI_SLAVE_STATUS_FLAG_SVREAD    = TWI_SR_SVREAD_Msk,
-	
+
 	/* Transmitter is ready */
     FLEXCOM_TWI_SLAVE_STATUS_FLAG_TXRDY     = TWI_SR_TXRDY_Msk,
-	
+
 	/* Receiver has an unread character */
     FLEXCOM_TWI_SLAVE_STATUS_FLAG_RXRDY     = TWI_SR_RXRDY_Msk,
-	
+
 	/* NACK received from master */
 	FLEXCOM_TWI_SLAVE_STATUS_FLAG_NACK    	= TWI_SR_NACK_Msk,
-	
+
 	/* Stop condtion or start condition with other slave address detected */
     FLEXCOM_TWI_SLAVE_STATUS_FLAG_TXCOMP    = TWI_SR_TXCOMP_Msk
 }FLEXCOM_TWI_SLAVE_STATUS_FLAG;
@@ -156,7 +156,7 @@ typedef enum
 {
 	/* Received ACK from I2C master */
     FLEXCOM_TWI_SLAVE_ACK_STATUS_RECEIVED_ACK = 0,
-	
+
 	/* Received NACK from I2C master */
     FLEXCOM_TWI_SLAVE_ACK_STATUS_RECEIVED_NAK
 }FLEXCOM_TWI_SLAVE_ACK_STATUS;
@@ -193,12 +193,12 @@ typedef enum
 }FLEXCOM_TWI_SLAVE_TRANSFER_EVENT;
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
 
-#pragma coverity compliance end_block "MISRA C-2012 Rule 5.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 5.2"
     <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop
     </#if>
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 
 // *****************************************************************************
 /* FLEXCOM TWI Slave Callback

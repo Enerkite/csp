@@ -51,12 +51,12 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 
 /* Following MISRA-C rules are deviated in the below code block */
-/* MISRA C-2012 Rule 8.6 - Deviation record ID - H3_MISRAC_2012_R_8_6_DR_1 */
-#pragma coverity compliance block deviate "MISRA C-2012 Rule 8.6"  "H3_MISRAC_2012_R_8_6_DR_1"
+/* MISRA C-2023 Rule 8.6 - Deviation record ID - H3_MISRAC_2023_R_8_6_DR_1 */
+#pragma coverity compliance block deviate "MISRA C-2023 Rule 8.6"  "H3_MISRAC_2023_R_8_6_DR_1"
 </#if>
 extern void __builtin_clrwdt(void);
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 8.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 8.6"
 #pragma GCC diagnostic pop
 </#if>
 

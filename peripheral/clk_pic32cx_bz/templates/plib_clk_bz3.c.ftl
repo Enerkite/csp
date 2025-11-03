@@ -117,14 +117,14 @@ void CLOCK_Initialize( void )
         //Setup 128MHz PLL
         CLOCK_RF_Write_Reg(0x2EU, 0x4328U);
 
-        /* MISRAC 2012 deviation block start */
-        /* MISRA C-2012 Rule 11.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2012_R_11_1_DR_1 */
+        /* MISRAC 2023 deviation block start */
+        /* MISRA C-2023 Rule 11.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2023_R_11_1_DR_1 */
         <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
         <#if COMPILER_CHOICE == "XC32">
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wunknown-pragmas"
         </#if>
-        #pragma coverity compliance block deviate:1 "MISRA C-2012 Rule 11.1" "H3_MISRAC_2012_R_11_1_DR_1"
+        #pragma coverity compliance block deviate:1 "MISRA C-2023 Rule 11.1" "H3_MISRAC_2023_R_11_1_DR_1"
 
         </#if>
         /* Configure Prefetch, Wait States by calling the ROM function whose address is available at address 0xF2D0 */
@@ -133,22 +133,22 @@ void CLOCK_Initialize( void )
                                         | (PCHE_CHECON_PFMWS(${CONFIG_CHECON_PFMWS}) | PCHE_CHECON_PREFEN(${CONFIG_CHECON_PREFEN}) | PCHE_CHECON_ADRWS(${CONFIG_CHECON_ADRWS})));
         <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-        #pragma coverity compliance end_block "MISRA C-2012 Rule 11.1"
+        #pragma coverity compliance end_block "MISRA C-2023 Rule 11.1"
         <#if COMPILER_CHOICE == "XC32">
         #pragma GCC diagnostic pop
         </#if>
-        /* MISRA C-2012 Rule 11.1 deviation block end  */
+        /* MISRA C-2023 Rule 11.1 deviation block end  */
     </#if>
     }
 </#if>
-    
+
 <#if ((CoreSeries?contains("PIC32WM_BZ36")) || (CoreSeries?contains("PIC32CXBZ36")))>
-    /* MISRAC 2012 deviation block start */
-    /* MISRA C-2012 Rule 11.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2012_R_11_1_DR_1 */
+    /* MISRAC 2023 deviation block start */
+    /* MISRA C-2023 Rule 11.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2023_R_11_1_DR_1 */
     <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunknown-pragmas"
-    #pragma coverity compliance block deviate:1 "MISRA C-2012 Rule 11.1" "H3_MISRAC_2012_R_11_1_DR_1"
+    #pragma coverity compliance block deviate:1 "MISRA C-2023 Rule 11.1" "H3_MISRAC_2023_R_11_1_DR_1"
     </#if>
 
     /* Configure Prefetch, Wait States by calling the ROM function whose address is available at address 0xF2D0 */
@@ -157,10 +157,10 @@ void CLOCK_Initialize( void )
                                     | (PCHE_CHECON_PFMWS(${CONFIG_CHECON_PFMWS}) | PCHE_CHECON_PREFEN(${CONFIG_CHECON_PREFEN})  | PCHE_CHECON_ADRWS(${CONFIG_CHECON_ADRWS})));
 
     <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-    #pragma coverity compliance end_block "MISRA C-2012 Rule 11.1"
+    #pragma coverity compliance end_block "MISRA C-2023 Rule 11.1"
     #pragma GCC diagnostic pop
     </#if>
-    /* MISRAC 2012 deviation block end */	
+    /* MISRAC 2023 deviation block end */
 </#if>
 
 <#if !((PRODUCT_FAMILY?contains("PIC32CX_BZ6")) || (CoreSeries?contains("PIC32WM_BZ36")) || (CoreSeries?contains("PIC32CXBZ36")))>

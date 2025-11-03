@@ -66,13 +66,13 @@
 // Section: Forward declaration of the handler functions
 // *****************************************************************************
 // *****************************************************************************
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.2 deviated ${DEVIATION_COUNT} times. Deviation record ID -  H3_MISRAC_2012_R_21_2_DR_4 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.2 deviated ${DEVIATION_COUNT} times. Deviation record ID -  H3_MISRAC_2023_R_21_2_DR_4 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma coverity compliance block deviate:${DEVIATION_COUNT} "MISRA C-2012 Rule 21.2" "H3_MISRAC_2012_R_21_2_DR_4"
+#pragma coverity compliance block deviate:${DEVIATION_COUNT} "MISRA C-2023 Rule 21.2" "H3_MISRAC_2023_R_21_2_DR_4"
 </#if>
 void _general_exception_handler(void);
 void _bootstrap_exception_handler(void);
@@ -277,7 +277,7 @@ void __attribute__((noreturn, weak)) _simple_tlb_refill_exception_handler(void)
 </#if>
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2"
 #pragma GCC diagnostic pop
 </#if>
 /*******************************************************************************

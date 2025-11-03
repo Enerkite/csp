@@ -63,13 +63,13 @@
 #define EIC_SCFGR_FRZ_Pos                    31U
 #define EIC_SCFGR_FRZ_Msk                    (1UL << EIC_SCFGR_FRZ_Pos)
 
-/* MISRA C-2012 Rule 7.2 violated ${EIC_NUM_INTERRUPTS} times below. Deviation record ID - H3_MISRAC_2012_R_7_2_DR_1*/
+/* MISRA C-2023 Rule 7.2 violated ${EIC_NUM_INTERRUPTS} times below. Deviation record ID - H3_MISRAC_2023_R_7_2_DR_1*/
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
 <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 </#if>
-#pragma coverity compliance block deviate:${EIC_NUM_INTERRUPTS} "MISRA C-2012 Rule 7.2" "H3_MISRAC_2012_R_7_2_DR_1"
+#pragma coverity compliance block deviate:${EIC_NUM_INTERRUPTS} "MISRA C-2023 Rule 7.2" "H3_MISRAC_2023_R_7_2_DR_1"
 </#if>
 
 static volatile struct
@@ -86,12 +86,12 @@ static volatile struct
 };
 
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 7.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 7.2"
 <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop
 </#if>
 </#if>
-/* MISRAC 2012 deviation block end for Rule 7.2 */
+/* MISRAC 2023 deviation block end for Rule 7.2 */
 
 void ${EIC_INSTANCE_NAME}_Initialize(void)
 {

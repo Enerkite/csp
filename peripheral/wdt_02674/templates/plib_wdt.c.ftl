@@ -93,13 +93,13 @@ bool ${WDT_INSTANCE_NAME}_IsWindowEnabled( void )
     return((bool)WDTCONbits.WDTWINEN);
 }
 
-/* MISRA C-2012 Rule 11.3 violated 1 time below. Deviation record ID - H3_MISRAC_2012_R_11_3_DR_1*/
+/* MISRA C-2023 Rule 11.3 violated 1 time below. Deviation record ID - H3_MISRAC_2023_R_11_3_DR_1*/
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 </#if>
-#pragma coverity compliance block deviate:1 "MISRA C-2012 Rule 11.3" "H3_MISRAC_2012_R_11_3_DR_1"
+#pragma coverity compliance block deviate:1 "MISRA C-2023 Rule 11.3" "H3_MISRAC_2023_R_11_3_DR_1"
 </#if>
 void ${WDT_INSTANCE_NAME}_Clear( void )
 {
@@ -111,9 +111,9 @@ void ${WDT_INSTANCE_NAME}_Clear( void )
     *wdtclrkey = 0x5743;
 }
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 11.3"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 11.3"
 <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop
 </#if>
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
