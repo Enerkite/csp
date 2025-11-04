@@ -38,7 +38,7 @@ const Oscillators32KHzControllerBox = (props: {
     symbolId: oscillator32KhzRadioSymbolId
   });
   let symbols: any = props.oscillatorData.map((e) => e.symbol_id).filter((e) => e !== undefined);
-  symbols = symbols.concat(
+  symbols = symbols.concat(internal32KhzOscillatorSettingsSymbolArray,
     crsytal32KhzOscillatorSymbolArray
   );
   symbols = removeDuplicates(symbols);
