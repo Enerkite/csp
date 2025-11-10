@@ -251,8 +251,10 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     ${ADC_INSTANCE_NAME}_REGS->ADC_INTENSET = (uint8_t)(${ADC_INTENSET_VAL});
 </#if>
 
+<#if ADC_EVCTRL_VAL?has_content>
     /* Events configuration  */
-    //${ADC_INSTANCE_NAME}_REGS->ADC_EVCTRL = (uint8_t)(${ADC_EVCTRL_VAL});
+    ${ADC_INSTANCE_NAME}_REGS->ADC_EVCTRL = (uint8_t)(${ADC_EVCTRL_VAL});
+</#if>
 
 <#if ADC_CTRLA_VAL?has_content>
     <@compress single_line=true>${ADC_INSTANCE_NAME}_REGS->ADC_CTRLA |= (uint8_t)(${ADC_CTRLA_VAL});</@compress>

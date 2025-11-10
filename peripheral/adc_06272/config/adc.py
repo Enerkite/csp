@@ -99,7 +99,7 @@ def updateADCInterruptStatus(symbol, event):
             else:
                 Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_Handler", 2)
     else:
-        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WINMON.getValue() == True:
+        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True:
             Database.setSymbolValue("core", InterruptVector, True, 2)
             Database.setSymbolValue("core", InterruptHandlerLock, True, 2)
             Database.setSymbolValue("core", InterruptHandler, adcInstanceName.getValue() + "_InterruptHandler", 2)
@@ -113,7 +113,7 @@ def updateADCInterruptWarningStatus(symbol, event):
     global multiVectorSupport
     symVisible = False
     if multiVectorSupport:
-        if adcSym_INTENSET_WINMON.getValue() == True:
+        if adcSym_INTENSET_WCMP.getValue() == True:
             if (Database.getSymbolValue("core", InterruptVectorUpdate[0].split("core.")[1]) == True):
                 symVisible = True
         if adcSym_INTENSET_RESRDY.getValue() == True:
@@ -124,7 +124,7 @@ def updateADCInterruptWarningStatus(symbol, event):
         else:
             symbol.setVisible(False)
     else:
-        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WINMON.getValue() == True:
+        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True:
             if (Database.getSymbolValue("core", InterruptVectorUpdate) == True):
                 symbol.setVisible(True)
             else:
@@ -139,7 +139,7 @@ def updateADCClockWarningStatus(symbol, event):
         symbol.setVisible(False)
 
 def adcCalcSampleTime(symbol, event):
-    clock_freq = 120000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     if clock_freq == 0:
         clock_freq = 1
     prescaler = adcSym_CTRLB_PRESCALER.getSelectedKey()[3:]
@@ -153,7 +153,7 @@ def adcCalcSampleTime(symbol, event):
     symbol.setLabel("**** Conversion Time is " + str(conv_time) + " uS ****")
 
 def adcCalcTimeBaseValue(symbole, event):
-    clock_freq = 120000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     timebase_time = adcSym_CTRLB_TIMEBASE.getValue()
     timebase_value = math.ceil(clock_freq * (timebase_time / 1000000.0))
     adcSym_TIMEBASE_VALUE.setValue(timebase_value)
@@ -600,7 +600,7 @@ def instantiateComponent(adcComponent):
     adcSym_MAX_CHANNELS.setDefaultValue(maxChannels)
 
     #timebase value
-    adc_clock_freq = 120000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    adc_clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     timebase_value = adc_clock_freq * 0.000001
 
     global adcSym_TIMEBASE_VALUE
@@ -799,7 +799,7 @@ def instantiateComponent(adcComponent):
     adcSym_CTRLE_SAMPLEN.setMax(256)
     adcSym_CTRLE_SAMPLEN.setDefaultValue(4)
 
-    clock_freq = 120000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     if clock_freq == 0:
         clock_freq = 1
     prescaler = adcSym_CTRLB_PRESCALER.getSelectedKey()[3:]
