@@ -199,31 +199,50 @@ def addKeyValueSetFromATDFInitValue(Parent, ModuleName, RegisterName, index, Bit
         labelPath = cclATDFRegisterBitfieldPath(ModuleName, RegisterName, BitFieldName)
         labelNode = ATDF.getNode(labelPath)
         if labelNode is not None:
-            value_groupPath = cclATDFValueGroupPath(ModuleName, labelNode.getAttribute('values'))
-            value_groupNode = ATDF.getNode(value_groupPath)
-            if value_groupNode is not None:
-                Component = Parent.createKeyValueSetSymbol(RegisterName + str(index) + '__' +
-                    BitFieldName, Menu)
-                cclValGrp_names = []
-                getBitfieldNames(value_groupNode, cclValGrp_names)
+            if labelNode.getAttribute('values') is not None:
+                value_groupPath = cclATDFValueGroupPath(ModuleName, labelNode.getAttribute('values'))
+                value_groupNode = ATDF.getNode(value_groupPath)
+                if value_groupNode is not None:
+                    Component = Parent.createKeyValueSetSymbol(RegisterName + str(index) + '__' +
+                        BitFieldName, Menu)
+                    cclValGrp_names = []
+                    getBitfieldNames(value_groupNode, cclValGrp_names)
+                    if BitFieldName == "INSEL0" and labelNode.getAttribute('caption') == "LUT Input # Source Selection":
+                        Component.setLabel("LUT Input 0 Source Selection")
+                    elif BitFieldName == "INSEL1" and labelNode.getAttribute('caption') == "LUT Input # Source Selection":
+                        Component.setLabel("LUT Input 1 Source Selection")
+                    elif BitFieldName == "INSEL2" and labelNode.getAttribute('caption') == "LUT Input # Source Selection":  
+                        Component.setLabel("LUT Input 2 Source Selection")
+                    else:
+                        Component.setLabel(labelNode.getAttribute('caption'))
+                    Component.setOutputMode("Value")
+                    Component.setDisplayMode("Description")
+                    for ii in cclValGrp_names:
+                        Component.addKey( ii['key'], ii['value'],  ii['desc'] )
+                    initval = registerNode.getAttribute('initval')
+                    if initval is not None:
+                        valuenode = value_groupNode.getChildren()  # look at all the <value ..> entries underneath <value-group >
+                        Component.setDefaultValue(findDefaultValue(labelNode, initval))
+                    else:
+                        Component.setDefaultValue(0)
 
-                Component.setLabel(labelNode.getAttribute('caption'))
-                Component.setOutputMode("Value")
-                Component.setDisplayMode("Description")
-                for ii in cclValGrp_names:
-                    Component.addKey( ii['key'], ii['value'],  ii['desc'] )
-                initval = registerNode.getAttribute('initval')
-                if initval is not None:
-                    valuenode = value_groupNode.getChildren()  # look at all the <value ..> entries underneath <value-group >
-                    Component.setDefaultValue(findDefaultValue(labelNode, initval))
+                    Component.setVisible(Visibility)
+                    return Component
+
                 else:
-                    Component.setDefaultValue(0)
-
+                    Log.writeInfoMessage("Adding KeyValueSet: no such node. " + value_groupPath)
+            else:
+                Component = Parent.createKeyValueSetSymbol(RegisterName + str(index) + '__' + BitFieldName, Menu)
+                Component.setLabel(labelNode.getAttribute('caption'))
+                if "Inverted" in labelNode.getAttribute('caption'):
+                    Component.addKey("NORMAL", "0", "normal")
+                    Component.addKey("INVERTED", "1", "inverted")
+                else:
+                    Component.addKey("DISABLE", "0", "disable")
+                    Component.addKey("ENABLE", "1", "enable")
+                Component.setOutputMode("Value")
                 Component.setVisible(Visibility)
                 return Component
-
-            else:
-                Log.writeInfoMessage("Adding KeyValueSet: no such node. " + value_groupPath)
         else:
             Log.writeInfoMessage("Adding KeyValueSet: no such node. " + labelPath)
     else:
@@ -458,14 +477,30 @@ def showWarningMenu(symbol, event):
     '''
     component = symbol.getComponent()
     symbol.setVisible(False)
-    # event["id"][-9] indicates which LUT block caused this callback, which affects which sequential logic block to look at
-    sequentialBlock = int(event["id"][-9]) / 2  # map the (calling) LUT block to sequential logic block
-    lutList = [2*sequentialBlock, 2*sequentialBlock+1] # the LUTs that go into the sequential block we currently care about for this callback's call
-    for ii in lutList:
-        if((cclLutctrlEnable[ii].getValue() == False) and                               # LUT block is not enabled
-           (component.getSymbolValue('SEQCTRL'+str(sequentialBlock)+'__SEQSEL')!=0) ):  # Sequential block is enabled
-            symbol.setVisible(True)
-            break
+
+    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"SEQCTRL\"]").getAttribute("count")  is None:
+        if "LUTCTRL" in event["id"]:
+            # event["id"][-9] indicates which LUT block caused this callback, which affects which sequential logic block to look at
+            sequentialBlock = int(event["id"][-9]) / 2  # map the (calling) LUT block to sequential logic block
+        else:
+            # event["id"][-10] indicates which SEQ block caused this callback, which affects which sequential logic block to look at
+            sequentialBlock = int(event["id"][-10]) / 2  # map the (calling) LUT block to sequential logic block
+    
+        lutList = [2*sequentialBlock, 2*sequentialBlock+1] # the LUTs that go into the sequential block we currently care about for this callback's call
+        for ii in lutList:
+            if((cclLutctrlEnable[ii].getValue() == False) and                                                   # LUT block is not enabled
+            (component.getSymbolValue('SEQCTRL'+str(sequentialBlock)+'__SEQSEL'+str(sequentialBlock))!=0) ):    # Sequential block is enabled
+                symbol.setVisible(True)
+                break
+    else:
+        # event["id"][-9] indicates which LUT block caused this callback, which affects which sequential logic block to look at
+        sequentialBlock = int(event["id"][-9]) / 2  # map the (calling) LUT block to sequential logic block
+        lutList = [2*sequentialBlock, 2*sequentialBlock+1] # the LUTs that go into the sequential block we currently care about for this callback's call
+        for ii in lutList:
+            if((cclLutctrlEnable[ii].getValue() == False) and                               # LUT block is not enabled
+            (component.getSymbolValue('SEQCTRL'+str(sequentialBlock)+'__SEQSEL')!=0) ):  # Sequential block is enabled
+                symbol.setVisible(True)
+                break
 
 def updateShiftValues():
     '''
@@ -711,10 +746,10 @@ def instantiateComponent(cclComponent):
     cclsym_CTRL.setVisible(False)
     cclsym_CTRL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ccl_u2225;register:CTRL")
     cclsym_CTRL.setLabel("CTRL register value")
-    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"CTRLA\"]") is None:
-        cclsym_CTRL.setDependencies(cclCalcCTRL, ['CTRL0__RUNSTDBY','CTRL0__ENABLE'])
-    else:    
+    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CCL\"]/register-group@[name=\"CCL\"]/register@[name=\"CTRLA\"]") is not None:
         cclsym_CTRL.setDependencies(cclCalcCTRL, ['CTRLA0__RUNSTDBY','CTRLA0__ENABLE'])
+    else:    
+        cclsym_CTRL.setDependencies(cclCalcCTRL, ['CTRL0__RUNSTDBY','CTRL0__ENABLE'])
 
     cclWarningCclClk = cclComponent.createMenuSymbol('GCLK_CCL_WARNING', cclEnable)
     cclWarningCclClk.setLabel("*** Warning: GCLK_CCL clock needs to be enabled under Peripheral Clock Configuration of Clock menu ***")
@@ -935,7 +970,7 @@ def instantiateComponent(cclComponent):
             cclSeqctrlWarning[ii] = cclComponent.createMenuSymbol(fieldName+str(ii)+'_WARNING', cclEnable)
             cclSeqctrlWarning[ii].setVisible(False)
             cclSeqctrlWarning[ii].setLabel("*** Warning: both LUT outputs need to be enabled if using sequential logic block "+str(ii)+" ***")
-            cclSeqctrlWarning[ii].setDependencies(showWarningMenu, ["LUTCTRL"+str(2*ii)+"__ENABLE", "LUTCTRL"+str(2*ii+1)+"__ENABLE", "SEQCTRL"+str(ii)+"__SEQSEL"])
+            cclSeqctrlWarning[ii].setDependencies(showWarningMenu, ["LUTCTRL"+str(2*ii)+"__ENABLE", "LUTCTRL"+str(2*ii+1)+"__ENABLE", "SEQCTRL"+str(ii)+"__SEQSEL"+str(ii)])
     
         # register SEQCTRL value for ftl file
         cclsym_SEQCTRL_SEQSEL = cclComponent.createHexSymbol("CCL_SEQCTRL_REGVALUE", None)
