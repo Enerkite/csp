@@ -95,7 +95,7 @@ typedef void (*${AC_INSTANCE_NAME}_CALLBACK) (uint8_t int_flags, uintptr_t conte
 
 typedef struct
 {
-    uint8_t int_flags;
+    uint8_t status;
     AC_CALLBACK callback;
     uintptr_t    context;
 

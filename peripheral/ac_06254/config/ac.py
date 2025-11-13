@@ -54,8 +54,16 @@ def fileUpdate(symbol, event):
 def setacScalerVisibility(MySymbol, event):
     global acSym_COMPCTRL_MUXNEG
     id = int(filter(str.isdigit, str(MySymbol.getID())))
-    if ("VSCALE" in acSym_COMPCTRL_MUXNEG[id].getSelectedKey() or
-            "VSCALE" in acSym_COMPCTRL_MUXPOS[id].getSelectedKey()):
+    if ("VREFSCALE" in acSym_COMPCTRL_MUXNEG[id].getSelectedKey()):
+        MySymbol.setVisible(True)
+    else:
+        MySymbol.setVisible(False)
+
+#Control REFSEL value visibility
+def setacRefselVisibility(MySymbol, event):
+    global acSym_COMPCTRL_MUXNEG
+    id = int(filter(str.isdigit, str(MySymbol.getID())))
+    if ("VREFSCALE" in acSym_COMPCTRL_MUXNEG[id].getSelectedKey()):
         MySymbol.setVisible(True)
     else:
         MySymbol.setVisible(False)
@@ -67,6 +75,14 @@ def setacHystVisibility(MySymbol, event):
         MySymbol.setVisible(False)
     else:
         MySymbol.setVisible(True)
+        
+#Control INTREF visibility
+def setacIntrefVisibility(MySymbol, event):
+    symObj = event["symbol"]
+    if symObj.getValue() == 1:
+        MySymbol.setVisible(True)
+    else:
+        MySymbol.setVisible(False)
 
 #Update Symbol Visibility
 def setacSymbolVisibility(symbol, event):
@@ -119,10 +135,6 @@ def acEvesysConfigure(symbol, event):
         instance = filter(str.isdigit,str(event["id"]))
         Database.setSymbolValue("evsys", "GENERATOR_AC_WIN_"+str(instance) + "_ACTIVE", event["value"], 2)
 
-    if ("AC_EVCTRL_COMPEI" in event["id"]):
-        instance = filter(str.isdigit,str(event["id"]))
-        Database.setSymbolValue("evsys", "USER_AC_SOC_"+str(instance) + "_READY", event["value"], 2)
-
 def handleMessage(messageID, args):
     retDict = {}
     if (messageID == "AC_CONFIG_HW_IO"):
@@ -173,6 +185,8 @@ def instantiateComponent(acComponent):
     acSym_COMPCTRL_MUXPOS = []
     global acSym_COMPCTRL_REFSEL
     acSym_COMPCTRL_REFSEL = []
+    global acSym_CTRLB_INTREF
+    acSym_CTRLB_INTREF = []
     evsysDep = []
     global nvicDep
     nvicDep = []    
@@ -230,14 +244,6 @@ def instantiateComponent(acComponent):
         acInterrupt_Enable.setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
         nvicDep.append("COMP" + str(comparatorID) + "INTERRUPT_ENABLE")
 
-        # #Single-shot Mode
-        # acSym_COMPCTRL_SINGLE = acComponent.createBooleanSymbol("AC_COMPCTRL_" + str(comparatorID) +"SINGLE_MODE", acSym_Enable[comparatorID])
-        # acSym_COMPCTRL_SINGLE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:COMPCTRL0")
-        # acSym_COMPCTRL_SINGLE.setLabel("Enable Single Shot Mode")
-        # acSym_COMPCTRL_SINGLE.setDefaultValue(False)
-        # acSym_COMPCTRL_SINGLE.setVisible(False)
-        # acSym_COMPCTRL_SINGLE.setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
-
         #MUXPOS
         acSym_COMPCTRL_MUXPOS.append(comparatorID)
         acSym_COMPCTRL_MUXPOS[comparatorID] = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_MUX_POS", acSym_Enable[comparatorID])
@@ -290,10 +296,62 @@ def instantiateComponent(acComponent):
         acSym_COMPCTRL_MUXNEG[comparatorID].setDisplayMode("Description")
         acSym_COMPCTRL_MUXNEG[comparatorID].setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
         
+        #REFSEL
+        acSym_COMPCTRL_REFSEL.append(comparatorID)
+        acSym_COMPCTRL_REFSEL[comparatorID] = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_REFSEL", acSym_COMPCTRL_MUXNEG[comparatorID])
+        acSym_COMPCTRL_REFSEL[comparatorID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:COMPCTRLB")
+        acSym_COMPCTRL_REFSEL[comparatorID].setLabel("Reference Selection")
+        acSym_COMPCTRL_REFSEL[comparatorID].setVisible(False)
+
+        acSym_COMPCTRL_REFSEL_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRLB__REFSEL\"]")
+        acSym_COMPCTRL_REFSEL_Node_Values = []
+        acSym_COMPCTRL_REFSEL_Node_Values = acSym_COMPCTRL_REFSEL_Node.getChildren()
+
+        acSym_COMPCTRL_REFSEL_Default_Val = 0
+
+        for id in range(len(acSym_COMPCTRL_REFSEL_Node_Values)):
+            acSym_COMPCTRL_REFSEL_Key_Name = acSym_COMPCTRL_REFSEL_Node_Values[id].getAttribute("name")
+            if(acSym_COMPCTRL_REFSEL_Key_Name == "GND"):
+                acSym_COMPCTRL_REFSEL_Default_Val = id
+            acSym_COMPCTRL_REFSEL_Key_Description = acSym_COMPCTRL_REFSEL_Node_Values[id].getAttribute("caption")
+            acSym_COMPCTRL_REFSEL_Key_Value = acSym_COMPCTRL_REFSEL_Node_Values[id].getAttribute("value")
+            acSym_COMPCTRL_REFSEL[comparatorID].addKey(acSym_COMPCTRL_REFSEL_Key_Name, acSym_COMPCTRL_REFSEL_Key_Value, acSym_COMPCTRL_REFSEL_Key_Description)    
+        
+        acSym_COMPCTRL_REFSEL[comparatorID].setDefaultValue(acSym_COMPCTRL_REFSEL_Default_Val)
+        acSym_COMPCTRL_REFSEL[comparatorID].setOutputMode("Key")
+        acSym_COMPCTRL_REFSEL[comparatorID].setDisplayMode("Description")
+        acSym_COMPCTRL_REFSEL[comparatorID].setDependencies(setacRefselVisibility,["AC" + str(comparatorID) + "_MUX_NEG"])
+        
+        #INTREF
+        acSym_CTRLB_INTREF.append(comparatorID)
+        acSym_CTRLB_INTREF[comparatorID] = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_INTREF", acSym_COMPCTRL_REFSEL[comparatorID])
+        acSym_CTRLB_INTREF[comparatorID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:CTRLB")
+        acSym_CTRLB_INTREF[comparatorID].setLabel("Internal Reference Selection")
+        acSym_CTRLB_INTREF[comparatorID].setVisible(False)
+
+        acSym_CTRLB_INTREF_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_CTRLB__INTREF\"]")
+        acSym_CTRLB_INTREF_Node_Values = []
+        acSym_CTRLB_INTREF_Node_Values = acSym_CTRLB_INTREF_Node.getChildren()
+
+        acSym_CTRLB_INTREF_Default_Val = 0
+
+        for id in range(len(acSym_CTRLB_INTREF_Node_Values)):
+            acSym_CTRLB_INTREF_Key_Name = acSym_CTRLB_INTREF_Node_Values[id].getAttribute("name")
+            if(acSym_CTRLB_INTREF_Key_Name == "GND"):
+                acSym_CTRLB_INTREF_Default_Val = id
+            acSym_CTRLB_INTREF_Key_Description = acSym_CTRLB_INTREF_Node_Values[id].getAttribute("caption")
+            acSym_CTRLB_INTREF_Key_Value = acSym_CTRLB_INTREF_Node_Values[id].getAttribute("value")
+            acSym_CTRLB_INTREF[comparatorID].addKey(acSym_CTRLB_INTREF_Key_Name, acSym_CTRLB_INTREF_Key_Value, acSym_CTRLB_INTREF_Key_Description)    
+        
+        acSym_CTRLB_INTREF[comparatorID].setDefaultValue(acSym_CTRLB_INTREF_Default_Val)
+        acSym_CTRLB_INTREF[comparatorID].setOutputMode("Key")
+        acSym_CTRLB_INTREF[comparatorID].setDisplayMode("Description")
+        acSym_CTRLB_INTREF[comparatorID].setDependencies(setacIntrefVisibility,["AC" + str(comparatorID) + "_REFSEL"])
+        
         #Scaling factor for Reference Voltage scaler
         acSym_SCALERn.append(comparatorID)
-        acSym_SCALERn[comparatorID] = acComponent.createIntegerSymbol("AC_SCALER_N_" + str(comparatorID), acSym_Enable[comparatorID])
-        acSym_SCALERn[comparatorID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:COMPSCALER0")
+        acSym_SCALERn[comparatorID] = acComponent.createIntegerSymbol("AC_SCALER_N_" + str(comparatorID), acSym_COMPCTRL_MUXNEG[comparatorID])
+        acSym_SCALERn[comparatorID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:COMPSCALER")
         acSym_SCALERn[comparatorID].setLabel("Scaling factor for VDD scaler")
         acSym_SCALERn[comparatorID].setMin(0)
         acSym_SCALERn[comparatorID].setMax(255)
@@ -420,66 +478,6 @@ def instantiateComponent(acComponent):
                 acSym_COMPCTRL_HYST_LEVEL.setVisible(False)
                 acSym_COMPCTRL_HYST_LEVEL.setDependencies(setacSymbolVisibility,["AC" + str(comparatorID) + "_HYSTEN"])
         
-    #     #Speed selection
-    #     acSym_COMPCTRL_SPEED = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_SPEED", acSym_AdvConf)
-    #     acSym_COMPCTRL_SPEED.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:COMPCTRL0")
-    #     acSym_COMPCTRL_SPEED.setLabel("Speed Selection")
-    #     acSym_COMPCTRL_SPEED.setVisible(False)
-        
-    #     acSym_COMPCTRL_SPEED_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__SPEED\"]")
-    #     acSym_COMPCTRL_SPEED_Values = []
-    #     acSym_COMPCTRL_SPEED_Values = acSym_COMPCTRL_SPEED_node.getChildren()
-
-    #     acSym_COMPCTRL_SPEED_Default_Val = 0
-
-    #     for id in range(len(acSym_COMPCTRL_SPEED_Values)):
-    #         acSym_COMPCTRL_SPEED_Key_Name = acSym_COMPCTRL_SPEED_Values[id].getAttribute("name")
-
-    #         if(acSym_COMPCTRL_SPEED_Key_Name == "LOW"):
-    #             acSym_COMPCTRL_SPEED_Default_Val = id
-
-    #         acSym_COMPCTRL_SPEED_Key_Description = acSym_COMPCTRL_SPEED_Values[id].getAttribute("caption")
-    #         acSym_COMPCTRL_SPEED_Key_Value = acSym_COMPCTRL_SPEED_Values[id].getAttribute("value")
-    #         acSym_COMPCTRL_SPEED.addKey(acSym_COMPCTRL_SPEED_Key_Name, acSym_COMPCTRL_SPEED_Key_Value, acSym_COMPCTRL_SPEED_Key_Description)
-
-    #     acSym_COMPCTRL_SPEED.setDefaultValue(acSym_COMPCTRL_SPEED_Default_Val)
-    #     acSym_COMPCTRL_SPEED.setOutputMode("Value")
-    #     acSym_COMPCTRL_SPEED.setDisplayMode("Description")
-    #     acSym_COMPCTRL_SPEED.setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
-
-    #     #Filter Length selection
-    #     acSym_COMPCTRL_FLEN = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_FLEN_VAL", acSym_AdvConf)
-    #     acSym_COMPCTRL_FLEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:COMPCTRL0")
-    #     acSym_COMPCTRL_FLEN.setLabel("Filter Length Selection")
-    #     acSym_COMPCTRL_FLEN.setDescription("Filtering must be disabled if continuous measurements will be done during sleep modes")
-    #     acSym_COMPCTRL_FLEN_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__FLEN\"]")
-    #     acSym_COMPCTRL_FLEN_Values = []
-    #     acSym_COMPCTRL_FLEN_Values = acSym_COMPCTRL_FLEN_node.getChildren()
-
-    #     acSym_COMPCTRL_FLEN_Default_Val = 0
-
-    #     for id in range(len(acSym_COMPCTRL_FLEN_Values)):
-    #         acSym_COMPCTRL_FLEN_Key_Name = acSym_COMPCTRL_FLEN_Values[id].getAttribute("name")
-
-    #         if(acSym_COMPCTRL_FLEN_Key_Name == "OFF"):
-    #             acSym_COMPCTRL_FLEN_Default_Val = id
-
-    #         acSym_COMPCTRL_FLEN_Key_Description = acSym_COMPCTRL_FLEN_Values[id].getAttribute("caption")
-    #         acSym_COMPCTRL_FLEN_Key_Value = acSym_COMPCTRL_FLEN_Values[id].getAttribute("value")
-    #         acSym_COMPCTRL_FLEN.addKey(acSym_COMPCTRL_FLEN_Key_Name, acSym_COMPCTRL_FLEN_Key_Value, acSym_COMPCTRL_FLEN_Key_Description)
-
-    #     acSym_COMPCTRL_FLEN.setDefaultValue(acSym_COMPCTRL_FLEN_Default_Val)
-    #     acSym_COMPCTRL_FLEN.setOutputMode("Key")
-    #     acSym_COMPCTRL_FLEN.setDisplayMode("Description")
-
-    #     #Event Input Enable
-    #     acSym_EVCTRL_COMPEI = acComponent.createBooleanSymbol("AC_EVCTRL_COMPEI" + str(comparatorID), acSym_AdvConf)
-    #     acSym_EVCTRL_COMPEI.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:EVCTRL")
-    #     acSym_EVCTRL_COMPEI.setLabel("Enable Event Input")
-    #     acSym_EVCTRL_COMPEI.setDefaultValue(False)
-    #     acSym_EVCTRL_COMPEI.setVisible(False)
-    #     acSym_EVCTRL_COMPEI.setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
-    #     evsysDep.append("AC_EVCTRL_COMPEI" + str(comparatorID))
         
         #Event Output Enable
         acSym_EVCTRL_COMPEO = acComponent.createBooleanSymbol("AC_EVCTRL_COMPEO" + str(comparatorID), acSym_AdvConf)

@@ -185,6 +185,8 @@ void ${AC_INSTANCE_NAME}_Initialize(void)
     <#assign AC_COMPCTRLA_HYS_LVL = "AC" + i + "_HYS_LVL">
 </#if>
     <#assign AC_COMPCTRLA_RUNSTDBY = "AC" + i + "_COMPCTRL_RUNSTDBY">
+    <#assign AC_COMPCTRLB_REFSEL = "AC" + i + "_REFSEL">
+    <#assign AC_CTRLB_INTREF = "AC" + i + "_INTREF">
     <#assign AC_SCALERn = "AC_SCALER_N_" + i>
         <#if .vars[ANALOG_COMPARATOR_ENABLE]?has_content>
             <#if (.vars[ANALOG_COMPARATOR_ENABLE] != false)>
@@ -199,10 +201,17 @@ void ${AC_INSTANCE_NAME}_Initialize(void)
                                   ${.vars[AC_COMPCTRLA_RUNSTDBY]?then(' | AC_COMPCTRLA_RUNSTDBY_Msk','')};</@compress>
 
     ${AC_INSTANCE_NAME}_REGS->COMP[${i}].AC_COMPCTRLA |= AC_COMPCTRLA_ENABLE_Msk;
-                <#if .vars[AC_SCALERn]?has_content >
-    ${AC_INSTANCE_NAME}_REGS->COMP[${i}].AC_COMPSCALER = ${.vars[AC_SCALERn]};
+                <#if .vars[AC_COMPCTRLA_MUX_NEG] == "VREFSCALE">
+                    <#if .vars[AC_SCALERn]?has_content >
+    ${AC_INSTANCE_NAME}_REGS->COMP[${i}].AC_COMPSCALER = AC_COMPSCALER_VALUE(${.vars[AC_SCALERn]});
+                    </#if>
+                    <#if .vars[AC_COMPCTRLB_REFSEL]?has_content >
+    ${AC_INSTANCE_NAME}_REGS->COMP[${i}].AC_COMPCTRLB = AC_COMPCTRLB_REFSEL_${.vars[AC_COMPCTRLB_REFSEL]};
+                        <#if .vars[AC_COMPCTRLB_REFSEL] == "INTVREF" >
+    ${AC_INSTANCE_NAME}_REGS->AC_CTRLB = AC_CTRLB_INTREF_${.vars[AC_CTRLB_INTREF]};
+                        </#if>        
+                    </#if>
                 </#if>
-
             </#if>
         </#if>
     </#list>
@@ -271,7 +280,8 @@ void __attribute__((used)) ${AC_INSTANCE_NAME}_InterruptHandler( void )
     uint8_t status;
     context = ${AC_INSTANCE_NAME?lower_case}Obj.context;
     /* Copy the status to use inside the callback */
-    status = ${AC_INSTANCE_NAME}_REGS->AC_STATUS;
+    ${AC_INSTANCE_NAME?lower_case}Obj.status = ${AC_INSTANCE_NAME}_REGS->AC_STATUS;
+    status = ${AC_INSTANCE_NAME?lower_case}Obj.status;
     /* Clear the interrupt flags*/
     ${AC_INSTANCE_NAME}_REGS->AC_INTFLAG = (uint8_t)AC_INTFLAG_Msk;
 
