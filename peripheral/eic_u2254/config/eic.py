@@ -263,14 +263,25 @@ def instantiateComponent(eicComponent):
     NMI_ASYNCH_Selection.setLabel("NMI Detection Clock")
 
     eicNMIAsyncNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_NMICTRL__NMIASYNCH\"]")
-    eicNMIAsyncValues = []
-    eicNMIAsyncValues = eicNMIAsyncNode.getChildren()
+    if eicNMIAsyncNode is not None:
+        eicNMIAsyncValues = []
+        eicNMIAsyncValues = eicNMIAsyncNode.getChildren()
 
-    for index in range(len(eicNMIAsyncNode.getChildren())):
-        eicNMIAsyncKeyName = eicNMIAsyncNode.getChildren()[index].getAttribute("name")
-        eicNMIAsyncKeyDescription = eicNMIAsyncNode.getChildren()[index].getAttribute("caption")
-        eicNMIAsyncKeyValue = eicNMIAsyncNode.getChildren()[index].getAttribute("value")
-        NMI_ASYNCH_Selection.addKey(eicNMIAsyncKeyName, eicNMIAsyncKeyValue , eicNMIAsyncKeyDescription)
+        for index in range(len(eicNMIAsyncNode.getChildren())):
+            eicNMIAsyncKeyName = eicNMIAsyncNode.getChildren()[index].getAttribute("name")
+            eicNMIAsyncKeyDescription = eicNMIAsyncNode.getChildren()[index].getAttribute("caption")
+            eicNMIAsyncKeyValue = eicNMIAsyncNode.getChildren()[index].getAttribute("value")
+            NMI_ASYNCH_Selection.addKey(eicNMIAsyncKeyName, eicNMIAsyncKeyValue , eicNMIAsyncKeyDescription)
+    else:
+        entries = [
+            {"name": "SYNC", "caption": "Edge detection is clock synchronously operated", "value": "0"},
+            {"name": "ASYNC", "caption": "Edge detection is clock asynchronously operated", "value": "1"}
+        ]
+        for entry in entries:
+            eicNMIAsyncKeyName = entry["name"]
+            eicNMIAsyncKeyDescription = entry["caption"]
+            eicNMIAsyncKeyValue = entry["value"]
+            NMI_ASYNCH_Selection.addKey(eicNMIAsyncKeyName, eicNMIAsyncKeyValue , eicNMIAsyncKeyDescription)
 
     NMI_ASYNCH_Selection.setDefaultValue(0)
     NMI_ASYNCH_Selection.setOutputMode("Value")
@@ -333,11 +344,22 @@ def instantiateComponent(eicComponent):
 
         eicAsynchNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_ASYNCH__ASYNCH\"]")
 
-        for index in range(len(eicAsynchNode.getChildren())):
-            eicAsynchKeyName = eicAsynchNode.getChildren()[index].getAttribute("name")
-            eicAsynchKeyDescription = eicAsynchNode.getChildren()[index].getAttribute("caption")
-            eicAsynchKeyValue = eicAsynchNode.getChildren()[index].getAttribute("value")
-            ASYNCH_ASYNCH_Selection.addKey(eicAsynchKeyName, eicAsynchKeyValue , eicAsynchKeyDescription)
+        if eicAsynchNode is not None:
+            for index in range(len(eicAsynchNode.getChildren())):
+                eicAsynchKeyName = eicAsynchNode.getChildren()[index].getAttribute("name")
+                eicAsynchKeyDescription = eicAsynchNode.getChildren()[index].getAttribute("caption")
+                eicAsynchKeyValue = eicAsynchNode.getChildren()[index].getAttribute("value")
+                ASYNCH_ASYNCH_Selection.addKey(eicAsynchKeyName, eicAsynchKeyValue , eicAsynchKeyDescription)
+        else:
+            entries = [
+                {"name": "SYNC", "caption": "Edge detection is clock synchronously operated", "value": "0"},
+                {"name": "ASYNC", "caption": "Edge detection is clock asynchronously operated", "value": "1"}
+            ]
+            for entry in entries:
+                eicAsynchKeyName = entry["name"]
+                eicAsynchKeyDescription = entry["caption"]
+                eicAsynchKeyValue = entry["value"]
+                ASYNCH_ASYNCH_Selection.addKey(eicAsynchKeyName, eicAsynchKeyValue, eicAsynchKeyDescription)
 
         ASYNCH_ASYNCH_Selection.setDefaultValue(0)
         ASYNCH_ASYNCH_Selection.setOutputMode("Value")
