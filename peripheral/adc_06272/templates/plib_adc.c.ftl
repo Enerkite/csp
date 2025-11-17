@@ -96,9 +96,16 @@
         <#assign ADC_EVCTRL_VAL = "ADC_EVCTRL_RESRDYEO_Msk">
     </#if>
 </#if>
+<#if ADC_EVCTRL_SAMPRDYEO == true>
+    <#if ADC_EVCTRL_VAL != "">
+        <#assign ADC_EVCTRL_VAL = ADC_EVCTRL_VAL + " | ADC_EVCTRL_SAMPRDYEO_Msk">
+    <#else>
+        <#assign ADC_EVCTRL_VAL = "ADC_EVCTRL_SAMPRDYEO_Msk">
+    </#if>
+</#if>
 <#if ADC_WINCTRL_WINMODE != "0" && ADC_WINDOW_OUTPUT_EVENT == true>
     <#if ADC_EVCTRL_VAL != "">
-        <#assign ADC_EVCTRL_VAL = ADC_EVCTRL_VAL + " | ADC_EVCTRL_WINMONEO_Msk">
+        <#assign ADC_EVCTRL_VAL = ADC_EVCTRL_VAL + " | ADC_EVCTRL_WCMPEO_Msk">
     <#else>
         <#assign ADC_EVCTRL_VAL = "ADC_EVCTRL_WINMONEO_Msk">
     </#if>
@@ -173,21 +180,10 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     {
         /* Wait for Synchronization */
     }
-<#if ADC_LOAD_CALIB? has_content>
-    <#if ADC_LOAD_CALIB == true >
-    <#lt>    /* Write linearity calibration in BIASREFBUF and bias calibration in BIASCOMP */
-    <#lt>    uint32_t calib_low_word = (uint32_t)(*(uint64_t*)${ADC_NVM_CALIB_REG});
-    <#lt>    ${ADC_INSTANCE_NAME}_REGS->ADC_CALIB = (uint16_t)((ADC_CALIB_BIASREFBUF((calib_low_word & ${ADC_INSTANCE_NAME}_LINEARITY_Msk) >> ${ADC_INSTANCE_NAME}_LINEARITY_POS)) |
-    <#lt>                                      (ADC_CALIB_BIASCOMP((calib_low_word & ${ADC_INSTANCE_NAME}_BIASCAL_Msk) >> ${ADC_INSTANCE_NAME}_BIASCAL_POS)));
-    </#if>
-</#if>
 
-    /* Mode of opearation */
-    <#assign hexStr = ADC_COMMAND_OPMODE?replace("0x", "") />
-    <#assign OPMODE = hexStr?number />
-    ${ADC_INSTANCE_NAME}_REGS->ADC_COMMAND = (uint8_t)ADC_COMMAND_MODE(${OPMODE}UL);
     /* Prescaler and timebase configuration */
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLB = (uint8_t)ADC_CTRLB_PRESC_${ADC_CTRLB_PRESCALER} | ADC_CTRLB_TIMEBASE(${ADC_CTRLB_TIMEBASE}UL) ;
+
     /* Sampling length */
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLE = (uint8_t)ADC_CTRLE_SAMPLEN(${ADC_CTRLE_SAMPLEN - 1}UL);
 
@@ -238,11 +234,13 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     ${ADC_INSTANCE_NAME}_REGS->ADC_AVGCTRL = (uint8_t)(ADC_AVGCTRL_SAMPLENUM(${ADC_SAMPLENUM}UL) | ADC_AVGCTRL_ADJRES(${ADC_ADJRES}UL));
 </#if>
 
-<#if ADC_WINCTRL_WINMODE != "0">
+<#if ADC_WINCTRL_WINMODE != "0x0">
     /* Upper threshold for window mode  */
     ${ADC_INSTANCE_NAME}_REGS->ADC_WINHT = (uint16_t)(${ADC_WINHT});
     /* Lower threshold for window mode  */
     ${ADC_INSTANCE_NAME}_REGS->ADC_WINLT = (uint16_t)(${ADC_WINLT});
+    /* Source for window mode  */
+    ${ADC_INSTANCE_NAME}_REGS->ADC_WINCTRL |= (uint32_t)ADC_WINCTRL_WINSRC(${ADC_WINCTRL_WINSRC}UL);
 </#if>
     /* Clear all interrupt flags */
     ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTFLAG_Msk;
@@ -259,6 +257,14 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
 <#if ADC_CTRLA_VAL?has_content>
     <@compress single_line=true>${ADC_INSTANCE_NAME}_REGS->ADC_CTRLA |= (uint8_t)(${ADC_CTRLA_VAL});</@compress>
 </#if>
+
+    /* Mode of opearation and Start type*/
+    <#assign hexStr = ADC_COMMAND_OPMODE?replace("0x", "") />
+    <#assign OPMODE = hexStr?number />
+    <#assign hexStr = ADC_COMMAND_CTRLCONV?replace("0x", "") />
+    <#assign STARTTYPE = hexStr?number />
+    ${ADC_INSTANCE_NAME}_REGS->ADC_COMMAND = (uint8_t)ADC_COMMAND_MODE(${OPMODE}UL) | (uint8_t)ADC_COMMAND_START(${STARTTYPE}UL);
+
     while((${ADC_INSTANCE_NAME}_REGS->ADC_STATUS & ADC_STATUS_ADCBUSY_Msk) != 0U)
     {
         /* Wait for Synchronization */

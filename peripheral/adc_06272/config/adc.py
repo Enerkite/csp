@@ -98,8 +98,16 @@ def updateADCInterruptStatus(symbol, event):
                 Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_RESRDY_InterruptHandler", 2)
             else:
                 Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_Handler", 2)
+        elif (event["id"] == "ADC_INTENSET_SAMPRDY"):
+            Database.setSymbolValue("core", InterruptVector[1], event["value"], 2)
+            Database.setSymbolValue("core", InterruptHandlerLock[1], event["value"], 2)
+            if event["value"] == True:
+                Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_SAMPRDY_InterruptHandler", 2)
+            else:
+                Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_Handler", 2)
+
     else:
-        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True:
+        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True or adcSym_INTENSET_SAMPRDY.getValue() == True:
             Database.setSymbolValue("core", InterruptVector, True, 2)
             Database.setSymbolValue("core", InterruptHandlerLock, True, 2)
             Database.setSymbolValue("core", InterruptHandler, adcInstanceName.getValue() + "_InterruptHandler", 2)
@@ -139,7 +147,7 @@ def updateADCClockWarningStatus(symbol, event):
         symbol.setVisible(False)
 
 def adcCalcSampleTime(symbol, event):
-    clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    clock_freq = Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     if clock_freq == 0:
         clock_freq = 1
     prescaler = adcSym_CTRLB_PRESCALER.getSelectedKey()[3:]
@@ -153,7 +161,7 @@ def adcCalcSampleTime(symbol, event):
     symbol.setLabel("**** Conversion Time is " + str(conv_time) + " uS ****")
 
 def adcCalcTimeBaseValue(symbole, event):
-    clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    clock_freq = Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     timebase_time = adcSym_CTRLB_TIMEBASE.getValue()
     timebase_value = math.ceil(clock_freq * (timebase_time / 1000000.0))
     adcSym_TIMEBASE_VALUE.setValue(timebase_value)
@@ -165,12 +173,10 @@ def adcEvesysConfigure(symbol, event):
     if(event["id"] == "ADC_WINDOW_OUTPUT_EVENT"):
         Database.setSymbolValue("evsys", "GENERATOR_"+str(adcInstanceName.getValue())+"_WINMON_ACTIVE", event["value"], 2)
 
+    if(event["id"] == "ADC_EVCTRL_SAMPRDYEO"):
+        Database.setSymbolValue("evsys", "GENERATOR_"+str(adcInstanceName.getValue())+"_SAMPRDY_ACTIVE", event["value"], 2)
+
     if (adcSym_CONV_TRIGGER.getValue() == "HW Event Trigger"):
-        # if (event["id"] == "ADC_EVCTRL_FLUSH"):
-        #     if (event["value"] > 0):
-        #         Database.setSymbolValue("evsys", "USER_"+str(adcInstanceName.getValue())+"_SYNC_READY", True, 2)
-        #     else:
-        #         Database.setSymbolValue("evsys", "USER_"+str(adcInstanceName.getValue())+"_SYNC_READY", False, 2)
         if (event["id"] == "ADC_EVCTRL_START"):
             if (event["value"] > 0):
                 Database.setSymbolValue("evsys", "USER_"+str(adcInstanceName.getValue())+"_START_READY", True, 2)
@@ -182,13 +188,6 @@ def adcNegativeInput(symbol, event):
         symbol.setReadOnly(False)
     else:
         symbol.setReadOnly(True)
-
-def adcResultBitVisibility(symbol, event):
-    symObj = event["symbol"]
-    if(symObj.getSelectedKey() == "16BIT"):
-        symbol.setVisible(True)
-    else:
-        symbol.setVisible(False)
 
 # def adcResultConfVisibility(symbol, event):
 #     component = symbol.getComponent()
@@ -312,9 +311,6 @@ def resetChannelsForPMSMFOC():
     #Database.setSymbolValue(component, "ADC_INPUTCTRL_MUXPOS", "0")
     Database.setSymbolValue(component, "ADC_CONV_TRIGGER", "Free Run")
     Database.setSymbolValue(component, "ADC_INTENSET_RESRDY", False)
-    #Disable slave for ADC1
-    if instanceNum == 1 :
-       Database.setSymbolValue(component, "ADC_CTRLA_SLAVEEN", False)
 
 def find_prescale_and_conv_samples(desired_conversion_time_us, resolution, input_clock):
     desired_conversion_frequency = 1e6 / desired_conversion_time_us
@@ -600,7 +596,7 @@ def instantiateComponent(adcComponent):
     adcSym_MAX_CHANNELS.setDefaultValue(maxChannels)
 
     #timebase value
-    adc_clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    adc_clock_freq = Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     timebase_value = adc_clock_freq * 0.000001
 
     global adcSym_TIMEBASE_VALUE
@@ -799,7 +795,7 @@ def instantiateComponent(adcComponent):
     adcSym_CTRLE_SAMPLEN.setMax(256)
     adcSym_CTRLE_SAMPLEN.setDefaultValue(4)
 
-    clock_freq = 48000000 #Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
+    clock_freq = Database.getSymbolValue("core", adcInstanceName.getValue()+"_CLOCK_FREQUENCY")
     if clock_freq == 0:
         clock_freq = 1
     prescaler = adcSym_CTRLB_PRESCALER.getSelectedKey()[3:]
@@ -843,18 +839,6 @@ def instantiateComponent(adcComponent):
     adcSym_CONV_TRIGGER.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:CTRLD")
     adcSym_CONV_TRIGGER.setDefaultValue("Free Run")
     adcSym_CONV_TRIGGER.setLabel("Select Conversion Trigger")
-    #adcSym_CONV_TRIGGER.setDependencies(adcSlaveModeVisibility, ["ADC_CTRLA_SLAVEEN"])
-
-    # adcSym_FLUSH_EVENT = adcComponent.createKeyValueSetSymbol("ADC_EVCTRL_FLUSH", adcSym_CONV_TRIGGER)
-    # adcSym_FLUSH_EVENT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:EVCTRL")
-    # adcSym_FLUSH_EVENT.setLabel("Flush Event Input")
-    # adcSym_FLUSH_EVENT.setVisible(False)
-    # adcSym_FLUSH_EVENT.setOutputMode("Value")
-    # adcSym_FLUSH_EVENT.setDisplayMode("Description")
-    # adcSym_FLUSH_EVENT.addKey("DISABLED", "0", "Disabled")
-    # adcSym_FLUSH_EVENT.addKey("ENABLED_RISING_EDGE", "1", "Enabled on Rising Edge")
-    # adcSym_FLUSH_EVENT.addKey("ENABLED_FALLING_EDGE", "2", "Enabled on Falling Edge")
-    # adcSym_FLUSH_EVENT.setDependencies(adcEventInputVisibility, ["ADC_CONV_TRIGGER", "ADC_CTRLA_SLAVEEN"])
 
     adcSym_START_EVENT = adcComponent.createKeyValueSetSymbol("ADC_EVCTRL_START", adcSym_CONV_TRIGGER)
     adcSym_START_EVENT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:EVCTRL")
@@ -867,35 +851,25 @@ def instantiateComponent(adcComponent):
     adcSym_START_EVENT.addKey("ENABLED_FALLING_EDGE", "2", "Enabled on Falling Edge")
     adcSym_START_EVENT.setDependencies(adcEventInputVisibility, ["ADC_CONV_TRIGGER"])
 
-    # # Auto sequence menu
-    # adcSequenceMenu = adcComponent.createMenuSymbol("ADC_SEQUENCE_MENU", None)
-    # adcSequenceMenu.setLabel("Automatic Sequence Configuration")
-    # adcSequenceMenu.setVisible(False)
-    # adcSequenceMenu.setDependencies(adcOptionVisible, ["ADC_CONV_TRIGGER"])
-
-    # # global adcSym_SEQ_ENABLE
-    # # adcSym_SEQ_ENABLE = adcComponent.createBooleanSymbol("ADC_SEQ_ENABLE", adcSequenceMenu)
-    # # adcSym_SEQ_ENABLE.setLabel("Enable Automatic Sequencing")
-
-    # # adcPositiveInputNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_INPUTCTRL__MUXPOS\"]")
-    # # adcPositiveInputValues = []
-    # # adcPositiveInputValues = adcPositiveInputNode.getChildren()
-    # # for index in range(0, len(adcPositiveInputValues)):
-    # #     value = int(adcPositiveInputValues[index].getAttribute("value"), 16)
-    # #     adcSym_SEQCTRL_SEQ = adcComponent.createBooleanSymbol("ADC_SEQCTRL_SEQ"+str(value), adcSym_SEQ_ENABLE)
-    # #     adcSym_SEQCTRL_SEQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_u2247;register:SEQCTRL")
-    # #     adcSym_SEQCTRL_SEQ.setLabel("Enable "+ str(adcPositiveInputValues[index].getAttribute("caption")))
-    # #     if "AIN" in adcPositiveInputValues[index].getAttribute("name"):
-    # #         if adcPositiveInputValues[index].getAttribute("name") in channel:
-    # #             adcSym_SEQCTRL_SEQ.setVisible(True)
-    # #         else:
-    # #             adcSym_SEQCTRL_SEQ.setVisible(False)
-
     adcPositiveInputNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_INPUTCTRL__MUXPOS\"]")
     adcPositiveInputValues = []
     adcPositiveInputValues = adcPositiveInputNode.getChildren()
     for index in range(0, len(adcPositiveInputValues)):
         value = int(adcPositiveInputValues[index].getAttribute("value"), 16)
+
+    # start conversion configuration
+    global adcSym_COMMAND_CTRLCONV
+    adcSym_COMMAND_CTRLCONV = adcComponent.createKeyValueSetSymbol("ADC_COMMAND_CTRLCONV", None)
+    adcSym_COMMAND_CTRLCONV.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:COMMAND")
+    adcSym_COMMAND_CTRLCONV.setLabel("Select Conversion Start Type")
+    adcSym_COMMAND_CTRLCONV.setDefaultValue(0)
+    adcSym_COMMAND_CTRLCONV.setOutputMode("Value")
+    adcSym_COMMAND_CTRLCONV.setDisplayMode("Description")
+    adcOperationNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_COMMAND__START\"]")
+    adcOperationValues = []
+    adcOperationValues = adcOperationNode.getChildren()
+    for index in range(0, len(adcOperationValues)):
+        adcSym_COMMAND_CTRLCONV.addKey(adcOperationValues[index].getAttribute("name"), adcOperationValues[index].getAttribute("value"), adcOperationValues[index].getAttribute("caption"))
 
     adcSym_NUM_CHANNELS = adcComponent.createIntegerSymbol("ADC_NUM_CHANNELS", None)
     adcSym_NUM_CHANNELS.setVisible(False)
@@ -991,14 +965,6 @@ def instantiateComponent(adcComponent):
     for index in range (0 , len(adcResultResolutionValues)):
         adcSym_CTRLD_RESOLUTION.addKey(adcResultResolutionValues[index].getAttribute("name"), adcResultResolutionValues[index].getAttribute("value"),
         adcResultResolutionValues[index].getAttribute("caption"))
-
-
-    # adcBits = ["13 Bit", "14 Bit", "15 Bit", "16 Bit", "Accumulation/Averaging"]
-    # adcSym_RES_BIT = adcComponent.createComboSymbol("ADC_RES_BIT", adcSym_CTRLD_RESOLUTION, adcBits)
-    # adcSym_RES_BIT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:CTRLC")
-    # adcSym_RES_BIT.setLabel("Number of Bits")
-    # adcSym_RES_BIT.setVisible(False)
-    # adcSym_RES_BIT.setDependencies(adcResultBitVisibility, ["ADC_CTRLD_RESOLUTION"])
 
     # Averaging
     adcSym_CTRLD_SAMPNUM = adcComponent.createKeyValueSetSymbol("ADC_CTRLD_SAMPNUM", adcResultMenu)
@@ -1096,6 +1062,22 @@ def instantiateComponent(adcComponent):
         adcSym_WINCTRL_WINMODE.addKey(adcWindowConfigValues[index].getAttribute("name"), adcWindowConfigValues[index].getAttribute("value"),
         adcWindowConfigValues[index].getAttribute("caption"))
 
+    # Configure Source for Window operation
+    adcSym_WINCTRL_WINSRC = adcComponent.createKeyValueSetSymbol("ADC_WINCTRL_WINSRC", adcWindowMenu)
+    adcSym_WINCTRL_WINSRC.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:WINCTRL")
+    adcSym_WINCTRL_WINSRC.setLabel("Select Window Monitor Source")
+    adcSym_WINCTRL_WINSRC.setDefaultValue(0)
+    adcSym_WINCTRL_WINSRC.setOutputMode("Value")
+    adcSym_WINCTRL_WINSRC.setDisplayMode("Description")
+    adcWindowConfigNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_WINCTRL__WINSRC\"]")
+    adcWindowConfigValues = []
+    adcWindowConfigValues = adcWindowConfigNode.getChildren()
+    for index in range (0 , len(adcWindowConfigValues)):
+        adcSym_WINCTRL_WINSRC.addKey(adcWindowConfigValues[index].getAttribute("name"), adcWindowConfigValues[index].getAttribute("value"),
+        adcWindowConfigValues[index].getAttribute("caption"))
+    adcSym_WINCTRL_WINSRC.setVisible(False)
+    adcSym_WINCTRL_WINSRC.setDependencies(adcWindowVisible, ["ADC_WINCTRL_WINMODE"])
+
     # Window upper threshold
     adcSym_WINHT = adcComponent.createIntegerSymbol("ADC_WINHT", adcWindowMenu)
     adcSym_WINHT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:WINHT")
@@ -1152,7 +1134,7 @@ def instantiateComponent(adcComponent):
     adcSym_EVESYS_CONFIGURE = adcComponent.createIntegerSymbol("ADC_EVESYS_CONFIGURE", None)
     adcSym_EVESYS_CONFIGURE.setVisible(False)
     adcSym_EVESYS_CONFIGURE.setDependencies(adcEvesysConfigure, \
-        ["ADC_WINDOW_OUTPUT_EVENT", "ADC_EVCTRL_RESRDYEO", "ADC_CONV_TRIGGER", "ADC_EVCTRL_START"])
+        ["ADC_WINDOW_OUTPUT_EVENT", "ADC_EVCTRL_RESRDYEO", "ADC_CONV_TRIGGER", "ADC_EVCTRL_START", "ADC_EVCTRL_SAMPRDYEO"])
 
     # adcSym_SUPC_COMMENT = adcComponent.createCommentSymbol("ADC_SUPC_COMMENT", None)
     # adcSym_SUPC_COMMENT.setLabel("*********** Enable Vref output in SUPC ***********")
@@ -1188,11 +1170,12 @@ def instantiateComponent(adcComponent):
 
         # Interrupt Dynamic settings
         adcSym_UpdateInterruptStatus = adcComponent.createBooleanSymbol("ADC_INTERRUPT_STATUS", None)
-        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP"])
+        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP", "ADC_INTENSET_SAMPRDY"])
         adcSym_UpdateInterruptStatus.setVisible(False)
 
         InterruptVectorUpdate.append("ADC_INTENSET_RESRDY")
         InterruptVectorUpdate.append("ADC_INTENSET_WCMP")
+        InterruptVectorUpdate.append("ADC_INTENSET_SAMPRDY")
 
         # Interrupt Warning status
         adcSym_IntEnComment = adcComponent.createCommentSymbol("ADC_INTERRUPT_ENABLE_COMMENT", None)
@@ -1208,14 +1191,14 @@ def instantiateComponent(adcComponent):
         InterruptVectorSecurity = adcInstanceName.getValue() + "_SET_NON_SECURE"
         # Interrupt Dynamic settings
         adcSym_UpdateInterruptStatus = adcComponent.createBooleanSymbol("ADC_INTERRUPT_STATUS", None)
-        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP"])
+        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP","ADC_INTENSET_SAMPRDY"])
         adcSym_UpdateInterruptStatus.setVisible(False)
 
         # Interrupt Warning status
         adcSym_IntEnComment = adcComponent.createCommentSymbol("ADC_INTERRUPT_ENABLE_COMMENT", None)
         adcSym_IntEnComment.setVisible(False)
         adcSym_IntEnComment.setLabel("Warning!!! "+adcInstanceName.getValue()+" Interrupt is Disabled in Interrupt Manager")
-        adcSym_IntEnComment.setDependencies(updateADCInterruptWarningStatus, ["core." + InterruptVectorUpdate, "ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP"])
+        adcSym_IntEnComment.setDependencies(updateADCInterruptWarningStatus, ["core." + InterruptVectorUpdate, "ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP", "ADC_INTENSET_SAMPRDY"])
 
     # Clock Warning status
     adcSym_ClkEnComment = adcComponent.createCommentSymbol("ADC_CLOCK_ENABLE_COMMENT", None)
