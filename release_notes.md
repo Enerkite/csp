@@ -3,6 +3,32 @@
 
 # Microchip MPLAB® Harmony 3 Release Notes
 
+## CSP Release v3.24.0
+
+### New Features
+
+- **New Features and Enhancements**
+  - I3CC Support
+  - SECUMOD plib support
+
+- **Bug Fixes**
+  - MISRA-C fixes
+  - FLEXCOM bug fixes
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+- [MPLAB® X IDE v6.25](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.00](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.3 or higher
+
 ## CSP Release v3.23.0
 
 ### New Features
