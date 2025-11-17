@@ -465,12 +465,13 @@ void ${UART_INSTANCE_NAME}_ReadCallbackRegister( UART_RING_BUFFER_CALLBACK callb
 }
 
 /* This routine is only called from ISR. Hence do not disable/enable USART interrupts. */
-static bool ${UART_INSTANCE_NAME}_TxPullByte(uint16_t* pWrByte)
+static bool ${UART_INSTANCE_NAME}_TxPullByte(void* pWrData)
 {
     bool isSuccess = false;
     uint32_t wrOutIndex = ${UART_INSTANCE_NAME?lower_case}Obj.wrOutIndex;
     uint32_t wrInIndex = ${UART_INSTANCE_NAME?lower_case}Obj.wrInIndex;
     uint32_t wrOut16Idx;
+    uint8_t* pWrByte = (uint8_t*)pWrData;
 
     if (wrOutIndex != wrInIndex)
     {
