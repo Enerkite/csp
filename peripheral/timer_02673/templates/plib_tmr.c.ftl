@@ -53,7 +53,7 @@
 </#if>
 
 <#if TMR_INTERRUPT_MODE == true>
-volatile static TIMER_OBJECT tmr${TMR_INSTANCE_NUMBER}Obj;
+static volatile TIMER_OBJECT tmr${TMR_INSTANCE_NUMBER}Obj;
 </#if>
 
 // Section: Macro Definitions

@@ -1,21 +1,21 @@
 <#assign nibbleLengthOptions = ["Reserved","ONE","TWO","THREE","FOUR","FIVE","SIX"]>
 /*******************************************************************************
   ${moduleName?lower_case} PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_${moduleName?lower_case}.c
- 
+
   Summary:
     ${moduleName?lower_case} PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -53,12 +53,12 @@
 static volatile bool bDataTransmitted = true;
 
 <#if SENT_INTERRUPT_MODE == true>
-volatile static SENT_TRANSMIT_COMPLETE_OBJECT txCompleteObj;
-</#if> 
+static volatile SENT_TRANSMIT_COMPLETE_OBJECT txCompleteObj;
+</#if>
 
 <#list nibbleLengthOptions as options>
 <#if options != "Reserved">
-#define SENT${SENT_INSTANCE}CON1_NIBCNT_${options}      ((uint32_t)(_SENT${SENT_INSTANCE}CON1_NIBCNT_MASK & ((uint32_t)(${options_index}) << _SENT${SENT_INSTANCE}CON1_NIBCNT_POSITION))) 
+#define SENT${SENT_INSTANCE}CON1_NIBCNT_${options}      ((uint32_t)(_SENT${SENT_INSTANCE}CON1_NIBCNT_MASK & ((uint32_t)(${options_index}) << _SENT${SENT_INSTANCE}CON1_NIBCNT_POSITION)))
 </#if>
 </#list>
 
@@ -96,7 +96,7 @@ void SENT${SENT_INSTANCE}_Initialize(void)
     /* enable the error interrupt*/
     IEC3bits.SENT${SENT_INSTANCE}EIE = 1U;
 	</#if>
-	
+
 	<#if SENT_INTERRUPT_MODE == true>
 	txCompleteObj.callback_fn = NULL;
 	</#if>
@@ -104,14 +104,14 @@ void SENT${SENT_INSTANCE}_Initialize(void)
 
 void SENT${SENT_INSTANCE}_Deinitialize(void)
 {
-    SENT${SENT_INSTANCE}_Disable(); 
-	
+    SENT${SENT_INSTANCE}_Disable();
+
 	IFS3bits.SENT${SENT_INSTANCE}IF = 0U;
 	IEC3bits.SENT${SENT_INSTANCE}IE = 0U;
-	
+
 	IFS3bits.SENT${SENT_INSTANCE}EIF = 0U;
 	IEC3bits.SENT${SENT_INSTANCE}EIE = 0U;
-	
+
 	/* De-initializing registers to POR values */
 	SENT${SENT_INSTANCE}CON1 = ${CON1_REG_POR};
 	SENT${SENT_INSTANCE}CON2 = ${CON2_REG_POR};
@@ -190,7 +190,7 @@ bool SENT${SENT_INSTANCE}_IsTransmissionComplete(void)
 <#else>
     while(IFS3bits.SENT${SENT_INSTANCE}IF == 0U)
     {
-      
+
     }
 	IFS3bits.SENT${SENT_INSTANCE}IF = 0U;
     return true;
@@ -211,7 +211,7 @@ void SENT${SENT_INSTANCE}_TransmitCompleteCallbackRegister(SENT_TRANSMIT_COMPLET
 }
 
 void __attribute__ ( ( used ) ) ${moduleName}_InterruptHandler( void )
-{	
+{
 	if(txCompleteObj.callback_fn != NULL )
     {
         uintptr_t context = txCompleteObj.context;
@@ -224,7 +224,7 @@ void __attribute__ ( ( used ) ) ${moduleName}_InterruptHandler( void )
     else if(SENT${SENT_INSTANCE}STATbits.SYNCTXEN == 0U)
     {
         bDataTransmitted = true;
-    }    
+    }
     else
     {
         bDataTransmitted = false;

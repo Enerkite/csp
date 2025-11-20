@@ -71,29 +71,29 @@
 #define ${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE            ${SPIS_RX_BUFFER_SIZE}
 #define ${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE           ${SPIS_TX_BUFFER_SIZE}
 
-volatile static uint8_t ${SPI_INSTANCE_NAME}_ReadBuffer[${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE];
-volatile static uint8_t ${SPI_INSTANCE_NAME}_WriteBuffer[${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE];
+static volatile uint8_t ${SPI_INSTANCE_NAME}_ReadBuffer[${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE];
+static volatile uint8_t ${SPI_INSTANCE_NAME}_WriteBuffer[${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE];
 
 <#elseif SPI_SPICON_MODE == "1">
 
 #define ${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE            ${SPIS_RX_BUFFER_SIZE/2}
 #define ${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE           ${SPIS_TX_BUFFER_SIZE/2}
 
-volatile static uint16_t ${SPI_INSTANCE_NAME}_ReadBuffer[${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE];
-volatile static uint16_t ${SPI_INSTANCE_NAME}_WriteBuffer[${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE];
+static volatile uint16_t ${SPI_INSTANCE_NAME}_ReadBuffer[${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE];
+static volatile uint16_t ${SPI_INSTANCE_NAME}_WriteBuffer[${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE];
 
 <#else>
 
 #define ${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE            ${SPIS_RX_BUFFER_SIZE/4}
 #define ${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE           ${SPIS_TX_BUFFER_SIZE/4}
 
-volatile static uint32_t ${SPI_INSTANCE_NAME}_ReadBuffer[${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE];
-volatile static uint32_t ${SPI_INSTANCE_NAME}_WriteBuffer[${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE];
+static volatile uint32_t ${SPI_INSTANCE_NAME}_ReadBuffer[${SPI_INSTANCE_NAME}_READ_BUFFER_SIZE];
+static volatile uint32_t ${SPI_INSTANCE_NAME}_WriteBuffer[${SPI_INSTANCE_NAME}_WRITE_BUFFER_SIZE];
 
 </#if>
 
 /* Global object to save SPI Exchange related data */
-volatile static SPI_CLIENT_OBJECT ${SPI_INSTANCE_NAME?lower_case}Obj;
+static volatile SPI_CLIENT_OBJECT ${SPI_INSTANCE_NAME?lower_case}Obj;
 
 // *****************************************************************************
 // *****************************************************************************
@@ -103,22 +103,22 @@ volatile static SPI_CLIENT_OBJECT ${SPI_INSTANCE_NAME?lower_case}Obj;
 
 //SPI SPIxCON1 MODE options
 <#list modeOptions as options>
-#define ${SPI_INSTANCE_NAME}CON1_MSTEN_${options}          ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_MSTEN_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_MSTEN_POSITION))) 
+#define ${SPI_INSTANCE_NAME}CON1_MSTEN_${options}          ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_MSTEN_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_MSTEN_POSITION)))
 </#list>
 
 //SPI SPIxCON1 Clock Polarity options
 <#list clkPolarityOptions as options>
-#define ${SPI_INSTANCE_NAME}CON1_CKP_${options}           ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_CKP_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_CKP_POSITION))) 
+#define ${SPI_INSTANCE_NAME}CON1_CKP_${options}           ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_CKP_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_CKP_POSITION)))
 </#list>
 
 //SPI SPIxCON1 Clock Edge options
 <#list clkEdgeOptions as options>
-#define ${SPI_INSTANCE_NAME}CON1_CKE_${options}           ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_CKE_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_CKE_POSITION))) 
+#define ${SPI_INSTANCE_NAME}CON1_CKE_${options}           ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_CKE_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_CKE_POSITION)))
 </#list>
 
 //SPI SPIxCON1 Clock select options
 <#list hostClkselOptions as options>
-#define ${SPI_INSTANCE_NAME}CON1_MCLKEN_${options}           ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_MCLKEN_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_MCLKEN_POSITION))) 
+#define ${SPI_INSTANCE_NAME}CON1_MCLKEN_${options}           ((uint32_t)(_${SPI_INSTANCE_NAME}CON1_MCLKEN_MASK & ((uint32_t)(${options_index}) << _${SPI_INSTANCE_NAME}CON1_MCLKEN_POSITION)))
 </#list>
 
 /* Forward declarations */
@@ -157,7 +157,7 @@ void ${SPI_INSTANCE_NAME}_Initialize ( void )
             |_${SPI_INSTANCE_NAME}CON1_SSEN_MASK<#if SPI_CON1__SMP == "1">
             |_${SPI_INSTANCE_NAME}CON1_SMP_MASK</#if><#if SPI_CON1__ENHBUF == "1">
             |_${SPI_INSTANCE_NAME}CON1_ENHBUF_MASK</#if>);
-            
+
     /* Enable generation of interrupt on receiver overflow */
     ${SPI_INSTANCE_NAME}IMSKbits.SPIROVEN = 1U;
 

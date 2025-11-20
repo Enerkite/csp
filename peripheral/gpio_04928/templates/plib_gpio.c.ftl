@@ -1,19 +1,19 @@
 /*******************************************************************************
   GPIO PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_gpio.h
- 
+
   Summary:
     GPIO PLIB Header File
- 
+
   Description:
     This file has prototype of all the interfaces provided for particular
     gpio peripheral.
- 
+
 *******************************************************************************/
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
@@ -43,15 +43,15 @@
 #include "interrupts.h"
 </#if>
 /**
-* @brief   Offset value between registers LAT, TRIS, PORT 
+* @brief   Offset value between registers LAT, TRIS, PORT
 */
-<#lt>#define OFFSET_REG (uint32_t)${REGISTER_OFFSET}UL 
+<#lt>#define OFFSET_REG (uint32_t)${REGISTER_OFFSET}UL
 
 /**
 * @brief  Offset value between two interrupt registers CNEN0, CNEN1, CNCON
 */
-<#lt>#define OFFSET_INT (uint32_t)${CN_INTERRUPT_OFFSET}UL 
- 
+<#lt>#define OFFSET_INT (uint32_t)${CN_INTERRUPT_OFFSET}UL
+
 <#if USE_PPS_INPUT_0 == true || USE_PPS_OUTPUT_0 == true>
 /**
 * @brief   Macro to lock registers for PPS configuration.
@@ -103,7 +103,7 @@
     <#assign portNumCbList = portNumCbList + [TOTAL_NUM_OF_INT_USED] >
 
     <#lt>/* Array to store callback objects of each configured interrupt */
-    <#lt>volatile static GPIO_PIN_CALLBACK_OBJ portPinCbObj[${TOTAL_NUM_OF_INT_USED}];
+    <#lt>static volatile GPIO_PIN_CALLBACK_OBJ portPinCbObj[${TOTAL_NUM_OF_INT_USED}];
 
     <#lt>/* Array to store number of interrupts in each PORT Channel + previous interrupt count */
     <@compress single_line=true>
@@ -146,7 +146,7 @@ void GPIO_Initialize ( void )
              <#lt>    ANSEL${.vars[channel]}= 0x${.vars["SYS_PORT_${.vars[channel]}_ANSEL"]}U; /* Digital Mode Enable */
         </#if>
 		<#if .vars["SYS_PORT_${.vars[channel]}_CN_USED"] == true>
-		
+
 			<#lt>    /* Change Notice Enable */
             <#if .vars["SYS_PORT_${.vars[channel]}_CN_STYLE"] == true>
 				<#lt>    CNCON${.vars[channel]} = _CNCON${.vars[channel]}_CNSTYLE_MASK | _CNCON${.vars[channel]}_ON_MASK;
@@ -159,7 +159,7 @@ void GPIO_Initialize ( void )
 			</#if>
         </#if>
     </#if>
-</#list>    
+</#list>
 
 <#if USE_PPS_INPUT_0 == true || USE_PPS_OUTPUT_0 == true>
     <#lt>    /* Unlock system for PPS configuration */
@@ -202,7 +202,7 @@ void GPIO_Initialize ( void )
 <#if USE_PPS_INPUT_0 == true || USE_PPS_OUTPUT_0 == true>
     <#lt>    /* Lock back the system after PPS configuration */
     <#lt>    PINS_PPSLock();
-        
+
 </#if>
 
 <#if TOTAL_NUM_OF_INT_USED gt 0>
@@ -301,7 +301,7 @@ void  GPIO_PinIntEnable(GPIO_PIN pin, GPIO_INTERRUPT_STYLE style)
     if (style == GPIO_INTERRUPT_ON_MISMATCH){
         *(volatile uint32_t *)((uint32_t)&CNEN0A + (port * OFFSET_INT)) |= mask;
     }
-        
+
     else if (style == GPIO_INTERRUPT_ON_POSITIVE_EDGE)
     {
         *(volatile uint32_t *)((uint32_t)&CNEN0A +(port * OFFSET_INT)) |= mask;
@@ -377,7 +377,7 @@ void __attribute__((used)) CN${.vars[channel]}_InterruptHandler(void)
 
     status  = CNF${.vars[channel]};
     CNF${.vars[channel]} = 0;
-	
+
     <#if .vars[channelIfs]?has_content>
     IFS${.vars[channelIfs]}bits.CN${.vars[channel]}IF = 0;
 	</#if>

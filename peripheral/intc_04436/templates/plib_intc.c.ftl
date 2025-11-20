@@ -50,7 +50,7 @@
     <#assign EXT_INT_PIN = "EXTERNAL_" + i + "_EXTERNAL_INTERRUPT_UPDATE">
     <#if .vars[EXT_INT_PIN]?has_content && .vars[EXT_INT_PIN] == true>
         <#assign numOfEnabledExtInt = numOfEnabledExtInt + 1>
-        <#lt>volatile static EXT_INT_PIN_CALLBACK_OBJ extInt${i}CbObj;
+        <#lt>static volatile EXT_INT_PIN_CALLBACK_OBJ extInt${i}CbObj;
     </#if>
 </#list>
 
@@ -123,10 +123,10 @@ void ${moduleNameUpperCase}_Enable( void )
 bool ${moduleNameUpperCase}_Disable( void )
 {
     bool processorStatus;
-    
+
     /* Save the current processor status and then Disable the global interrupt */
     processorStatus = (${GIEStatusbit} != 0U);
-            
+
     (void)__builtin_disable_interrupts();
 
     /* return the processor status */
@@ -150,13 +150,13 @@ void ${moduleNameUpperCase}_ExternalInterruptEnable( EXTERNAL_INT_PIN extIntPin 
     <#list 0..MAX_EXTERNAL_INT_COUNT as i>
         <#assign EXT_INT_PIN = "EXTERNAL_" + i + "_EXTERNAL_INTERRUPT_UPDATE">
         <#if .vars[EXT_INT_PIN]?has_content && .vars[EXT_INT_PIN] == true>
-        case EXTERNAL_INT_${i}: 
-            _INT${i}IE = 1U; 
+        case EXTERNAL_INT_${i}:
+            _INT${i}IE = 1U;
             break;
 
         </#if>
     </#list>
-        default: /* Invalid pin, do nothing */ 
+        default: /* Invalid pin, do nothing */
             break;
     }
 }
@@ -168,13 +168,13 @@ void ${moduleNameUpperCase}_ExternalInterruptDisable( EXTERNAL_INT_PIN extIntPin
     <#list 0..MAX_EXTERNAL_INT_COUNT as i>
         <#assign EXT_INT_PIN = "EXTERNAL_" + i + "_EXTERNAL_INTERRUPT_UPDATE">
         <#if .vars[EXT_INT_PIN]?has_content && .vars[EXT_INT_PIN] == true>
-        case EXTERNAL_INT_${i}: 
-            _INT${i}IE = 0U; 
+        case EXTERNAL_INT_${i}:
+            _INT${i}IE = 0U;
             break;
-            
+
         </#if>
     </#list>
-        default: /* Invalid pin, do nothing */ 
+        default: /* Invalid pin, do nothing */
             break;
     }
 }

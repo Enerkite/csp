@@ -81,7 +81,7 @@
 
 // Section: Global Data
 
-volatile static ${dmaModuleName}_CHANNEL_OBJECT  dmaChannelObj[${dmaModuleName}_NUMBER_OF_CHANNELS];
+static volatile ${dmaModuleName}_CHANNEL_OBJECT  dmaChannelObj[${dmaModuleName}_NUMBER_OF_CHANNELS];
 
 // Section: ${dmaModuleName} PLib Interface Implementations
 

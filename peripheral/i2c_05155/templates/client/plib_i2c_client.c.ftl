@@ -2,21 +2,21 @@
 <#assign sdhatOptions = ["100NS","300NS"]>
 /*******************************************************************************
   ${moduleName?lower_case} PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_${moduleName?lower_case}.c
- 
+
   Summary:
     ${moduleName?lower_case} PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -51,20 +51,20 @@
 //I2CxCON SMBEN options
 <#list smbenOptions as options>
 <#if options != "">
-#define I2C${instance}CON1_SMBEN_${options}          ((uint32_t)(_I2C${instance}CON1_SMBEN_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SMBEN_POSITION))) 
+#define I2C${instance}CON1_SMBEN_${options}          ((uint32_t)(_I2C${instance}CON1_SMBEN_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SMBEN_POSITION)))
 </#if>
 </#list>
 
 //I2CxCON SDHAT options
 <#list sdhatOptions as options>
 <#if options != "">
-#define I2C${instance}CON1_SDAHT_${options}          ((uint32_t)(_I2C${instance}CON1_SDAHT_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SDAHT_POSITION))) 
+#define I2C${instance}CON1_SDAHT_${options}          ((uint32_t)(_I2C${instance}CON1_SDAHT_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SDAHT_POSITION)))
 </#if>
 </#list>
 
 // Section: Global Data
 
-volatile static I2C_CLIENT_OBJ ${moduleName?lower_case}Obj;
+static volatile I2C_CLIENT_OBJ ${moduleName?lower_case}Obj;
 
 void ${moduleName}_Initialize(void)
 {
@@ -75,12 +75,12 @@ void ${moduleName}_Initialize(void)
                 |_I2C${instance}CON1_SCIE_MASK<#if ENABLE_CLOCK_STRETCHING==true>
                 |_I2C${instance}CON1_STREN_MASK</#if><#if I2CS_AHEN_SUPPORT==true>
                 |_I2C${instance}CON1_AHEN_MASK</#if><#if I2CS_DHEN_SUPPORT==true>
-                |_I2C${instance}CON1_DHEN_MASK</#if><#if ENABLE_10BIT_ADDRESS==true> 
+                |_I2C${instance}CON1_DHEN_MASK</#if><#if ENABLE_10BIT_ADDRESS==true>
                 |_I2C${instance}CON1_A10M_MASK</#if><#if I2C_CON1__DISSLW?number != 0>
                 |_I2C${instance}CON1_DISSLW_MASK</#if>
                 |I2C${instance}CON1_SMBEN_${smbenOptions[.vars["I2C_CON1__SMBEN"]?number]}
                 |I2C${instance}CON1_SDAHT_${sdhatOptions[.vars["I2C_CON1__SDAHT"]?number]});
-                
+
     I2C${instance}INTC = (_I2C${instance}INTC_BCLIE_MASK
                 |_I2C${instance}INTC_CADDRIE_MASK
                 |_I2C${instance}INTC_CDTXIE_MASK
@@ -112,19 +112,19 @@ void ${moduleName}_Deinitialize(void)
 {
     /* Turn off the I2C module */
     ${moduleName}CON1bits.ON = 0U;
-    
+
     /* Disable the I2C Bus collision interrupt */
     _I2C${instance}EIE = 0U;
     /* Disable the I2C Client interrupt */
     _I2C${instance}IE = 0U;
-    
+
     I2C${instance}CON1 = (_I2C${instance}CON1_SCLREL_MASK);
-    I2C${instance}INTC = 0x0UL;  
+    I2C${instance}INTC = 0x0UL;
 
     I2C${instance}ADD = 0x0UL;
     I2C${instance}MSK = 0x0UL;
 
-    ${moduleName?lower_case}Obj.callback = NULL;  
+    ${moduleName?lower_case}Obj.callback = NULL;
 }
 
 /* I2C client state machine */

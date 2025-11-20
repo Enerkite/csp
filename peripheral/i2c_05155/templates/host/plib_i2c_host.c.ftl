@@ -2,21 +2,21 @@
 <#assign sdhatOptions = ["100NS","300NS"]>
 /*******************************************************************************
   ${moduleName?lower_case} PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_${moduleName?lower_case}.c
- 
+
   Summary:
     ${moduleName?lower_case} PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -53,21 +53,21 @@
 //I2CxCON SMBEN options
 <#list smbenOptions as options>
 <#if options != "">
-#define I2C${instance}CON1_SMBEN_${options}          ((uint32_t)(_I2C${instance}CON1_SMBEN_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SMBEN_POSITION))) 
+#define I2C${instance}CON1_SMBEN_${options}          ((uint32_t)(_I2C${instance}CON1_SMBEN_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SMBEN_POSITION)))
 </#if>
 </#list>
 
 //I2CxCON SDHAT options
 <#list sdhatOptions as options>
 <#if options != "">
-#define I2C${instance}CON1_SDAHT_${options}          ((uint32_t)(_I2C${instance}CON1_SDAHT_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SDAHT_POSITION))) 
+#define I2C${instance}CON1_SDAHT_${options}          ((uint32_t)(_I2C${instance}CON1_SDAHT_MASK & ((uint32_t)(${options_index}) << _I2C${instance}CON1_SDAHT_POSITION)))
 </#if>
 </#list>
 
 // Section: Global Data
 
 #define NOP asm(" NOP")
-volatile static I2C_HOST_OBJ ${moduleName?lower_case}Obj;
+static volatile I2C_HOST_OBJ ${moduleName?lower_case}Obj;
 
 void ${moduleName}_Initialize(void)
 {
@@ -75,7 +75,7 @@ void ${moduleName}_Initialize(void)
     _${moduleName}IE = 0U;
     _${moduleName}EIE = 0U;
 
-    ${moduleName}HBRG = 0x${brgValueInHex}UL; 
+    ${moduleName}HBRG = 0x${brgValueInHex}UL;
     ${moduleName}LBRG = 0x${brgValueInHex}UL;
 
     ${moduleName}CON1 = (I2C${instance}CON1_SMBEN_${smbenOptions[.vars["I2C_CON1__SMBEN"]?number]}
@@ -88,7 +88,7 @@ void ${moduleName}_Initialize(void)
                         |_I2C${instance}INTC_HACKSIE_MASK
                         |_I2C${instance}INTC_HDTXIE_MASK
                         |_I2C${instance}INTC_HDRXIE_MASK
-                        |_I2C${instance}INTC_HSTIE_MASK);   
+                        |_I2C${instance}INTC_HSTIE_MASK);
 
     /* Clear host interrupt flag */
     _I2C${instance}IF = 0U;
@@ -98,8 +98,8 @@ void ${moduleName}_Initialize(void)
 
     /* Turn on the I2C module */
     I2C${instance}CON1bits.ON = 1U;
-    
-    ${moduleName?lower_case}Obj.callback = NULL;  
+
+    ${moduleName?lower_case}Obj.callback = NULL;
 
     /* Set the initial state of the I2C state machine */
     ${moduleName?lower_case}Obj.state = I2C_STATE_IDLE;
@@ -109,19 +109,19 @@ void ${moduleName}_Deinitialize(void)
 {
     /* Turn off the I2C module */
     I2C${instance}CON1bits.ON = 0U;
-    
+
     /* Clear host interrupt flag */
     _I2C${instance}IF = 0U;
     /* Clear fault interrupt flag */
     _I2C${instance}EIF = 0U;
-    
+
     ${moduleName}CON1 = (_I2C${instance}CON1_SCLREL_MASK);
-    ${moduleName}INTC = 0x0UL;  
-    
-    ${moduleName}HBRG = 0x0UL; 
+    ${moduleName}INTC = 0x0UL;
+
+    ${moduleName}HBRG = 0x0UL;
     ${moduleName}LBRG = 0x0UL;
-    
-    ${moduleName?lower_case}Obj.callback = NULL;  
+
+    ${moduleName?lower_case}Obj.callback = NULL;
 
 }
 
@@ -447,7 +447,7 @@ bool ${moduleName}_Write(uint16_t address, uint8_t* wdata, size_t wlength)
 <#if I2C_INCLUDE_FORCED_WRITE == true>
         ${moduleName?lower_case}Obj.forcedWrite         = false;
 </#if>
-        
+
         I2C${instance}CON1bits.SEN = 1U;
         _I2C${instance}IE = 1U;
         _I2C${instance}EIE= 1U;
@@ -551,7 +551,7 @@ bool ${moduleName}_TransferSetup(I2C_TRANSFER_SETUP* setup, uint32_t srcClkFreq 
     {
         srcClkFreq = 100000000UL;
     }
-    
+
     fBaudValue = (float)((((1.0f / (2.0f * (float)i2cClkSpeed)) - 0.0000002f) * (float)srcClkFreq) - 3.0f);
     baudValue = (uint32_t)fBaudValue;
 
@@ -597,7 +597,7 @@ void __attribute__((used)) ${i2cErrorInterruptHandler}(void)
 {
     /* ACK the bus interrupt */
     _I2C${instance}EIF = 0;
-    
+
     if(I2C${instance}STAT1bits.BCL == 1U)
     {
         /* Clear the bus collision error status bit */

@@ -10,21 +10,21 @@
 <#assign clkmonCntDivOptions = ["DIV_BY_1","DIV_BY_2","DIV_BY_4",""]>
 /*******************************************************************************
   Clock PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_clk.c
- 
+
   Summary:
     Clock PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -64,7 +64,7 @@
 //CLOCK PLLxCON NOSC options
 <#list pllClockSources as options>
 <#if options != "">
-#define PLL${i}CON_NOSC_${options}          ((uint32_t)(_PLL${i}CON_NOSC_MASK & ((uint32_t)(${options_index}) << _PLL${i}CON_NOSC_POSITION))) 
+#define PLL${i}CON_NOSC_${options}          ((uint32_t)(_PLL${i}CON_NOSC_MASK & ((uint32_t)(${options_index}) << _PLL${i}CON_NOSC_POSITION)))
 </#if>
 </#list>
 <#list pllClockSources as options>
@@ -78,21 +78,21 @@
 </#list>
 <#list pllClockSources as options>
 <#if options != "">
-#define PLL${i}CON_BOSC_${options}          ((uint32_t)(_PLL${i}CON_BOSC_MASK & ((uint32_t)(${options_index}) << _PLL${i}CON_BOSC_POSITION))) 
+#define PLL${i}CON_BOSC_${options}          ((uint32_t)(_PLL${i}CON_BOSC_MASK & ((uint32_t)(${options_index}) << _PLL${i}CON_BOSC_POSITION)))
 </#if>
 </#list>
 
 //CLOCK PLLxCON PLLPRE set
-#define PLL${i}DIV_PLLPRE_SET(value)          ((uint32_t)(_PLL${i}DIV_PLLPRE_MASK & ((uint32_t)(value) << _PLL${i}DIV_PLLPRE_POSITION))) 
+#define PLL${i}DIV_PLLPRE_SET(value)          ((uint32_t)(_PLL${i}DIV_PLLPRE_MASK & ((uint32_t)(value) << _PLL${i}DIV_PLLPRE_POSITION)))
 //CLOCK PLLxCON PLLFBDIV set
-#define PLL${i}DIV_PLLFBDIV_SET(value)          ((uint32_t)(_PLL${i}DIV_PLLFBDIV_MASK & ((uint32_t)(value) << _PLL${i}DIV_PLLFBDIV_POSITION))) 
+#define PLL${i}DIV_PLLFBDIV_SET(value)          ((uint32_t)(_PLL${i}DIV_PLLFBDIV_MASK & ((uint32_t)(value) << _PLL${i}DIV_PLLFBDIV_POSITION)))
 //CLOCK PLLxCON POSTDIV1 set
-#define PLL${i}DIV_POSTDIV1_SET(value)          ((uint32_t)(_PLL${i}DIV_POSTDIV1_MASK & ((uint32_t)(value) << _PLL${i}DIV_POSTDIV1_POSITION))) 
+#define PLL${i}DIV_POSTDIV1_SET(value)          ((uint32_t)(_PLL${i}DIV_POSTDIV1_MASK & ((uint32_t)(value) << _PLL${i}DIV_POSTDIV1_POSITION)))
 //CLOCK PLLxCON POSTDIV2 set
-#define PLL${i}DIV_POSTDIV2_SET(value)          ((uint32_t)(_PLL${i}DIV_POSTDIV2_MASK & ((uint32_t)(value) << _PLL${i}DIV_POSTDIV2_POSITION))) 
+#define PLL${i}DIV_POSTDIV2_SET(value)          ((uint32_t)(_PLL${i}DIV_POSTDIV2_MASK & ((uint32_t)(value) << _PLL${i}DIV_POSTDIV2_POSITION)))
 
 //CLOCK VCOxDIV INTDIV set
-#define VCO${i}DIV_INTDIV_SET(value)          ((uint32_t)(_VCO${i}DIV_INTDIV_MASK & ((uint32_t)(value) << _VCO${i}DIV_INTDIV_POSITION))) 
+#define VCO${i}DIV_INTDIV_SET(value)          ((uint32_t)(_VCO${i}DIV_INTDIV_MASK & ((uint32_t)(value) << _VCO${i}DIV_INTDIV_POSITION)))
 
 </#if>
 </#list>
@@ -101,7 +101,7 @@
 //CLOCK CLKxCON NOSC options
 <#list clkgenClockSources as options>
 <#if options != "">
-#define CLK${i}CON_NOSC_${options}          ((uint32_t)(_CLK${i}CON_NOSC_MASK & ((uint32_t)(${options_index}) << _CLK${i}CON_NOSC_POSITION))) 
+#define CLK${i}CON_NOSC_${options}          ((uint32_t)(_CLK${i}CON_NOSC_MASK & ((uint32_t)(${options_index}) << _CLK${i}CON_NOSC_POSITION)))
 </#if>
 </#list>
 <#list clkgenClockSources as options>
@@ -113,14 +113,14 @@
 </#list>
 <#list clkgenClockSources as options>
 <#if options != "">
-#define CLK${i}CON_BOSC_${options}          ((uint32_t)(_CLK${i}CON_BOSC_MASK & ((uint32_t)(${options_index}) << _CLK${i}CON_BOSC_POSITION))) 
+#define CLK${i}CON_BOSC_${options}          ((uint32_t)(_CLK${i}CON_BOSC_MASK & ((uint32_t)(${options_index}) << _CLK${i}CON_BOSC_POSITION)))
 </#if>
 </#list>
 
 //CLOCK CLKxCON INTDIV set
-#define CLK${i}DIV_INTDIV_SET(value)          ((uint32_t)(_CLK${i}DIV_INTDIV_MASK & ((uint32_t)(value) << _CLK${i}DIV_INTDIV_POSITION))) 
+#define CLK${i}DIV_INTDIV_SET(value)          ((uint32_t)(_CLK${i}DIV_INTDIV_MASK & ((uint32_t)(value) << _CLK${i}DIV_INTDIV_POSITION)))
 //CLOCK CLKONxCON FRACDIV set
-#define CLK${i}DIV_FRACDIV_SET(value)          ((uint32_t)(_CLK${i}DIV_FRACDIV_MASK & ((uint32_t)(value) << _CLK${i}DIV_FRACDIV_POSITION))) 
+#define CLK${i}DIV_FRACDIV_SET(value)          ((uint32_t)(_CLK${i}DIV_FRACDIV_MASK & ((uint32_t)(value) << _CLK${i}DIV_FRACDIV_POSITION)))
 
 </#if>
 </#list>
@@ -130,7 +130,7 @@
 //CLOCK CMxCON CNTDIV options
 <#list clkmonCntDivOptions as options>
 <#if options != "">
-#define CM${i}CON_CNTDIV_${options}          ((uint32_t)(_CM${i}CON_CNTDIV_MASK & ((uint32_t)(${options_index}) << _CM${i}CON_CNTDIV_POSITION))) 
+#define CM${i}CON_CNTDIV_${options}          ((uint32_t)(_CM${i}CON_CNTDIV_MASK & ((uint32_t)(${options_index}) << _CM${i}CON_CNTDIV_POSITION)))
 </#if>
 </#list>
 <#list clkmonClockSources as options>
@@ -142,7 +142,7 @@
 </#list>
 <#list clkmonClockSources as options>
 <#if options != "">
-#define CM${i}SEL_CNTSEL_${options}          ((uint32_t)(_CM${i}SEL_CNTSEL_MASK & ((uint32_t)(${options_index}) << _CM${i}SEL_CNTSEL_POSITION))) 
+#define CM${i}SEL_CNTSEL_${options}          ((uint32_t)(_CM${i}SEL_CNTSEL_MASK & ((uint32_t)(${options_index}) << _CM${i}SEL_CNTSEL_POSITION)))
 </#if>
 </#list>
 <#list clkmonClockSources as options>
@@ -154,7 +154,7 @@
 </#list>
 <#list clkmonClockSources as options>
 <#if options != "">
-#define CM${i}SEL_WINSEL_${options}          ((uint32_t)(_CM${i}SEL_WINSEL_MASK & ((uint32_t)(${options_index}) << _CM${i}SEL_WINSEL_POSITION))) 
+#define CM${i}SEL_WINSEL_${options}          ((uint32_t)(_CM${i}SEL_WINSEL_MASK & ((uint32_t)(${options_index}) << _CM${i}SEL_WINSEL_POSITION)))
 </#if>
 </#list>
 
@@ -163,7 +163,7 @@
 </#if>
 
 #define PLL1FOUT_SOURCE         5U
-#define PLL2VCODIV_SOURCE       8U 
+#define PLL2VCODIV_SOURCE       8U
 
 // Section: Static Variables
 
@@ -171,7 +171,7 @@
 <#list monIntTypes as type>
 <#list 1..maxClockMon as i>
 <#if (.vars["cm"+i+type+"IntEnable"]??) &&  (.vars["cm"+i+type+"IntEnable"]== true)>
-volatile static CLOCK_Monitor${type?capitalize}Object cm${type}Obj[${maxClockMon}];
+static volatile CLOCK_Monitor${type?capitalize}Object cm${type}Obj[${maxClockMon}];
 <#break>
 </#if>
 </#list>
@@ -179,21 +179,21 @@ volatile static CLOCK_Monitor${type?capitalize}Object cm${type}Obj[${maxClockMon
 </#if>
 
 <#if clockFailIntEnable == true>
-volatile static CLOCK_CombinedFailObject clkGenObj;
+static volatile CLOCK_CombinedFailObject clkGenObj;
 </#if>
 
 void CLOCK_Initialize(void)
 {
-    /*  
+    /*
         System Clock Source                             :  ${sysClockSourceComment}
         System/Generator 1 frequency (Fosc)             :  ${sysClockFrequencyComment} MHz
-        
+
         <#list 1..maxClockGen as i>
         <#if (i > 1) && (.vars["clkGen"+i+"Enable"]??) && (.vars["clkGen"+i+"Enable"])>
         Clock Generator ${i} frequency                     : ${.vars["clkGen"+i+"OutFrequencyInMHz"]} MHz
         </#if>
         </#list>
-        
+
         <#list 1..maxPllGen as i>
 		<#if (.vars["pll"+i+"Enable"]??) && (.vars["pll"+i+"Enable"])>
         PLL ${i} frequency                                 : ${.vars["pll"+i+"OutFrequencyInMHz"]} MHz
@@ -202,7 +202,7 @@ void CLOCK_Initialize(void)
         </#list>
 
     */
-    //Primary oscillator settings 
+    //Primary oscillator settings
     OSCCFGbits.POSCMD = ${poscmdValue}U;
     <#if clkoUsed>
     OSCCFGbits.POSCIOFNC = 1U;
@@ -211,16 +211,16 @@ void CLOCK_Initialize(void)
     OSCCTRLbits.POSCEN = 1U;
     while(OSCCTRLbits.POSCRDY == 0U){};
     </#if>
-    
+
     //If CLK GEN 1 (system clock) is using a PLL, switch to FRC to avoid risk of over-clocking the CPU while changing PLL settings
     uint32_t currentSysClock = CLK1CONbits.COSC;
     if((currentSysClock >= PLL1FOUT_SOURCE) && (currentSysClock <= PLL2VCODIV_SOURCE))
     {
-        CLK1CONbits.NOSC = 1U; //FRC as source 
+        CLK1CONbits.NOSC = 1U; //FRC as source
         CLK1CONbits.OSWEN = 1U;
         while(CLK1CONbits.OSWEN == 1U){};
     }
-    
+
     <#list 1..maxPllGen as i>
 	<#if (.vars["pll"+i+"Enable"]??) && (.vars["pll"+i+"Enable"])>
     //PLL ${i} settings
@@ -234,32 +234,32 @@ void CLOCK_Initialize(void)
                  |PLL${i}DIV_POSTDIV2_SET(${.vars["pll"+i+"DIV__POSTDIV2"]?number}));
     //Enable PLL Input and Feedback Divider update
     PLL${i}CONbits.PLLSWEN = 1U;
-#ifndef __MPLAB_DEBUGGER_SIMULATOR 
+#ifndef __MPLAB_DEBUGGER_SIMULATOR
     while (PLL${i}CONbits.PLLSWEN == 1){};
 #endif
     PLL${i}CONbits.FOUTSWEN = 1U;
-#ifndef __MPLAB_DEBUGGER_SIMULATOR 
+#ifndef __MPLAB_DEBUGGER_SIMULATOR
     while (PLL${i}CONbits.FOUTSWEN == 1U){};
 #endif
     //Enable clock switching
     PLL${i}CONbits.OSWEN = 1U;
-#ifndef __MPLAB_DEBUGGER_SIMULATOR    
+#ifndef __MPLAB_DEBUGGER_SIMULATOR
     //Wait for switching
-    while(PLL${i}CONbits.OSWEN == 1U){}; 
+    while(PLL${i}CONbits.OSWEN == 1U){};
     //Wait for clock to be ready
-    while(OSCCTRLbits.PLL${i}RDY == 0U){}; 
-#endif  
+    while(OSCCTRLbits.PLL${i}RDY == 0U){};
+#endif
 	</#if>
     <#if (.vars["pll"+i+"Enable"]??) && (.vars["pll"+i+"Enable"])>
-    //Configure VCO Divider 
+    //Configure VCO Divider
     VCO${i}DIV = VCO${i}DIV_INTDIV_SET(${.vars["vco"+i+"DIV__INTDIV"]?number});
     //Enable PLL VCO divider
     PLL${i}CONbits.DIVSWEN = 1U;
-#ifndef __MPLAB_DEBUGGER_SIMULATOR    
+#ifndef __MPLAB_DEBUGGER_SIMULATOR
     //Wait for setup complete
-    while(PLL${i}CONbits.DIVSWEN == 1U){}; 
+    while(PLL${i}CONbits.DIVSWEN == 1U){};
 #endif
-    
+
     //Clearing ON shuts down oscillator when no downstream clkgen or peripheral is requesting the clock
     PLL${i}CONbits.ON = 0U;
 	</#if>
@@ -276,7 +276,7 @@ void CLOCK_Initialize(void)
     CLK${i}DIV = (CLK${i}DIV_INTDIV_SET(${.vars["clkGen"+i+"DIV__INTDIV"]?number})
                  |CLK${i}DIV_FRACDIV_SET(${.vars["clkGen"+i+"DIV__FRACDIV"]?number}));
     //Enable divide factors
-    CLK${i}CONbits.DIVSWEN = 1U; 
+    CLK${i}CONbits.DIVSWEN = 1U;
 #ifndef __MPLAB_DEBUGGER_SIMULATOR
     //Wait for divide factors to get updated
     while(CLK${i}CONbits.DIVSWEN == 1U){};
@@ -284,18 +284,18 @@ void CLOCK_Initialize(void)
     </#if>
     //Enable clock switching
     CLK${i}CONbits.OSWEN = 1U;
-#ifndef __MPLAB_DEBUGGER_SIMULATOR    
+#ifndef __MPLAB_DEBUGGER_SIMULATOR
     //Wait for clock switching complete
     while(CLK${i}CONbits.OSWEN == 1U){};
 #endif
 
     </#if>
-    </#list>   
-    <#if clockFailIntEnable == true> 
+    </#list>
+    <#if clockFailIntEnable == true>
     //Enable clock failure interrupt
-    ${clkfailInterruptFlagBit} = 0U; 
+    ${clkfailInterruptFlagBit} = 0U;
     ${clkfailInterruptEnableBit} = 1U;
-    
+
     </#if>
     <#if useClockMonitor>
     <#list 1..maxClockMon as i>
@@ -311,7 +311,7 @@ void CLOCK_Initialize(void)
     CM${i}SEL = (CM${i}SEL_CNTSEL_${clkmonClockSources[.vars["CM"+i+"SEL__CNTSEL"]?number]}
                 |CM${i}SEL_WINSEL_${clkmonClockSources[.vars["CM"+i+"SEL__WINSEL"]?number]});
     CM${i}CON = CM${i}CON_CNTDIV_${clkmonCntDivOptions[.vars["CM"+i+"CON__CNTDIV"]?number]};
-    
+
     </#if>
     </#list>
     <#list monIntTypes as type>
@@ -376,24 +376,24 @@ void CLOCK_Monitor${type?capitalize}CallbackRegister(CLOCK_MONITOR monitor, CLOC
             /*Do Nothing*/
             break;
     }
-}  
+}
 <#break>
 </#if>
 </#if>
 </#list>
 </#list>
 </#if>
- 
+
 <#if clockFailIntEnable == true>
 void ${clkfailIsrHandlerName}(void)
 {
-    
+
     if(NULL != clkGenObj.callback)
     {
         uintptr_t context = clkGenObj.context;
         (*clkGenObj.callback)(context);
-    } 
-    // clear clock fail status  
+    }
+    // clear clock fail status
     CLKFAIL =  0x0U;
     // clear the CLOCK interrupt flag
     ${clkfailInterruptFlagBit} = 0U;

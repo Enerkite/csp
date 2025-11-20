@@ -76,7 +76,7 @@ typedef enum
 } NVM_OPERATION_MODE;
 
 <#if INTERRUPT_ENABLE == true>
-volatile static nvmCallbackObjType ${NVM_INSTANCE_NAME?lower_case}CallbackObj;
+static volatile nvmCallbackObjType ${NVM_INSTANCE_NAME?lower_case}CallbackObj;
 </#if>
 /* ************************************************************************** */
 /* ************************************************************************** */

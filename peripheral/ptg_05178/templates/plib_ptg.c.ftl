@@ -7,21 +7,21 @@
 <#assign MaxTrigger = 3>
 /*******************************************************************************
   ${moduleNameUpperCase?lower_case} PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_${moduleNameUpperCase?lower_case}.c
- 
+
   Summary:
     ${moduleNameUpperCase?lower_case} PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -57,21 +57,21 @@
 //Section: Data Type Definitions
 
 <#if isPtgInterruptEnabled == true>
-volatile static PTG_EVENTS_CALLBACK_OBJECT trigger0Obj;
-volatile static PTG_EVENTS_CALLBACK_OBJECT trigger1Obj;
-volatile static PTG_EVENTS_CALLBACK_OBJECT trigger2Obj;
-volatile static PTG_EVENTS_CALLBACK_OBJECT trigger3Obj;
-volatile static PTG_EVENTS_CALLBACK_OBJECT triggerWdtObj;
+static volatile PTG_EVENTS_CALLBACK_OBJECT trigger0Obj;
+static volatile PTG_EVENTS_CALLBACK_OBJECT trigger1Obj;
+static volatile PTG_EVENTS_CALLBACK_OBJECT trigger2Obj;
+static volatile PTG_EVENTS_CALLBACK_OBJECT trigger3Obj;
+static volatile PTG_EVENTS_CALLBACK_OBJECT triggerWdtObj;
 </#if>
 
 //Section: Macro Definitions
 
 <#list WdtTimeoutOptions as options>
-#define PTGCON_PTGWDT_TIMEOUT_${options}      ((uint32_t)(_PTGCON_PTGWDT_MASK & ((uint32_t)(${options_index}) <<_PTGCON_PTGWDT_POSITION))) 
+#define PTGCON_PTGWDT_TIMEOUT_${options}      ((uint32_t)(_PTGCON_PTGWDT_MASK & ((uint32_t)(${options_index}) <<_PTGCON_PTGWDT_POSITION)))
 </#list>
 
 <#list InputTriggerMode as options>
-#define PTGCON_PTGITM_${options}      ((uint32_t)(_PTGCON_PTGITM_MASK & ((uint32_t)(${options_index}) <<_PTGCON_PTGITM_POSITION))) 
+#define PTGCON_PTGITM_${options}      ((uint32_t)(_PTGCON_PTGITM_MASK & ((uint32_t)(${options_index}) <<_PTGCON_PTGITM_POSITION)))
 </#list>
 
 <#list ClockPrescalarOptions as options>
@@ -84,7 +84,7 @@ void ${moduleNameUpperCase}_Initialize (void)
 	PTGCON = (PTGCON_PTGWDT_TIMEOUT_${WdtTimeoutOptions[PTG_CON__PTGWDT?number]}
 			|PTGCON_PTGITM_${InputTriggerMode[PTG_CON__PTGITM?number]}
 			|PTGCON_PTGDIV_DIVIDE_BY_${ClockPrescalarOptions[PTG_CON__PTGDIV?number]});
-			
+
 	PTGBTE   = 0x${PTGBTE}UL;
 	PTGHOLD  = 0x${PTGHOLD}UL;
 	PTGT0LIM = 0x${PTGT0LIM}UL;
@@ -94,10 +94,10 @@ void ${moduleNameUpperCase}_Initialize (void)
 	PTGC1LIM = 0x${PTGC1LIM}UL;
 	PTGADJ   = 0x${PTGADJ}UL;
 	PTGQPTR  = 0x${PTGQPTR}UL;
-	
 
-  /** 
-   Step Commands 
+
+  /**
+   Step Commands
   */
 
     <#list 0..maxStepSequence as j >
@@ -107,36 +107,36 @@ void ${moduleNameUpperCase}_Initialize (void)
 	</#list>
 
     <#if PTG0Interrupt == true>
-	//Clear  interrupt flag  
+	//Clear  interrupt flag
     ${zeroInterruptFlagBit} = 0;
     //Enable  interrupt
     ${zeroInterruptEnableBit} = 1;
 	</#if>
 	<#if  PTG1Interrupt == true>
-	//Clear  interrupt flag  
+	//Clear  interrupt flag
     ${oneInterruptFlagBit} = 0;
     //Enable  interrupt
     ${oneInterruptEnableBit} = 1;
 	</#if>
 	<#if  PTG2Interrupt == true>
-	//Clear  interrupt flag  
+	//Clear  interrupt flag
     ${twoInterruptFlagBit} = 0;
     //Enable  interrupt
     ${twoInterruptEnableBit} = 1;
 	</#if>
 	<#if  PTG3Interrupt == true>
-	//Clear  interrupt flag  
+	//Clear  interrupt flag
     ${threeInterruptFlagBit} = 0;
     //Enable  interrupt
     ${threeInterruptEnableBit} = 1;
 	</#if>
 	<#if PTGWDTInterrupt == true>
-	//Clear  interrupt flag  
+	//Clear  interrupt flag
     ${wdtInterruptFlagBit} = 0;
     //Enable  interrupt
     ${wdtInterruptEnableBit} = 1;
 	</#if>
-	
+
 }
 
 void ${moduleNameUpperCase}_Deinitialize (void)
@@ -162,7 +162,7 @@ void ${moduleNameUpperCase}_Deinitialize (void)
 	${wdtInterruptFlagBit} = 0;
 	${wdtInterruptEnableBit} = 0;
 	</#if>
-	
+
 ${regPorSet}
 }
 
@@ -173,17 +173,17 @@ void ${moduleNameUpperCase}_Enable (void)
 
 void ${moduleNameUpperCase}_StepSequenceStart (void)
 {
-    ${moduleNameUpperCase}CONbits.${moduleNameUpperCase}STRT = 1; 
+    ${moduleNameUpperCase}CONbits.${moduleNameUpperCase}STRT = 1;
 }
 
 void ${moduleNameUpperCase}_SoftwareTriggerSet (void)
 {
-    ${moduleNameUpperCase}CONbits.${moduleNameUpperCase}SWT = 1;    
+    ${moduleNameUpperCase}CONbits.${moduleNameUpperCase}SWT = 1;
 }
 
 void ${moduleNameUpperCase}_SoftwareTriggerClear (void)
 {
-    ${moduleNameUpperCase}CONbits.${moduleNameUpperCase}SWT = 0;    
+    ${moduleNameUpperCase}CONbits.${moduleNameUpperCase}SWT = 0;
 }
 
 bool ${moduleNameUpperCase}_WatchdogTimeoutStatusGet (void)
@@ -194,7 +194,7 @@ bool ${moduleNameUpperCase}_WatchdogTimeoutStatusGet (void)
 void ${moduleNameUpperCase}_StepSequenceStop (void)
 {
     ${moduleNameUpperCase}CONbits.${moduleNameUpperCase}STRT = 0;
-}   
+}
 
 void ${moduleNameUpperCase}_Disable (void)
 {
@@ -212,7 +212,7 @@ void ${moduleNameUpperCase}_EventCallbackRegister(${moduleNameUpperCase}_EVENTS 
 		trigger${i}Obj.context = context;
 		break;
 	</#list>
-	
+
 	case WATCHDOGTIMER:
 		triggerWdtObj.callback_fn = callback_fn;
 		triggerWdtObj.context = context;
@@ -235,7 +235,7 @@ void __attribute__ ( ( used ) ) ${zeroIsrHandlerName}( void )
 	${zeroInterruptFlagBit} = 0;
 }
 </#if>
-<#if  PTG1Interrupt == true> 
+<#if  PTG1Interrupt == true>
 void __attribute__ ( ( used ) ) ${oneIsrHandlerName}( void )
 
 {

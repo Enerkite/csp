@@ -1,21 +1,21 @@
 <#assign nibbleLengthOptions = ["Reserved","ONE","TWO","THREE","FOUR","FIVE","SIX"]>
 /*******************************************************************************
   ${moduleName?lower_case} PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_${moduleName?lower_case}.c
- 
+
   Summary:
     ${moduleName?lower_case} PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -52,13 +52,13 @@
 static volatile bool bDataReceived = false;
 
 <#if SENT_INTERRUPT_MODE == true>
-volatile static SENT_RECEIVE_COMPLETE_OBJECT rxCompleteObj;
-volatile static SENT_ERROR_OBJECT rxErrorObj;
+static volatile SENT_RECEIVE_COMPLETE_OBJECT rxCompleteObj;
+static volatile SENT_ERROR_OBJECT rxErrorObj;
 </#if>
 
 <#list nibbleLengthOptions as options>
 <#if options != "Reserved">
-#define SENT${SENT_INSTANCE}CON1_NIBCNT_${options}      ((uint32_t)(_SENT${SENT_INSTANCE}CON1_NIBCNT_MASK & ((uint32_t)(${options_index}) << _SENT${SENT_INSTANCE}CON1_NIBCNT_POSITION))) 
+#define SENT${SENT_INSTANCE}CON1_NIBCNT_${options}      ((uint32_t)(_SENT${SENT_INSTANCE}CON1_NIBCNT_MASK & ((uint32_t)(${options_index}) << _SENT${SENT_INSTANCE}CON1_NIBCNT_POSITION)))
 </#if>
 </#list>
 
@@ -75,7 +75,7 @@ void SENT${SENT_INSTANCE}_Initialize(void)
 			|_SENT${SENT_INSTANCE}CON1_RCVEN_MASK</#if><#if SENT_CON1__SIDL == "1">
 			|_SENT${SENT_INSTANCE}CON1_SIDL_MASK</#if><#if SENT_CON1__ON == "1">
 			|_SENT${SENT_INSTANCE}CON1_ON_MASK</#if>);
-			
+
 	/* SYNC MAX */
 	SENT${SENT_INSTANCE}CON2 = 0x${SYNC_MAX}UL;
 	/* SYNC MIN */
@@ -92,7 +92,7 @@ void SENT${SENT_INSTANCE}_Initialize(void)
     // enable the error interrupt
     IEC3bits.SENT${SENT_INSTANCE}EIE = 1U;
 	</#if>
-	
+
 	<#if SENT_INTERRUPT_MODE == true>
 	rxCompleteObj.callback_fn = NULL;
 	rxErrorObj.callback_fn = NULL;
@@ -101,14 +101,14 @@ void SENT${SENT_INSTANCE}_Initialize(void)
 
 void SENT${SENT_INSTANCE}_Deinitialize(void)
 {
-    ${moduleName}_Disable(); 
-	
+    ${moduleName}_Disable();
+
 	IFS3bits.SENT${SENT_INSTANCE}IF= 0U;
 	IEC3bits.SENT${SENT_INSTANCE}IE = 0U;
-	
+
 	IFS3bits.SENT${SENT_INSTANCE}EIF = 0U;
 	IEC3bits.SENT${SENT_INSTANCE}EIE = 0U;
-	
+
 	/* De-initializing registers to POR values */
 	SENT${SENT_INSTANCE}CON1 = ${CON1_REG_POR};
 	SENT${SENT_INSTANCE}CON2 = ${CON2_REG_POR};
@@ -132,24 +132,24 @@ SENT_DATA_RECEIVE SENT${SENT_INSTANCE}_Receive(void)
     sentData.status =   SENT${SENT_INSTANCE}DATbits.STAT;
     sentData.data1  =   SENT${SENT_INSTANCE}DATbits.DATA1;
     sentData.data2  =   SENT${SENT_INSTANCE}DATbits.DATA2;
-    sentData.data3  =   SENT${SENT_INSTANCE}DATbits.DATA3; 
+    sentData.data3  =   SENT${SENT_INSTANCE}DATbits.DATA3;
     sentData.data4  =   SENT${SENT_INSTANCE}DATbits.DATA4;
-    sentData.data5  =   SENT${SENT_INSTANCE}DATbits.DATA5; 
-    sentData.data6  =   SENT${SENT_INSTANCE}DATbits.DATA6; 
+    sentData.data5  =   SENT${SENT_INSTANCE}DATbits.DATA5;
+    sentData.data6  =   SENT${SENT_INSTANCE}DATbits.DATA6;
     </#if>
     <#if SENT_CON1__NIBCNT == "5">
     sentData.status =  SENT${SENT_INSTANCE}DATbits.STAT;
     sentData.data1  =  SENT${SENT_INSTANCE}DATbits.DATA1;
     sentData.data2  =  SENT${SENT_INSTANCE}DATbits.DATA2;
-    sentData.data3  =  SENT${SENT_INSTANCE}DATbits.DATA3; 
+    sentData.data3  =  SENT${SENT_INSTANCE}DATbits.DATA3;
     sentData.data4  =  SENT${SENT_INSTANCE}DATbits.DATA4;
-    sentData.data5  =  SENT${SENT_INSTANCE}DATbits.DATA5; 
+    sentData.data5  =  SENT${SENT_INSTANCE}DATbits.DATA5;
     </#if>
     <#if SENT_CON1__NIBCNT == "4">
     sentData.status =   SENT${SENT_INSTANCE}DATbits.STAT;
     sentData.data1  =   SENT${SENT_INSTANCE}DATbits.DATA1;
     sentData.data2  =   SENT${SENT_INSTANCE}DATbits.DATA2;
-    sentData.data3  =   SENT${SENT_INSTANCE}DATbits.DATA3; 
+    sentData.data3  =   SENT${SENT_INSTANCE}DATbits.DATA3;
     sentData.data4  =   SENT${SENT_INSTANCE}DATbits.DATA4;
     </#if>
     <#if SENT_CON1__NIBCNT == "3">
@@ -196,7 +196,7 @@ SENT_ERROR_CODE ReceiveErrorGet(void)
 	if(IFS3bits.SENT${SENT_INSTANCE}EIF == 0x1)
 	{
 		SENT_ERROR_CODE errorCode = NO_ERROR;
-		
+
 		if(SENT1STATbits.CRCERR == 0x1)
 		{
 			SENT1STATbits.CRCERR = 0;
@@ -221,7 +221,7 @@ SENT_ERROR_CODE ReceiveErrorGet(void)
 	}
 	return NO_ERROR;
 }
-			
+
 <#if SENT_INTERRUPT_MODE == true>
 void SENT${SENT_INSTANCE}_ReceiveCompleteCallbackRegister(SENT_RECEIVE_COMPLETE_CALLBACK callback_fn, uintptr_t context)
 {
@@ -237,26 +237,26 @@ void SENT${SENT_INSTANCE}_ErrorCallbackRegister(SENT_ERROR_CALLBACK callback_fn,
 }
 
 void __attribute__ ( ( used ) ) ${moduleName}_InterruptHandler( void )
-{	
+{
 	if(rxCompleteObj.callback_fn != NULL )
     {
         uintptr_t context = rxCompleteObj.context;
         rxCompleteObj.callback_fn(context);
     }
-    
+
     bDataReceived = true;
     IFS3bits.SENT${SENT_INSTANCE}IF = 0;
 }
 
 void __attribute__ ( ( used ) ) ${moduleName}E_InterruptHandler (void)
-{	
-    
+{
+
 	if(rxErrorObj.callback_fn != NULL)
     {
         uintptr_t context = rxErrorObj.context;
         rxErrorObj.callback_fn(context);
     }
-	
+
 	if(SENT${SENT_INSTANCE}STATbits.FRMERR == 1U)
     {
         SENT${SENT_INSTANCE}STATbits.FRMERR = 0U;

@@ -4,21 +4,21 @@
 <#assign adchconCmpmodOptions = ["DISABLED","OUT_OF_BOUNDS","IN_BOUNDS","GRATER_THAN","LESS_THAN_OR_EQUAL"]>
 /*******************************************************************************
   ${moduleName?lower_case} PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_${moduleName?lower_case}.c
- 
+
   Summary:
     ${moduleName?lower_case} PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -56,46 +56,46 @@
 
 //ADC AD${instance}CON MODE options
 <#list adconModeOptions as options>
-#define AD${instance}CON_MODE_${options}          ((uint32_t)(_AD${instance}CON_MODE_MASK & ((uint32_t)(${options_index}) << _AD${instance}CON_MODE_POSITION))) 
+#define AD${instance}CON_MODE_${options}          ((uint32_t)(_AD${instance}CON_MODE_MASK & ((uint32_t)(${options_index}) << _AD${instance}CON_MODE_POSITION)))
 </#list>
 
 //ADC AD${instance}CON RPTCNT set
-#define AD${instance}CON_RPTCNT_SET(value)              ((uint32_t)(_AD${instance}CON_RPTCNT_MASK & ((uint32_t)(value) << _AD${instance}CON_RPTCNT_POSITION))) 
+#define AD${instance}CON_RPTCNT_SET(value)              ((uint32_t)(_AD${instance}CON_RPTCNT_MASK & ((uint32_t)(value) << _AD${instance}CON_RPTCNT_POSITION)))
 
 <#list 0..maxChannel as i>
 <#if (.vars["ch"+i+"channelUsed"]??) && (.vars["ch"+i+"channelUsed"] == true)>
 //ADC AD${instance}CH${i}CON MODE options
 <#list adchconModeOptions as options>
-#define AD${instance}CH${i}CON_MODE_${options}          ((uint32_t)(_AD${instance}CH${i}CON_MODE_MASK & ((uint32_t)(${options_index}) << _AD${instance}CH${i}CON_MODE_POSITION))) 
+#define AD${instance}CH${i}CON_MODE_${options}          ((uint32_t)(_AD${instance}CH${i}CON_MODE_MASK & ((uint32_t)(${options_index}) << _AD${instance}CH${i}CON_MODE_POSITION)))
 </#list>
 
 //ADC AD${instance}CH${i}CON ACCNUM options
 <#list adchconAccnumOptions as options>
-#define AD${instance}CH${i}CON_ACCNUM_${options}          ((uint32_t)(_AD${instance}CH${i}CON_ACCNUM_MASK & ((uint32_t)(${options_index}) << _AD${instance}CH${i}CON_ACCNUM_POSITION))) 
+#define AD${instance}CH${i}CON_ACCNUM_${options}          ((uint32_t)(_AD${instance}CH${i}CON_ACCNUM_MASK & ((uint32_t)(${options_index}) << _AD${instance}CH${i}CON_ACCNUM_POSITION)))
 </#list>
 
 //ADC AD${instance}CH${i}CON TRG2SRC set
-#define AD${instance}CH${i}CON_TRG2SRC_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_TRG2SRC_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_TRG2SRC_POSITION))) 
+#define AD${instance}CH${i}CON_TRG2SRC_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_TRG2SRC_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_TRG2SRC_POSITION)))
 
 //ADC AD${instance}CH${i}CON CMPMOD options
 <#list adchconCmpmodOptions as options>
-#define AD${instance}CH${i}CON_CMPMOD_${options}          ((uint32_t)(_AD${instance}CH${i}CON_CMPMOD_MASK & ((uint32_t)(${options_index}) << _AD${instance}CH${i}CON_CMPMOD_POSITION))) 
+#define AD${instance}CH${i}CON_CMPMOD_${options}          ((uint32_t)(_AD${instance}CH${i}CON_CMPMOD_MASK & ((uint32_t)(${options_index}) << _AD${instance}CH${i}CON_CMPMOD_POSITION)))
 </#list>
 
 //ADC AD${instance}CH${i}CON PINSEL set
-#define AD${instance}CH${i}CON_PINSEL_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_PINSEL_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_PINSEL_POSITION))) 
+#define AD${instance}CH${i}CON_PINSEL_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_PINSEL_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_PINSEL_POSITION)))
 
 //ADC AD${instance}CH${i}CON NINSEL set
-#define AD${instance}CH${i}CON_NINSEL_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_NINSEL_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_NINSEL_POSITION))) 
+#define AD${instance}CH${i}CON_NINSEL_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_NINSEL_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_NINSEL_POSITION)))
 
 //ADC AD${instance}CH${i}CON SAMC set
-#define AD${instance}CH${i}CON_SAMC_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_SAMC_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_SAMC_POSITION))) 
+#define AD${instance}CH${i}CON_SAMC_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_SAMC_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_SAMC_POSITION)))
 
 //ADC AD${instance}CH${i}CON TRG1SRC set
-#define AD${instance}CH${i}CON_TRG1SRC_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_TRG1SRC_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_TRG1SRC_POSITION))) 
+#define AD${instance}CH${i}CON_TRG1SRC_SET(value)              ((uint32_t)(_AD${instance}CH${i}CON_TRG1SRC_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CON_TRG1SRC_POSITION)))
 
 //ADC AD${instance}CH${i}CNT CNT set
-#define AD${instance}CH${i}CNT_CNT_SET(value)              ((uint32_t)(_AD${instance}CH${i}CNT_CNT_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CNT_CNT_POSITION))) 
+#define AD${instance}CH${i}CNT_CNT_SET(value)              ((uint32_t)(_AD${instance}CH${i}CNT_CNT_MASK & ((uint32_t)(value) << _AD${instance}CH${i}CNT_CNT_POSITION)))
 
 </#if>
 </#list>
@@ -103,14 +103,14 @@
 // Section: File specific functions
 
 <#if isChannelSelected == true>
-volatile static ADC_CHANNEL_OBJECT ${moduleName?lower_case}ChannelObj[${maxChannel}];
-volatile static ADC_CMP_OBJECT ${moduleName?lower_case}CmpObj[${maxChannel}];
+static volatile ADC_CHANNEL_OBJECT ${moduleName?lower_case}ChannelObj[${maxChannel}];
+static volatile ADC_CMP_OBJECT ${moduleName?lower_case}CmpObj[${maxChannel}];
 
 
 typedef enum {
     <#list minPWM..maxPWM as x>
-    PWM${x}_TRIGGER1 = ${triggerInitVal?number + x_index*2}, 
-    PWM${x}_TRIGGER2 = ${triggerInitVal?number + x_index*2 + 1}, 
+    PWM${x}_TRIGGER1 = ${triggerInitVal?number + x_index*2},
+    PWM${x}_TRIGGER2 = ${triggerInitVal?number + x_index*2 + 1},
     </#list>
 }${moduleName}_PWM_TRIGGERS;
 
@@ -124,7 +124,7 @@ void ${moduleName}_Initialize(void)
     AD${instance}CON = AD${instance}CON_RPTCNT_SET(${.vars["AD_CON__RPTCNT"]?number});
     //Clear CMP status
     AD${instance}CMPSTAT = 0x0U;
-    
+
     <#list 0..maxChannel as i>
     <#if (.vars["ch"+i+"channelUsed"]??) && (.vars["ch"+i+"channelUsed"] == true)>
     AD${instance}CH${i}CON = (AD${instance}CH${i}CON_MODE_${adchconModeOptions[.vars["AD_CH"+i+"CON__MODE"]?number]}
@@ -147,10 +147,10 @@ void ${moduleName}_Initialize(void)
     <#if .vars["AD_CH" + i + "CMPHI"]??>
     AD${instance}CH${i}CMPHI = 0X${.vars["AD_CH" + i + "CMPHI"]}UL;
     </#if>
-    
+
     </#if>
-    </#list>  
-    
+    </#list>
+
     <#list 0..maxChannel as i>
     <#if (.vars["ch"+i+"channelUsed"]??) && (.vars["ch"+i+"channelUsed"] == true)>
     <#if (.vars["ch"+i+"IntEnable"]) == true>
@@ -158,14 +158,14 @@ void ${moduleName}_Initialize(void)
     ${.vars["ch"+i+"InterruptFlagBit"]} = 0U;
     // Enabling CH ${i} interrupt.
     ${.vars["ch"+i+"InterruptEnableBit"]} = 1U;
-    
+
     </#if>
     <#if (.vars["cmp"+i+"IntEnable"]) == true>
     // Clearing CMP ${i} interrupt flag.
     ${.vars["cmp"+i+"InterruptFlagBit"]} = 0U;
     // Enabling CMP ${i} interrupt.
     ${.vars["cmp"+i+"InterruptEnableBit"]} = 1U;
-    
+
     </#if>
     </#if>
     </#list>
@@ -177,9 +177,9 @@ void ${moduleName}_Initialize(void)
 void ${moduleName}_Deinitialize(void)
 {
     uint32_t  __attribute__ ((unused)) dummy;
-    
+
     ${moduleName}_Disable();
-    
+
     <#list 0..maxChannel as i>
     <#if (.vars["ch"+i+"channelUsed"]??) && (.vars["ch"+i+"channelUsed"] == true)>
     dummy = AD${instance}CH${i}DATA;
@@ -188,9 +188,9 @@ void ${moduleName}_Deinitialize(void)
     _AD${instance}CH${i}IE = 0U;
     </#if>
     </#list>
-    
+
 ${regPorSet}
-    
+
 }
 
 <#if isChannelSelected == true>
@@ -245,7 +245,7 @@ void ${moduleName}_ChannelCallbackRegister(ADC${instance}_CHANNEL channel,ADC_CH
 {
     ${moduleName?lower_case}ChannelObj[channel].callback = callback;
     ${moduleName?lower_case}ChannelObj[channel].context = context;
-} 
+}
 
 <#list 0..maxChannel as i>
 <#if (.vars["ch"+i+"cmpUsed"]??) && (.vars["ch"+i+"cmpUsed"] == true)>
@@ -268,7 +268,7 @@ void ${.vars["ch"+i+"IsrHandlerName"]}(void)
     uint32_t valChannel${i}Data;
     //Read the ADC value from the ADCH${i}DATA
     valChannel${i}Data = AD${instance}CH${i}DATA;
-    
+
     if(${moduleName?lower_case}ChannelObj[${i}].callback != NULL)
     {
       ${moduleName?lower_case}ChannelObj[${i}].callback(valChannel${i}Data, ${moduleName?lower_case}ChannelObj[${i}].context);
@@ -290,7 +290,7 @@ void ${.vars["cmp"+i+"IsrHandlerName"]}(void)
     {
       ${moduleName?lower_case}CmpObj[${i}].callback(${moduleName?lower_case}CmpObj[${i}].context);
     }
-    
+
     //Clear status flag
     AD${instance}CMPSTATbits.CH${i}CMP = 0U;
     //clear the CMP ${i} interrupt flag

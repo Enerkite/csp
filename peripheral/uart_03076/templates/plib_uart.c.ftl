@@ -3,21 +3,21 @@
 <#assign uconClkselOptions = ["UPB_CLOCK","CLOCK_GEN_"+clkSrcGenNumber]>
 /*******************************************************************************
   ${moduleName?lower_case} PLIB
- 
+
   Company:
     Microchip Technology Inc.
- 
+
   File Name:
     plib_${moduleName?lower_case}.c
- 
+
   Summary:
     ${moduleName?lower_case} PLIB Source File
- 
+
   Description:
     None
- 
+
 *******************************************************************************/
- 
+
 /*******************************************************************************
 * Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
@@ -52,28 +52,28 @@
 #include "plib_${moduleName?lower_case}.h"
 
 <#if intEnable == true>
-volatile static UART_OBJECT ${moduleName?lower_case}Obj;
+static volatile UART_OBJECT ${moduleName?lower_case}Obj;
 </#if>
 
 // Section: Macro Definitions
 
 //UART UxCON MODE options
 <#list uconModeOptions as options>
-#define U${instanceNumber}CON_MODE_${options}          ((uint32_t)(_U${instanceNumber}CON_MODE_MASK & ((uint32_t)(${options_index}) << _U${instanceNumber}CON_MODE_POSITION))) 
+#define U${instanceNumber}CON_MODE_${options}          ((uint32_t)(_U${instanceNumber}CON_MODE_MASK & ((uint32_t)(${options_index}) << _U${instanceNumber}CON_MODE_POSITION)))
 </#list>
 
 //UART UxCON STP options
 <#list uconStpOptions as options>
-#define U${instanceNumber}CON_STP_${options}           ((uint32_t)(_U${instanceNumber}CON_STP_MASK & ((uint32_t)(${options_index}) << _U${instanceNumber}CON_STP_POSITION))) 
+#define U${instanceNumber}CON_STP_${options}           ((uint32_t)(_U${instanceNumber}CON_STP_MASK & ((uint32_t)(${options_index}) << _U${instanceNumber}CON_STP_POSITION)))
 </#list>
 
 //UART UxCON CLKSEL options
 <#list uconClkselOptions as options>
-#define U${instanceNumber}CON_CLKSEL_${options}        ((uint32_t)(_U${instanceNumber}CON_CLKSEL_MASK & ((uint32_t)(${options_index}) << _U${instanceNumber}CON_CLKSEL_POSITION))) 
+#define U${instanceNumber}CON_CLKSEL_${options}        ((uint32_t)(_U${instanceNumber}CON_CLKSEL_MASK & ((uint32_t)(${options_index}) << _U${instanceNumber}CON_CLKSEL_POSITION)))
 </#list>
 
 //UART UxCON FLO options
-#define U${instanceNumber}CON_FLO_NONE        ((uint32_t)(_U${instanceNumber}CON_FLO_MASK & ((uint32_t)(0) << _U${instanceNumber}CON_FLO_POSITION))) 
+#define U${instanceNumber}CON_FLO_NONE        ((uint32_t)(_U${instanceNumber}CON_FLO_MASK & ((uint32_t)(0) << _U${instanceNumber}CON_FLO_POSITION)))
 
 #define UART_MAX_BAUD 0xFFFFFUL
 #define UART_MIN_FRACTIONAL_BAUD 16U
@@ -193,11 +193,11 @@ bool ${moduleName}_SerialSetup(UART_SERIAL_SETUP *setup, uint32_t srcClkFreq)
 
         srcClkFreq = ${moduleName}_FrequencyGet();
 
-        
+
         /* Turn OFF ${moduleName}. Save UTXEN, URXEN bits as these are cleared upon disabling UART */
         ctrlReg = U${instanceNumber}CON & (_U${instanceNumber}CON_TXEN_MASK | _U${instanceNumber}CON_RXEN_MASK );
         U${instanceNumber}CONbits.ON = 0U;
-        
+
         /* Calculate BRG value in fractional mode as it has least error rate */
         uxbrg = (srcClkFreq/baud);
         /* Check if the valid baud value is set */
@@ -211,7 +211,7 @@ bool ${moduleName}_SerialSetup(UART_SERIAL_SETUP *setup, uint32_t srcClkFreq)
             /* Calculate BRG value for high speed mode*/
             uxbrg = (srcClkFreq/(4U*baud)) - 1U;
             U${instanceNumber}CONbits.BRGS = 1U;
-            
+
             if(uxbrg > UART_MAX_BAUD)
             {
                 /* Calculate BRG value for low speed mode*/
@@ -228,7 +228,7 @@ bool ${moduleName}_SerialSetup(UART_SERIAL_SETUP *setup, uint32_t srcClkFreq)
         {
             U${instanceNumber}CONbits.CLKMOD = 1U;
         }
-        
+
         if(setup->dataWidth == UART_DATA_8_BIT)
         {
             /* Configure ${moduleName} mode with parity if mode is 8 bit */
@@ -248,7 +248,7 @@ bool ${moduleName}_SerialSetup(UART_SERIAL_SETUP *setup, uint32_t srcClkFreq)
 
         /* Restore UTXEN, URXEN bits. */
         U${instanceNumber}CON |= ctrlReg;
-        
+
         U${instanceNumber}CONbits.ON = 1U;
 
         status = true;
@@ -286,7 +286,7 @@ bool ${moduleName}_Read(void* buffer, const size_t size)
             {
                 break;
             }
-            
+
             /* 8-bit and 7-bit mode */
             ((uint8_t*)(buffer))[processedSize] = (uint8_t)(U${instanceNumber}RXB);
             processedSize++;
@@ -363,7 +363,7 @@ bool ${moduleName}_Write( void* buffer, const size_t size )
             /* Initiate the transfer by writing as many bytes as we can */
             while((U${instanceNumber}STATbits.TXBF == 0U) && (txSize > txProcessedSize) )
             {
-                
+
                 /* 7-bit and 8-bit mode */
                 U${instanceNumber}TXB = ((uint8_t*)${moduleName?lower_case}Obj.txBuffer)[txProcessedSize];
                 txProcessedSize++;
@@ -525,7 +525,7 @@ void ${rxIsrHandlerName}(void)
 
         /* Clear ${moduleName} RX Interrupt flag */
         ${rxInterruptFlagBit} = 0U;
-        
+
         /* Check if the buffer is done */
         if(rxProcessedSize >= ${moduleName?lower_case}Obj.rxSize)
         {
@@ -560,7 +560,7 @@ void ${txIsrHandlerName}(void)
 
         /* Clear ${moduleName} TX Interrupt flag */
         ${txInterruptFlagBit} = 0u;
-        
+
         while((U${instanceNumber}STATbits.TXBF == 0U) && (txSize > txProcessedSize) )
         {
             /* 8-bit mode */

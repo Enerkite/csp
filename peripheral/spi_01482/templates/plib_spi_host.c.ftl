@@ -50,7 +50,7 @@
 
 <#if SPI_INTERRUPT_MODE == true>
 /* Global object to save SPI Exchange related data */
-volatile static SPI_OBJECT ${SPI_INSTANCE_NAME?lower_case}Obj;
+static volatile SPI_OBJECT ${SPI_INSTANCE_NAME?lower_case}Obj;
 </#if>
 
 // *****************************************************************************

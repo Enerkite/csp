@@ -8,13 +8,13 @@
     plib_secumod.c
 
   Summary:
-    This source file implements a driver for a hardware security module found in secure microcontrollers. 
-    The driver is responsible for configuring and managing the module?s security features, which include 
+    This source file implements a driver for a hardware security module found in secure microcontrollers.
+    The driver is responsible for configuring and managing the module?s security features, which include
     monitoring for abnormal temperature, voltage fluctuations, and physical intrusion attempts.
-    At startup, the driver sets up the security module to detect critical conditions, such as high 
-    temperature, and ensures that the system is ready to respond to these events. 
-    It provides mechanisms to read the current status of the security system, including whether backup 
-    protection, scrambling, or automatic backup features are active. The driver also allows the application 
+    At startup, the driver sets up the security module to detect critical conditions, such as high
+    temperature, and ensures that the system is ready to respond to these events.
+    It provides mechanisms to read the current status of the security system, including whether backup
+    protection, scrambling, or automatic backup features are active. The driver also allows the application
     to enable or disable these features as needed, adapting the security posture to the system?s operational requirements.
 
   Remarks:
@@ -47,7 +47,7 @@ whether express or implied, are granted under any patent or other intellectual p
 #define SECUMOD_TPM_HIGH_MASK   (SECUMOD_SCR_TPMH_Msk >> SECUMOD_SCR_TPMH_Pos)
 
 // Callback object for SECUMOD
-volatile static SECUMOD_CALLBACK_OBJECT SECUMOD_CallbackObj;
+static volatile SECUMOD_CALLBACK_OBJECT SECUMOD_CallbackObj;
 
 /**
  * @brief Initialize SECUMOD module.
@@ -190,7 +190,7 @@ void SECUMOD_GetAlarmStatus(secumod_alarm_status_t* status)
  */
 void SECUMOD_EnableBackupAlarm( const SECUMOD_BACKUP_ALARM_LIST backup_alarm_list )
 {
-    if ( backup_alarm_list & SECUMOD_BACKUP_STATUS_MASK ) 
+    if ( backup_alarm_list & SECUMOD_BACKUP_STATUS_MASK )
     {
         // Show backup and normal protection registers
         SECUMOD_REGS->SECUMOD_CR = SECUMOD_CR_KEY_SHOW;
@@ -210,7 +210,7 @@ void SECUMOD_EnableBackupAlarm( const SECUMOD_BACKUP_ALARM_LIST backup_alarm_lis
  */
 void SECUMOD_DisableBackupAlarm( const SECUMOD_BACKUP_ALARM_LIST backup_alarm_list )
 {
-    if ( backup_alarm_list & SECUMOD_BACKUP_STATUS_MASK ) 
+    if ( backup_alarm_list & SECUMOD_BACKUP_STATUS_MASK )
     {
         // Show backup and normal protection registers
         SECUMOD_REGS->SECUMOD_CR = SECUMOD_CR_KEY_SHOW;
@@ -249,7 +249,7 @@ void SECUMOD_EnableBackupWakeup( const SECUMOD_BACKUP_ALARM_LIST backup_alarm_li
  */
 void SECUMOD_DisableBackupWakeup( const SECUMOD_BACKUP_ALARM_LIST backup_alarm_list )
 {
-    if ( backup_alarm_list & SECUMOD_BACKUP_STATUS_MASK ) 
+    if ( backup_alarm_list & SECUMOD_BACKUP_STATUS_MASK )
     {
         SECUMOD_REGS->SECUMOD_WKPR &= ~backup_alarm_list;
     }
@@ -262,7 +262,7 @@ void SECUMOD_DisableBackupWakeup( const SECUMOD_BACKUP_ALARM_LIST backup_alarm_l
  */
 void SECUMOD_EnableNormalAlarm( const SECUMOD_NORMAL_ALARM_LIST normal_alarm_list )
 {
-    if ( normal_alarm_list & SECUMOD_NORMAL_STATUS_MASK ) 
+    if ( normal_alarm_list & SECUMOD_NORMAL_STATUS_MASK )
     {
         // Show backup and normal protection registers
         SECUMOD_REGS->SECUMOD_CR = SECUMOD_CR_KEY_SHOW;
@@ -282,7 +282,7 @@ void SECUMOD_EnableNormalAlarm( const SECUMOD_NORMAL_ALARM_LIST normal_alarm_lis
  */
 void SECUMOD_DisableNormalAlarm( const SECUMOD_NORMAL_ALARM_LIST normal_alarm_list )
 {
-    if ( normal_alarm_list & SECUMOD_NORMAL_STATUS_MASK ) 
+    if ( normal_alarm_list & SECUMOD_NORMAL_STATUS_MASK )
     {
         // Show backup and normal protection registers
         SECUMOD_REGS->SECUMOD_CR = SECUMOD_CR_KEY_SHOW;
@@ -303,7 +303,7 @@ void SECUMOD_DisableNormalAlarm( const SECUMOD_NORMAL_ALARM_LIST normal_alarm_li
  */
 void SECUMOD_EnableNormalInterrupt( const uint32_t normal_alarm_list, SECUMOD_ALARM_MASK clear_pending_flag_mask )
 {
-    if ( normal_alarm_list & SECUMOD_NORMAL_STATUS_MASK ) 
+    if ( normal_alarm_list & SECUMOD_NORMAL_STATUS_MASK )
     {
         // Clear any pending alarm event
         SECUMOD_ClearAlarmEvent( clear_pending_flag_mask );
@@ -376,7 +376,7 @@ void __attribute__((used)) SECUMOD_Handler(void)
 
     // Call registered callback function if set and if any alarm or system status is active
     if ( ( SECUMOD_CallbackObj.callback_fn != NULL ) && (
-        ( SECUMOD_ALARM_STATUS_NONE != secumod_status ) || ( SECUMOD_ALARM_STATUS_NONE != secumod_system_status ) ) ) 
+        ( SECUMOD_ALARM_STATUS_NONE != secumod_status ) || ( SECUMOD_ALARM_STATUS_NONE != secumod_system_status ) ) )
     {
         // Clear alarm flags if requested
         SECUMOD_ClearAlarmEvent( SECUMOD_CallbackObj.auto_clear_status_mask );
