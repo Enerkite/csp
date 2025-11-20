@@ -71,7 +71,7 @@ void _IllegalInstructionTrap(void);
 #pragma coverity compliance end_block "MISRA C-2023 Rule 21.2"
 </#if>
 
-#define ERROR_HANDLER __attribute__((weak,interrupt,no_auto_psv))
+#define ERROR_HANDLER __attribute__((weak,interrupt,no_auto_psv, noreturn))
 #define FAILSAFE_STACK_GUARDSIZE 8
 #define FAILSAFE_STACK_SIZE 32
 
@@ -84,7 +84,7 @@ static uint32_t  exception_code;
 // Section: Driver Interface Function Definitions
 
 //@brief Halts
-void __attribute__((weak)) ${trapsFileUpperCase}_halt_on_error(uint16_t code)  //
+void __attribute__((weak, noreturn)) ${trapsFileUpperCase}_halt_on_error(uint16_t code)  //
 {
     exception_code  = code;
 

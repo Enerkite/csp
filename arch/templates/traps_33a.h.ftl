@@ -6,8 +6,8 @@
     ${trapsFileLowerCase}.h
 
   Summary:
-    Traps driver with handler for all types of traps using dsPIC MCUs.   
- 
+    Traps driver with handler for all types of traps using dsPIC MCUs.
+
   Description:
     None
 
@@ -63,7 +63,7 @@
 /**
  * @brief    TRAPS error codes Type Definition
  *
- * Defines the type used to represent TRAPS error codes in the system. 
+ * Defines the type used to represent TRAPS error codes in the system.
  * The value corresponds to various TRAPS error codes available in the device.
  */
 </#if>
@@ -75,13 +75,14 @@ typedef uint32_t TRAPS_ERROR_CODE;
 /**
  * @ingroup    trapsdriver
  * @brief      Stores the trap error code and waits forever.
- *             This is a weak attribute function. The user can 
+ *             This is a weak attribute function. The user can
  *             override and implement the same function without weak attribute.
  * @param[in]  code - trap error code
- * @return     none  
+ * @return     none
  */
  </#if>
-void ${trapsFileUpperCase}_halt_on_error(uint16_t code);
+
+void __attribute__((weak, noreturn)) ${trapsFileUpperCase}_halt_on_error(uint16_t code);
 
 #endif
 
