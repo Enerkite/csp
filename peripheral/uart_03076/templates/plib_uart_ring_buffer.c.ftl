@@ -84,7 +84,7 @@ static volatile uint8_t ${moduleName}_ReadBuffer[${moduleName}_READ_BUFFER_SIZE]
 #define ${moduleName}_WRITE_BUFFER_SIZE      (${txBufferSize}U + 1U)
 static volatile uint8_t ${moduleName}_WriteBuffer[${moduleName}_WRITE_BUFFER_SIZE];
 
-void static ${moduleName}_ErrorClear( void )
+static void ${moduleName}_ErrorClear( void )
 {
     UART_ERROR errors = UART_ERROR_NONE;
     uint8_t dummyData = 0u;

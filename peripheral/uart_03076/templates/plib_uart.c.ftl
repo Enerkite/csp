@@ -80,7 +80,7 @@ static volatile UART_OBJECT ${moduleName?lower_case}Obj;
 
 // Section: ${moduleName} Implementation
 
-void static ${moduleName}_ErrorClear( void )
+static void ${moduleName}_ErrorClear( void )
 {
     UART_ERROR errors = UART_ERROR_NONE;
     uint8_t dummyData = 0u;
