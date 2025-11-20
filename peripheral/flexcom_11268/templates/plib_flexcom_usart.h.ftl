@@ -165,7 +165,7 @@ void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Vcc_Disable( void );
 
 void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Warm_Reset( void );
 
-void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Decode_Atr( uint8_t *p_atr, uint8_t size);
+void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Decode_Atr(uint8_t * pAtr, uint8_t size);
 
 uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Data_Read_Atr( uint8_t *p_atr );
 
