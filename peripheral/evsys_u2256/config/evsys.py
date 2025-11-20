@@ -140,6 +140,12 @@ def instantiateComponent(evsysComponent):
     #EVSYS Main Menu
     evsysSym_Menu = evsysComponent.createMenuSymbol("EVSYS_MENU", None)
     evsysSym_Menu.setLabel("EVSYS MODULE SETTINGS ")
+    
+    #EVSYS Secure/Non-Secure
+    evsysSecImplemented = evsysComponent.createBooleanSymbol("EVSYS_SEC_IMPLEMENTED", evsysSym_Menu)
+    evsysSecImplemented.setVisible(False)
+
+    evsysSecImplemented.setDefaultValue(False)
 
     generatorSymbol = []
     generatorsNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/generators")
