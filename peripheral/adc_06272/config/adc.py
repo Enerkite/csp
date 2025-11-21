@@ -99,12 +99,12 @@ def updateADCInterruptStatus(symbol, event):
             else:
                 Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_Handler", 2)
         elif (event["id"] == "ADC_INTENSET_SAMPRDY"):
-            Database.setSymbolValue("core", InterruptVector[1], event["value"], 2)
-            Database.setSymbolValue("core", InterruptHandlerLock[1], event["value"], 2)
+            Database.setSymbolValue("core", InterruptVector[2], event["value"], 2)
+            Database.setSymbolValue("core", InterruptHandlerLock[2], event["value"], 2)
             if event["value"] == True:
-                Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_SAMPRDY_InterruptHandler", 2)
+                Database.setSymbolValue("core", InterruptHandler[2], adcInstanceName.getValue() + "_SAMPRDY_InterruptHandler", 2)
             else:
-                Database.setSymbolValue("core", InterruptHandler[1], adcInstanceName.getValue() + "_Handler", 2)
+                Database.setSymbolValue("core", InterruptHandler[2], adcInstanceName.getValue() + "_Handler", 2)
 
     else:
         if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True or adcSym_INTENSET_SAMPRDY.getValue() == True:
@@ -127,12 +127,15 @@ def updateADCInterruptWarningStatus(symbol, event):
         if adcSym_INTENSET_RESRDY.getValue() == True:
             if (Database.getSymbolValue("core", InterruptVectorUpdate[1].split("core.")[1]) == True):
                 symVisible = True
+        if adcSym_INTENSET_SAMPRDY.getValue() == True:
+            if (Database.getSymbolValue("core", InterruptVectorUpdate[2].split("core.")[1]) == True):
+                symVisible = True
         if symVisible == True:
             symbol.setVisible(True)
         else:
             symbol.setVisible(False)
     else:
-        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True:
+        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True or adcSym_INTENSET_SAMPRDY.getValue() == True:
             if (Database.getSymbolValue("core", InterruptVectorUpdate) == True):
                 symbol.setVisible(True)
             else:
@@ -465,14 +468,14 @@ def handleMessage(messageID, args):
             if enable == False:
                 Database.clearSymbolValue(component, "ADC_INPUTCTRL_{}".format(muxInput))
                 if muxInput == 'MUXNEG':
-                    Database.clearSymbolValue(component, "ADC_CTRLC_DIFFMODE")
+                    Database.clearSymbolValue(component, "ADC_COMMAND_DIFFMODE")
                     
                 dict = {"Result": "Success"}
             else:
                 for adcInputValue in adcInputValues:
                     if adcInputValue.getAttribute("name") == "AIN{}".format(channel):
                         if muxInput == 'MUXNEG':
-                            res = Database.setSymbolValue(component, "ADC_CTRLC_DIFFMODE", enable)
+                            res = Database.setSymbolValue(component, "ADC_COMMAND_DIFFMODE", enable)
                             adcSym_INPUTCTRL_MUXNEG.setSelectedKey("AIN{}".format(channel))
                         else:
                             res = True
@@ -878,10 +881,10 @@ def instantiateComponent(adcComponent):
     adcChannelMenu = adcComponent.createMenuSymbol("ADC_CHANNEL_MENU", None)
     adcChannelMenu.setLabel("Channel Configuration")
 
-    adcSym_CTRLC_DIFFMODE = adcComponent.createBooleanSymbol("ADC_CTRLC_DIFFMODE", adcChannelMenu)
-    adcSym_CTRLC_DIFFMODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:COMMAND")
-    adcSym_CTRLC_DIFFMODE.setLabel("Enable Differential Mode")
-    adcSym_CTRLC_DIFFMODE.setDefaultValue(False)
+    adcSym_COMMAND_DIFFMODE = adcComponent.createBooleanSymbol("ADC_COMMAND_DIFFMODE", adcChannelMenu)
+    adcSym_COMMAND_DIFFMODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:COMMAND")
+    adcSym_COMMAND_DIFFMODE.setLabel("Enable Differential Mode")
+    adcSym_COMMAND_DIFFMODE.setDefaultValue(False)
 
     # positive input
     global adcSym_INPUTCTRL_MUXPOS
@@ -946,7 +949,7 @@ def instantiateComponent(adcComponent):
             adcNagativeInputValues[index].getAttribute("caption"))
             gndIndex += 1
     adcSym_INPUTCTRL_MUXNEG.setDefaultValue(defaultIndex)
-    adcSym_INPUTCTRL_MUXNEG.setDependencies(adcMuxNegVisibility, ["ADC_CTRLC_DIFFMODE"])
+    adcSym_INPUTCTRL_MUXNEG.setDependencies(adcMuxNegVisibility, ["ADC_COMMAND_DIFFMODE"])
 
     adcResultMenu = adcComponent.createMenuSymbol("ADC_RESULT_MENU", None)
     adcResultMenu.setLabel("Result Configuration")

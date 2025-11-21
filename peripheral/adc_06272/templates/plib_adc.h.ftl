@@ -118,7 +118,11 @@ void ${ADC_INSTANCE_NAME}_CallbackRegister( ADC_CALLBACK callback, uintptr_t con
 </#if>
 
 <#if ADC_INTENSET_RESRDY == false>
-bool ${ADC_INSTANCE_NAME}_ConversionStatusGet( void );
+bool ${ADC_INSTANCE_NAME}_ResultReadyStatusGet( void );
+</#if>
+
+<#if ADC_INTENSET_SAMPRDY == false>
+bool ${ADC_INSTANCE_NAME}_SampleReadyStatusGet( void );
 </#if>
 
 <#if ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == false>

@@ -58,21 +58,10 @@
 </#if>
 #include "plib_${ADC_INSTANCE_NAME?lower_case}.h"
 <#compress>
-<#assign ADC_CTRLC_VAL = "">
 <#assign ADC_SEQCTRL_VAL = "">
 <#assign ADC_EVCTRL_VAL = "">
 <#assign ADC_INTENSET_VAL = "">
 <#assign ADC_CTRLA_VAL = "">
-<#if ADC_CTRLC_DIFFMODE == true>
-    <#assign ADC_CTRLC_VAL = "ADC_CTRLC_DIFFMODE_Msk">
-</#if>
-<#if ADC_CONV_TRIGGER == "Free Run">
-    <#if ADC_CTRLC_VAL != "">
-        <#assign ADC_CTRLC_VAL = ADC_CTRLC_VAL + " | ADC_CTRLC_FREERUN_Msk">
-    <#else>
-        <#assign ADC_CTRLC_VAL = "ADC_CTRLC_FREERUN_Msk">
-    </#if>
-</#if>
 
 <#if ADC_CONV_TRIGGER != "Free Run">
     <#list 0..ADC_NUM_CHANNELS-1 as i>
@@ -134,6 +123,13 @@
         <#assign ADC_INTENSET_VAL = "ADC_INTENSET_RESRDY_Msk">
     </#if>
 </#if>
+<#if ADC_INTENSET_SAMPRDY == true>
+    <#if ADC_INTENSET_VAL != "">
+        <#assign ADC_INTENSET_VAL = ADC_INTENSET_VAL + " | ADC_INTENSET_SAMPRDY_Msk">
+    <#else>
+        <#assign ADC_INTENSET_VAL = "ADC_INTENSET_SAMPRDY_Msk">
+    </#if>
+</#if>
 <#if ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == true>
     <#if ADC_INTENSET_VAL != "">
         <#assign ADC_INTENSET_VAL = ADC_INTENSET_VAL + " | ADC_INTENSET_WCMP_Msk">
@@ -159,7 +155,7 @@
 // Section: Global Data
 // *****************************************************************************
 // *****************************************************************************
-<#if ADC_INTENSET_RESRDY = true || (ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP = true)>
+<#if (ADC_INTENSET_RESRDY == true) || (ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == true) || (ADC_INTENSET_SAMPRDY == true)>
 static volatile ADC_CALLBACK_OBJ ${ADC_INSTANCE_NAME}_CallbackObject;
 </#if>
 
@@ -193,11 +189,11 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
 <#if ADC_SEQCTRL_VAL?has_content>
     /*lint -e{9048} false positive about a missing 'U' literal */
     ${ADC_INSTANCE_NAME}_REGS->ADC_SEQCTRL = ${ADC_SEQCTRL_VAL};
-    <#if ADC_CTRLC_DIFFMODE == true>
+    <#if ADC_COMMAND_DIFFMODE == true>
     ${ADC_INSTANCE_NAME}_REGS->ADC_INPUTCTRL =  ((uint16_t)ADC_NEGINPUT_${ADC_INPUTCTRL_MUXNEG});
     </#if>
 <#else>
-    <#if ADC_CTRLC_DIFFMODE == true>
+    <#if ADC_COMMAND_DIFFMODE == true>
     /* Positive and negative input pins */
     ${ADC_INSTANCE_NAME}_REGS->ADC_INPUTCTRL =  ((uint16_t)ADC_POSINPUT_${ADC_INPUTCTRL_MUXPOS} | (uint16_t)ADC_NEGINPUT_${ADC_INPUTCTRL_MUXNEG});
     <#else>
@@ -206,7 +202,7 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     </#if>
 </#if>
 
-<#if (ADC_COMMAND_OPMODE == "0x2") || (ADC_COMMAND_OPMODE == "0x2")>
+<#if (ADC_COMMAND_OPMODE == "0x2") || (ADC_COMMAND_OPMODE == "0x3")>
     /* Resolution,Scaling,Filter & Chopping Mode */
     <@compress single_line=true>${ADC_INSTANCE_NAME}_REGS->ADC_CTRLD = ADC_CTRLD_RESOLUTION_${ADC_CTRLD_RESOLUTION}
     <#if ADC_CTRLD_FILTER>
@@ -219,20 +215,26 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     <#else>
         | ADC_CTRLD_CHOPPING(0UL)
     </#if>
-    | ADC_CTRLD_SCALING(${ADC_CTRLD_SCALING}UL);
+    | ADC_CTRLD_SCALING(${ADC_CTRLD_SCALING}UL)
+    <#if ADC_CONV_TRIGGER == "Free Run">
+        | ADC_CTRLD_FREERUN_Msk
+    </#if>;
     </@compress>
 <#else>
     /* Resolution & Scaling */
-    <@compress single_line=true>${ADC_INSTANCE_NAME}_REGS->ADC_CTRLD = ADC_CTRLD_RESOLUTION_${ADC_CTRLD_RESOLUTION} | ADC_CTRLD_SCALING(${ADC_CTRLD_SCALING}UL);</@compress>
+    <@compress single_line=true>${ADC_INSTANCE_NAME}_REGS->ADC_CTRLD = ADC_CTRLD_RESOLUTION_${ADC_CTRLD_RESOLUTION} | ADC_CTRLD_SCALING(${ADC_CTRLD_SCALING}UL)
+                                                                        <#if ADC_CONV_TRIGGER == "Free Run">
+                                                                            | ADC_CTRLD_FREERUN_Msk
+                                                                        </#if>
+                                                                        <#if ADC_CTRLD_VPD>
+                                                                            | ADC_CTRLD_VPD(1UL)
+                                                                        <#else>
+                                                                            | ADC_CTRLD_VPD(0UL)
+                                                                        </#if>;</@compress>
 </#if>
 
     /* Window Operation Mode */
     ${ADC_INSTANCE_NAME}_REGS->ADC_WINCTRL = (uint32_t)ADC_WINCTRL_WINMODE(${ADC_WINCTRL_WINMODE}UL);
-
-<#if ADC_CTRLD_RESOLUTION == "16BIT">
-    /* Result averaging */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_AVGCTRL = (uint8_t)(ADC_AVGCTRL_SAMPLENUM(${ADC_SAMPLENUM}UL) | ADC_AVGCTRL_ADJRES(${ADC_ADJRES}UL));
-</#if>
 
 <#if ADC_WINCTRL_WINMODE != "0x0">
     /* Upper threshold for window mode  */
@@ -263,7 +265,10 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     <#assign OPMODE = hexStr?number />
     <#assign hexStr = ADC_COMMAND_CTRLCONV?replace("0x", "") />
     <#assign STARTTYPE = hexStr?number />
-    ${ADC_INSTANCE_NAME}_REGS->ADC_COMMAND = (uint8_t)ADC_COMMAND_MODE(${OPMODE}UL) | (uint8_t)ADC_COMMAND_START(${STARTTYPE}UL);
+    <@compress single_line=true>${ADC_INSTANCE_NAME}_REGS->ADC_COMMAND = (uint8_t)ADC_COMMAND_MODE(${OPMODE}UL) | (uint8_t)ADC_COMMAND_START(${STARTTYPE}UL)
+                                            <#if ADC_COMMAND_DIFFMODE>
+                                                | (uint8_t)ADC_COMMAND_DIFF_Msk
+                                            </#if>;</@compress>
 
     while((${ADC_INSTANCE_NAME}_REGS->ADC_STATUS & ADC_STATUS_ADCBUSY_Msk) != 0U)
     {
@@ -346,7 +351,7 @@ void ${ADC_INSTANCE_NAME}_ComparisonWindowSet(uint16_t low_threshold, uint16_t h
 
 void ${ADC_INSTANCE_NAME}_WindowModeSet(ADC_WINMODE mode)
 {
-    ${ADC_INSTANCE_NAME}_REGS->ADC_WINCTRL =  (${ADC_INSTANCE_NAME}_REGS->ADC_WINCTRL & (uint16_t)(~ADC_WINCTRL_WINMODE_Msk)) | (uint16_t)((uint32_t)mode << ADC_WINCTRL_WINMODE_Pos);
+    ${ADC_INSTANCE_NAME}_REGS->ADC_WINCTRL =  (${ADC_INSTANCE_NAME}_REGS->ADC_WINCTRL & (uint16_t)(~ADC_WINCTRL_WINMODE_Msk)) | (uint16_t)((uint32_t)mode);
     while((${ADC_INSTANCE_NAME}_REGS->ADC_STATUS & ADC_STATUS_ADCBUSY_Msk) != 0U)
     {
         /* Wait for Synchronization */
@@ -374,7 +379,7 @@ void ${ADC_INSTANCE_NAME}_InterruptsDisable(ADC_STATUS interruptMask)
     ${ADC_INSTANCE_NAME}_REGS->ADC_INTENCLR = (uint8_t)interruptMask;
 }
 
-<#if ADC_INTENSET_RESRDY == true || (ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == true)>
+<#if (ADC_INTENSET_RESRDY == true) || (ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == true) || (ADC_INTENSET_SAMPRDY == true)>
 /* Register callback function */
 void ${ADC_INSTANCE_NAME}_CallbackRegister( ADC_CALLBACK callback, uintptr_t context )
 {
@@ -398,13 +403,26 @@ void __attribute__((used)) ${ADC_INSTANCE_NAME}_InterruptHandler( void )
 </#if>
 <#if ADC_INTENSET_RESRDY == false>
 /* Check whether result is ready */
-bool ${ADC_INSTANCE_NAME}_ConversionStatusGet( void )
+bool ${ADC_INSTANCE_NAME}_ResultReadyStatusGet( void )
 {
     bool status;
     status =  (((${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG & ADC_INTFLAG_RESRDY_Msk) >> ADC_INTFLAG_RESRDY_Pos) != 0U);
     if (status == true)
     {
         ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTFLAG_RESRDY_Msk;
+    }
+    return status;
+}
+</#if>
+<#if ADC_INTENSET_SAMPRDY == false>
+/* Check whether sample is ready */
+bool ${ADC_INSTANCE_NAME}_SampleReadyStatusGet( void )
+{
+    bool status;
+    status =  (((${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG & ADC_INTENSET_SAMPRDY_Msk) >> ADC_INTENSET_SAMPRDY_Pos) != 0U);
+    if (status == true)
+    {
+        ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)ADC_INTENSET_SAMPRDY_Msk;
     }
     return status;
 }
