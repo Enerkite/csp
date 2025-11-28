@@ -98,13 +98,15 @@ void ${ADC_INSTANCE_NAME}_ChannelSelect( ADC_POSINPUT positiveInput, ADC_NEGINPU
 
 void ${ADC_INSTANCE_NAME}_ConversionStart( void );
 
-uint16_t ${ADC_INSTANCE_NAME}_ConversionResultGet( void );
+void ${ADC_INSTANCE_NAME}_ConversionStartTypeSelect( ADC_STARTTYPE startType );
+
+bool ${ADC_INSTANCE_NAME}_ConversionIsFinished( void );
+
+uint32_t ${ADC_INSTANCE_NAME}_ConversionResultGet( void );
 
 void ${ADC_INSTANCE_NAME}_ComparisonWindowSet(uint16_t low_threshold, uint16_t high_threshold);
 
 void ${ADC_INSTANCE_NAME}_WindowModeSet(ADC_WINMODE mode);
-
-bool ${ADC_INSTANCE_NAME}_ConversionSequenceIsFinished(void);
 
 void ${ADC_INSTANCE_NAME}_InterruptsClear(ADC_STATUS interruptMask);
 
@@ -125,7 +127,7 @@ bool ${ADC_INSTANCE_NAME}_ResultReadyStatusGet( void );
 bool ${ADC_INSTANCE_NAME}_SampleReadyStatusGet( void );
 </#if>
 
-<#if ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == false>
+<#if ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == false>
 bool ${ADC_INSTANCE_NAME}_WindowMonitorStatusGet( void );
 </#if>
 
