@@ -62,7 +62,7 @@ def getMaxValue(mask):
 registerGroup = ["BOOT0_FUSES", "BOOT1_FUSES", "BOOT2_FUSES", "BOOT3_FUSES", "BOOT4_FUSES", "BOOT5_FUSES"]
 
 #TO:DO Set Default fuse values once device arrives
-default = [0xFFFFFFFF,
+default = [0,
            0x7,
            0,
            0,
