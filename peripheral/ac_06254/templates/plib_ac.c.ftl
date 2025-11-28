@@ -280,7 +280,7 @@ void __attribute__((used)) ${AC_INSTANCE_NAME}_InterruptHandler( void )
     uint8_t status;
     context = ${AC_INSTANCE_NAME?lower_case}Obj.context;
     /* Copy the status to use inside the callback */
-    ${AC_INSTANCE_NAME?lower_case}Obj.status = ${AC_INSTANCE_NAME}_REGS->AC_STATUS;
+    ${AC_INSTANCE_NAME?lower_case}Obj.status = (uint8_t)${AC_INSTANCE_NAME}_REGS->AC_STATUS;
     status = ${AC_INSTANCE_NAME?lower_case}Obj.status;
     /* Clear the interrupt flags*/
     ${AC_INSTANCE_NAME}_REGS->AC_INTFLAG = (uint8_t)AC_INTFLAG_Msk;

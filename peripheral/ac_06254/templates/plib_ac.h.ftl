@@ -111,8 +111,6 @@ void ${AC_INSTANCE_NAME}_Initialize (void);
 
 void ${AC_INSTANCE_NAME}_Start( AC_CHANNEL channel_id );
 
-void ${AC_INSTANCE_NAME}_SwapInputs( AC_CHANNEL channel_id );
-
 bool ${AC_INSTANCE_NAME}_StatusGet (AC_CHANNEL channel);
 
 void ${AC_INSTANCE_NAME}_CallbackRegister (AC_CALLBACK callback, uintptr_t context);
