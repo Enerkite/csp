@@ -254,7 +254,7 @@ bool ${AC_INSTANCE_NAME}_StatusGet (AC_CHANNEL channel)
 {
     bool breturnVal = false;
 
-    if((${AC_INSTANCE_NAME}_REGS->AC_STATUS & (AC_STATUS_STATE0_Msk << (uint8_t)channel)) == (AC_STATUS_STATE0_Msk << (uint8_t)channel))
+    if((${AC_INSTANCE_NAME}_REGS->AC_STATUS & (AC_STATUS_COMPSTATE0_Msk << (uint8_t)channel)) == (AC_STATUS_COMPSTATE0_Msk << (uint8_t)channel))
     {
         breturnVal = true;
     }

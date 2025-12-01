@@ -531,7 +531,7 @@ def instantiateComponent(acComponent):
         acSym_WNCTRL_WINT[num].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_06254;register:winctrl")
         acSym_WNCTRL_WINT[num].setLabel("AC Window Interrupt Selection")
 
-        acSym_WNCTRL_WINT_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_WINCTRL__WINTSEL0\"]")
+        acSym_WNCTRL_WINT_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_WINCTRL__WINTSELx\"]")
         acSym_WNCTRL_WINT_Values = []
         acSym_WNCTRL_WINT_Values = acSym_WNCTRL_WINT_node.getChildren()
         acSym_WNCTRL_WINT0_Default_Val = 0
