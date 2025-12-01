@@ -119,9 +119,11 @@ typedef enum
 
 typedef enum
 {
-    ADC_STARTTYPE_INPUT = ADC_COMMAND_START_INPUT,
-    ADC_STARTTYPE_EVENT = ADC_COMMAND_START_EVENT,
-}ADC_STARTTYPE;
+    ADC_STARTMODE_STOP       = 0x0, // Stop an ongoing conversion
+    ADC_STARTMODE_IMMEDIATE  = 0x1, // Start conversion immediately
+    ADC_STARTMODE_INPUT      = 0x2, // Start conversion on INPUTCTRL register write
+    ADC_STARTMODE_EVENT      = 0x4  // Start conversion on event trigger (EVCTRL.STARTEI must be set)
+} ADC_STARTMODE;
 
 
 // *****************************************************************************

@@ -98,7 +98,7 @@ void ${ADC_INSTANCE_NAME}_ChannelSelect( ADC_POSINPUT positiveInput, ADC_NEGINPU
 
 void ${ADC_INSTANCE_NAME}_ConversionStart( void );
 
-void ${ADC_INSTANCE_NAME}_ConversionStartTypeSelect( ADC_STARTTYPE startType );
+void ${ADC_INSTANCE_NAME}_ConversionStartModeSet( ADC_STARTMODE startMode );
 
 bool ${ADC_INSTANCE_NAME}_ConversionIsFinished( void );
 

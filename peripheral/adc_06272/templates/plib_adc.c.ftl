@@ -178,7 +178,7 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     }
 
     /* Prescaler and timebase configuration */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLB = (uint8_t)ADC_CTRLB_PRESC_${ADC_CTRLB_PRESCALER} | ADC_CTRLB_TIMEBASE(${ADC_CTRLB_TIMEBASE}UL) ;
+    ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLB = (uint8_t)ADC_CTRLB_PRESCALER_${ADC_CTRLB_PRESCALER} | ADC_CTRLB_TIMEBASE(${ADC_CTRLB_TIMEBASE}UL) ;
 
     /* Sampling length */
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLE = (uint8_t)ADC_CTRLE_SAMPLEN(${ADC_CTRLE_SAMPLEN - 1}UL);
@@ -321,10 +321,10 @@ void ${ADC_INSTANCE_NAME}_ConversionStart( void )
 }
 
 /* Select ADC conversion start type */
-void ${ADC_INSTANCE_NAME}_ConversionStartTypeSelect( ADC_STARTTYPE startType )
+void ${ADC_INSTANCE_NAME}_ConversionStartModeSet( ADC_STARTMODE startMode )
 {
     /* Start conversion */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_COMMAND |= (uint32_t)startType;
+    ${ADC_INSTANCE_NAME}_REGS->ADC_COMMAND |= (uint32_t)startMode;
 
     while((${ADC_INSTANCE_NAME}_REGS->ADC_STATUS & ADC_STATUS_ADCBUSY_Msk) != 0U)
     {

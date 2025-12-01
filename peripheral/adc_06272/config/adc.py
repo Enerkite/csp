@@ -782,7 +782,7 @@ def instantiateComponent(adcComponent):
     adcSym_CTRLB_PRESCALER.setDefaultValue(2)
     adcSym_CTRLB_PRESCALER.setOutputMode("Key")
     adcSym_CTRLB_PRESCALER.setDisplayMode("Description")
-    adcPrescalerNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_CTRLB__PRESC\"]")
+    adcPrescalerNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_CTRLB__PRESCALER\"]")
     adcPrescalerValues = []
     adcPrescalerValues = adcPrescalerNode.getChildren()
     for index in range(0, len(adcPrescalerValues)):
