@@ -177,6 +177,21 @@ def instantiateComponent(freqmComponent):
     freqmSym_MeasurementTime_Comment.setLabel("*** Measurement Time " + str(measurementTime) + " mS ***")
     freqmSym_MeasurementTime_Comment.setDependencies(updateMeasurementTime, ["core." + freqmInstanceName.getValue() + "_REF_CLOCK_FREQUENCY","FREQM_REF_CLK_CYCLES", "FREQM_REF_CLK_DIV"])
 
+    # The freqm calculation formula varies slightly depending on the IP version. Read the IP version to use the correct formula.
+    freqm_ip_ver = freqmComponent.createStringSymbol("FREQM_IP_VERSION", None)
+    freqm_ip_ver.setVisible(False)
+
+    freqm_module = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FREQM\"]")
+    freqm_id = freqm_module.getAttribute("id")
+    if freqm_id != None and freqm_id == "U2257":
+        freqm_version = freqm_module.getAttribute("version")
+        if freqm_version != None and (freqm_version == "1.0.1" or freqm_version == "1.1.0"):
+            freqm_ip_ver.setDefaultValue("v1")
+        else:
+            freqm_ip_ver.setDefaultValue("-")
+    else:
+        freqm_ip_ver.setDefaultValue("-")
+
     ############################################################################
     #### Dependency ####
     ############################################################################
