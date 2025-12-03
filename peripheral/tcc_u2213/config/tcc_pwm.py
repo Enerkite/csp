@@ -316,6 +316,17 @@ tccSym_WAVE_WAVEGEN.addKey("DSBOTH", "6", "Dual slope PWM with interrupt/event w
 tccSym_WAVE_WAVEGEN.addKey("DSTOP", "7", "Dual slope PWM with interrupt/event when counter = TOP")
 tccSym_WAVE_WAVEGEN.setDependencies(tccSlaveModeVisibility, ["TCC_SLAVE_MODE"])
 
+tccSym_WAVE_SINGLESLOPE = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"TCC\"]/register-group@[name=\"TCC\"]/register@[name=\"WAVE\"]/mode@[name=\"SINGLESLOPE\"]")
+if tccSym_WAVE_SINGLESLOPE != None:
+    tccSym_wave_singleslope = tccComponent.createBooleanSymbol("TCC_WAVE_SINGLESLOPE", tccSym_PWMMenu)
+    tccSym_wave_singleslope.setVisible(False)
+    tccSym_wave_singleslope.setValue(True)
+
+tccSym_WAVE_DUALSLOPE = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"TCC\"]/register-group@[name=\"TCC\"]/register@[name=\"WAVE\"]/mode@[name=\"DUALSLOPE\"]")
+if tccSym_WAVE_DUALSLOPE != None:
+    tccSym_wave_dualslope = tccComponent.createBooleanSymbol("TCC_WAVE_DUALSLOPE", tccSym_PWMMenu)
+    tccSym_wave_dualslope.setVisible(False)
+    tccSym_wave_dualslope.setValue(True)
 
 tccSym_CTRLBSET_DIR = tccComponent.createBooleanSymbol("TCC_CTRLBSET_DIR", tccSym_PWMMenu)
 tccSym_CTRLBSET_DIR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tcc_u2213;register:CTRLBSET")

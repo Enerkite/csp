@@ -117,17 +117,33 @@
 <#if (TCC_WAVE_WAVEGEN == "DSBOTTOM") || (TCC_WAVE_WAVEGEN == "DSBOTH") || (TCC_WAVE_WAVEGEN == "DSTOP") >
     <#if .vars[TCC_POLARITY] == "1">
         <#if TCC_WAVE_VAL != "">
-            <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+            <#if (TCC_WAVE_DUALSLOPE??) && (TCC_WAVE_DUALSLOPE == true)>
+                <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_DUALSLOPE_POL"+i+"_Msk">
+            <#else>
+                <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+            </#if>
         <#else>
-            <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+            <#if (TCC_WAVE_DUALSLOPE??) && (TCC_WAVE_DUALSLOPE == true)>
+                <#assign TCC_WAVE_VAL = "TCC_WAVE_DUALSLOPE_POL"+i+"_Msk">
+            <#else>
+                <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+            </#if>
         </#if>
     </#if>
 <#elseif (TCC_WAVE_WAVEGEN == "NPWM")>
 <#if .vars[TCC_POLARITY_NPWM] == "1">
     <#if TCC_WAVE_VAL != "">
-        <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+        <#if (TCC_WAVE_SINGLESLOPE??) && (TCC_WAVE_SINGLESLOPE == true)>
+            <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_SINGLESLOPE_POL"+i+"_Msk">
+        <#else>
+            <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+        </#if>
     <#else>
-        <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+        <#if (TCC_WAVE_SINGLESLOPE??) && (TCC_WAVE_SINGLESLOPE == true)>
+            <#assign TCC_WAVE_VAL = "TCC_WAVE_SINGLESLOPE_POL"+i+"_Msk">
+        <#else>
+            <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+        </#if>
     </#if>
 
 </#if>
@@ -572,7 +588,7 @@ void ${TCC_INSTANCE_NAME}_PWM32bitCounterSet (uint32_t countVal)
 /* Enable forced synchronous update */
 void ${TCC_INSTANCE_NAME}_PWMForceUpdate(void)
 {
-    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLBSET |= (uint8_t)TCC_CTRLBCLR_CMD_UPDATE;
+    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLBSET |= (uint8_t)TCC_CTRLBSET_CMD_UPDATE;
     while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_CTRLB_Msk) == TCC_SYNCBUSY_CTRLB_Msk)
     {
         /* Wait for sync */
