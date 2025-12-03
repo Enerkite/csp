@@ -1428,6 +1428,13 @@ def instantiateComponent(rtcComponent):
     else:
         rtcSymMode2_AlarmRegName.setDefaultValue("ALARM")
 
+    rtcSymMode2_ClockHourMaskName = rtcComponent.createStringSymbol("RTC_MODE2_CLOCK_HOUR_MASK_NAME", None)
+    rtcSymMode2_ClockHourMaskName.setVisible(False)
+    if ATDF.getNode('/avr-tools-device-file/modules/module@[name="RTC"]/register-group@[name="RTC"]/register@[modes="MODE2",name="CLOCK"]/bitfield@[modes="CLK24H"]') is not None:
+        rtcSymMode2_ClockHourMaskName.setDefaultValue("CLK24H_HOUR")
+    else:
+        rtcSymMode2_ClockHourMaskName.setDefaultValue("HOUR")
+
     rtcSymMode2_MaskRegName = rtcComponent.createStringSymbol("RTC_MODE2_MASK_REGISTER_NAME", None)
     rtcSymMode2_MaskRegName.setVisible(False)
     if ATDF.getNode('/avr-tools-device-file/modules/module@[name="RTC"]/register-group@[name="RTC"]/register@[modes="MODE2",name="MASK0"]') is not None:
