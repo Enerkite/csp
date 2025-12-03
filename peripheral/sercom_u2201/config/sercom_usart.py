@@ -549,6 +549,12 @@ usartSym_UseFractionalBaud.setValue(False)
 usartSym_UseFractionalBaud.setVisible(sampleRateSupported == True)
 usartSym_UseFractionalBaud.setDependencies(updateFractionalBaudConfig, ["USART_FORM", "SERCOM_MODE"])
 
+usartArithBaud = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/register-group@[name=\"SERCOM\"]/register@[modes=\"USART\",name=\"BAUD\"]/bitfield@[modes=\"ARITH\",name=\"BAUD\"]")
+if usartArithBaud != None:
+    usartSym_usartArithBaud = sercomComponent.createBooleanSymbol("USART_ARITH_BAUD", sercomSym_OperationMode)
+    usartSym_usartArithBaud.setVisible(False)
+    usartSym_usartArithBaud.setValue(True)
+
 #USART Baud Value
 usartSym_BAUD_VALUE = sercomComponent.createIntegerSymbol("USART_BAUD_VALUE", sercomSym_OperationMode)
 usartSym_BAUD_VALUE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:BAUD")
