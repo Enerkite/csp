@@ -190,7 +190,7 @@ def instantiateComponent(nvmctrlComponent):
     nvmctrlSym_MemoryEraseComment.setLabel("*** Should be equal to Row Erase Size ***")
     nvmctrlSym_MemoryEraseComment.setDependencies(nvmctlrSetMemoryDependency, ["DRV_MEMORY_CONNECTED", "ERASE_ENABLE"])
 
-    writeApiName = nvmctrlComponent.getID().upper() + "_PageWrite"
+    writeApiName = nvmctrlComponent.getID().upper() + "_FlashWrite"
     eraseApiName = nvmctrlComponent.getID().upper() + "_PageErase"
     userRowEraseApiName = nvmctrlComponent.getID().upper() + "_BOOTCFG_PageErase"
     userRowWriteApiName = nvmctrlComponent.getID().upper() + "_BOOTCFG_PageWrite"

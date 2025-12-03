@@ -91,13 +91,6 @@ static volatile nvmCallbackObjType ${NVMCTRL_INSTANCE_NAME?lower_case}CallbackOb
     <#lt>}
 </#if>
 
-/*
-void ${NVMCTRL_INSTANCE_NAME}_Initialize(void)
-{
-
-}
-*/
-
 bool ${NVMCTRL_INSTANCE_NAME}_Read( uint32_t *data, uint32_t length, const uint32_t address )
 {
     uint32_t *paddress_read = (uint32_t *)address;
@@ -105,24 +98,20 @@ bool ${NVMCTRL_INSTANCE_NAME}_Read( uint32_t *data, uint32_t length, const uint3
     return true;
 }
 
-bool ${NVMCTRL_INSTANCE_NAME}_WordWrite( uint32_t *data, const uint32_t address, uint32_t word_count )
+bool ${WRITE_API_NAME}( uint32_t *data, const uint32_t address, uint32_t size )
 {
     uint32_t i;
     uint32_t * paddress = (uint32_t *)address;
 
-	/* Erase page before write 
-	if ( ${NVMCTRL_INSTANCE_NAME}_PageErase( address ) == false){
-		return false;
-	}
-	*/
-	
+    ${NVMCTRL_INSTANCE_NAME}_CMD_Clear();
+    
     /* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address;
 
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_FLWR_Val | NVMCTRL_CTRLB_CMDEX_KEY;
 
-	/* writing 32-bit data into the given address */
-    for (i = 0U; i < word_count; i++)
+    /* writing 32-bit data into the given address */
+    for (i = 0U; i < (size/4U); i++)
     {
         *paddress = data[i];
          paddress++;
@@ -131,29 +120,33 @@ bool ${NVMCTRL_INSTANCE_NAME}_WordWrite( uint32_t *data, const uint32_t address,
 <#if INTERRUPT_ENABLE == true>
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_INTENSET = NVMCTRL_INTENSET_READY_Msk;
 </#if>
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
+    
     return true;
 }
 
-bool ${WRITE_API_NAME}( uint32_t *data, const uint32_t address )
+bool ${ERASE_API_NAME}( uint32_t address )
 {
-    uint32_t i;
-    uint32_t * paddress = (uint32_t *)address;
-
-	/* Erase page before write */
-	if ( ${NVMCTRL_INSTANCE_NAME}_PageErase( address ) == false){
-		return false;
-	}
-	
+    ${NVMCTRL_INSTANCE_NAME}_CMD_Clear();
+    
     /* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address;
 
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_FLWR_Val | NVMCTRL_CTRLB_CMDEX_KEY;
-
-	/* writing 32-bit data into the given address */
-    for (i = 0U; i < (${NVMCTRL_INSTANCE_NAME}_FLASH_PAGESIZE/4U); i++)
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_FLPER_Val | NVMCTRL_CTRLB_CMDEX_KEY;
+    
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
     {
-        *paddress = data[i];
-         paddress++;
+        /* Waiting for Ready state */
+    }
+    
+    *((uint32_t *)address) = 0xFFFFFFFFU;
+    
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
     }
 
 <#if INTERRUPT_ENABLE == true>
@@ -162,15 +155,18 @@ bool ${WRITE_API_NAME}( uint32_t *data, const uint32_t address )
     return true;
 }
 
-bool ${NVMCTRL_INSTANCE_NAME}_PagesErase(uint32_t start_address, FLASH_ERASE num_pages)
+bool ${NVMCTRL_INSTANCE_NAME}_PagesErase(uint32_t address, FLASH_ERASE num_pages)
 {
-    uint8_t cmd;
-
+    uint32_t cmd;
+	bool status = true;
+	
+    ${NVMCTRL_INSTANCE_NAME}_CMD_Clear();
+    
     switch (num_pages)
     {
-		case FLASH_ERASE_2_PAGE:
+        case FLASH_ERASE_2_PAGE:
             cmd = NVMCTRL_CTRLB_CMD_FLMPER2_Val;
-			break;
+            break;
         case FLASH_ERASE_4_PAGE:
             cmd = NVMCTRL_CTRLB_CMD_FLMPER4_Val;
             break;
@@ -184,48 +180,61 @@ bool ${NVMCTRL_INSTANCE_NAME}_PagesErase(uint32_t start_address, FLASH_ERASE num
             cmd = NVMCTRL_CTRLB_CMD_FLMPER32_Val;
             break;
         default:
-            return false;  
+			status = false;  
+			break;
     }
-
-	/* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = start_address >> 1U;
 	
+	if (!status)
+	{
+		return status;
+	}
+
+    /* Set address and command */
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address;
+    
     /* Issue erase command */
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = cmd | NVMCTRL_CTRLB_CMDEX_KEY;
-	
-	${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_INTENSET = NVMCTRL_INTENSET_READY_Msk;
-
-    return true;
-}
-
-bool ${ERASE_API_NAME}( uint32_t address )
-{
-    /* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
-
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_FLPER_Val | NVMCTRL_CTRLB_CMDEX_KEY;
-
+    
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
+    
+    *((uint32_t *)address) = 0xFFFFFFFFU;
+    
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
 <#if INTERRUPT_ENABLE == true>
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_INTENSET = NVMCTRL_INTENSET_READY_Msk;
 </#if>
+
     return true;
 }
 
-bool ${NVMCTRL_INSTANCE_NAME}_BOOTCFG_WordWrite( uint32_t *data, const uint32_t address, uint32_t word_count )
+bool ${NVMCTRL_INSTANCE_NAME}_BOOTCFG_FlashWrite( uint32_t *data, const uint32_t address, uint32_t size )
 {
     uint32_t i;
     uint32_t * paddress = (uint32_t *)address;
 
-	/* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
+    ${NVMCTRL_INSTANCE_NAME}_CMD_Clear();
+    
+    /* Set address and command */
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address;
 
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_WBOOTCFG_Val | NVMCTRL_CTRLB_CMDEX_KEY;
 
-	/* writing 32-bit data into the given address */
-    for (i = 0U; i < word_count; i++)
+    /* writing 32-bit data into the given address */
+    for (i = 0U; i < (size/4U); i++)
     {
         *paddress = data[i];
          paddress++;
+    }
+
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
     }
     
 <#if INTERRUPT_ENABLE == true>
@@ -234,49 +243,39 @@ bool ${NVMCTRL_INSTANCE_NAME}_BOOTCFG_WordWrite( uint32_t *data, const uint32_t 
     return true;
 }
 
-bool ${NVMCTRL_INSTANCE_NAME}_BOOTCFG_PageWrite( uint32_t *data, const uint32_t address )
+bool ${NVMCTRL_INSTANCE_NAME}_BOOTCFG_FlashErase( uint32_t address )
 {
-    uint32_t i;
-    uint32_t * paddress = (uint32_t *)address;
-
+    ${NVMCTRL_INSTANCE_NAME}_CMD_Clear();
+    
     /* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
-
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_WBOOTCFG_Val | NVMCTRL_CTRLB_CMDEX_KEY;
-
-    /* writing 32-bit data into the given address */
-    for (i = 0U; i < (NVMCTRL_FLASH_PAGESIZE/4U); i++)
-    {
-        *paddress = data[i];
-         paddress++;
-    }
-
-<#if INTERRUPT_ENABLE == true>
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_INTENSET = NVMCTRL_INTENSET_READY_Msk;
-</#if>
-    return true;
-}
-
-bool ${NVMCTRL_INSTANCE_NAME}_BOOTCFG_PageErase( uint32_t address )
-{
-    /* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address;
 
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_EBOOTCFG_Val | NVMCTRL_CTRLB_CMDEX_KEY;
+    
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
+    
+    *((uint32_t *)address) = 0xFFFFFFFFU;
 
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
+    
 <#if INTERRUPT_ENABLE == true>
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_INTENSET = NVMCTRL_INTENSET_READY_Msk;
 </#if>
     return true;
 }
-
 
 NVMCTRL_ERROR ${NVMCTRL_INSTANCE_NAME}_ErrorGet( void )
 {
-    volatile uint16_t nvm_error;
+    volatile uint32_t nvm_error;
 
     /* Get the error bits set */
-    nvm_error = (${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_STATUS & ((uint8_t) NVMCTRL_STATUS_LOCKE_Msk | NVMCTRL_STATUS_PROGE_Msk));
+    nvm_error = (${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_STATUS & (NVMCTRL_STATUS_LOCKE_Msk | NVMCTRL_STATUS_PROGE_Msk));
 
     /* Clear the error bits in both STATUS and INTFLAG register */
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_STATUS |= nvm_error;
@@ -293,33 +292,56 @@ bool ${NVMCTRL_INSTANCE_NAME}_IsBusy(void)
 
 void ${NVMCTRL_INSTANCE_NAME}_RegionLock(uint32_t address)
 {
+    ${NVMCTRL_INSTANCE_NAME}_CMD_Clear();
+    
     /* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address;
 
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_LR_Val | NVMCTRL_CTRLB_CMDEX_KEY;
+    
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
 }
 
 void ${NVMCTRL_INSTANCE_NAME}_RegionUnlock(uint32_t address)
 {
+    ${NVMCTRL_INSTANCE_NAME}_CMD_Clear();
+    
     /* Set address and command */
-    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address >> 1U;
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_ADDR = address;
 
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_UR_Val | NVMCTRL_CTRLB_CMDEX_KEY;
+    
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
 }
 
 void ${NVMCTRL_INSTANCE_NAME}_CMD_Clear(void)
 {
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_CMD_NOCMD | NVMCTRL_CTRLB_CMDEX_KEY;
+    while(${NVMCTRL_INSTANCE_NAME}_IsBusy())
+    {
+        /* Waiting for Ready state */
+    }
 }
 
 void ${NVMCTRL_INSTANCE_NAME}_WriteProtect_enable( void )
 {
-	${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_WPCTRL = NVMCTRL_WPCTRL_WPKEY(NVMCTRL_WPCTRL_KEY)| NVMCTRL_WPCTRL_WPEN_Msk;
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_WPCTRL |= NVMCTRL_WPCTRL_WPKEY(NVMCTRL_WPCTRL_KEY)| NVMCTRL_WPCTRL_WPEN_Msk;
 }
 
-void NVMCTRL_WriteProtect_disable( void )
+void ${NVMCTRL_INSTANCE_NAME}_WriteProtect_disable( void )
 {
     ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_WPCTRL = NVMCTRL_WPCTRL_WPKEY(NVMCTRL_WPCTRL_KEY) & (~NVMCTRL_WPCTRL_WPEN_Msk);
+}
+
+void ${NVMCTRL_INSTANCE_NAME}_WriteProtect_Writelock( void )
+{
+    ${NVMCTRL_INSTANCE_NAME}_REGS->NVMCTRL_WPCTRL |= NVMCTRL_WPCTRL_WPKEY(NVMCTRL_WPCTRL_KEY)| NVMCTRL_WPCTRL_WPLCK_Msk;
 }
 
 uint32_t ${NVMCTRL_INSTANCE_NAME}_InterruptFlagGet(void)
