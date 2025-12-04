@@ -59,11 +59,15 @@ def getMaxValue(mask):
 
 
 
-registerGroup = ["BOOT0_FUSES", "BOOT1_FUSES", "BOOT2_FUSES", "BOOT3_FUSES", "BOOT4_FUSES", "BOOT5_FUSES"]
+registerGroup = ["FUSES_BOOTCFG","FUSES_SIGNATURE"]
 
 #TO:DO Set Default fuse values once device arrives
 default = [0,
            0x7,
+           0,
+           0,
+           0,
+           0,
            0,
            0,
            0,
@@ -96,11 +100,13 @@ for group in range(0, len(registerGroup)):
     registerNamesvalue = registerNamesnode.getChildren()
     for regNameindex in range(0, len(registerNamesvalue)):
         registerNames = registerNamesvalue[regNameindex].getAttribute("name")
-        path = "/avr-tools-device-file/modules/module@[name=\"" + "FUSES" + "\"]/register-group@[name=\"" + registerGroup[group] + "\"]/register@[name=\"" + registerNames + "\"]"
-        fuseNode = ATDF.getNode(path)
+        bitfieldPath = "/avr-tools-device-file/modules/module@[name=\"" + "FUSES" + "\"]/register-group@[name=\"" + registerGroup[group] + "\"]/register@[name=\"" + registerNames + "\"]"
+        fuseNode = ATDF.getNode(bitfieldPath)
         fuseNodeValues = fuseNode.getChildren()
         for index in range(0, len(fuseNodeValues)):
             key = fuseNodeValues[index].getAttribute("name")
+            # Concatenate registerNames + "_" + key
+            key = registerNames + "_" + key
             caption=fuseNodeValues[index].getAttribute("caption")
             valueGroup = fuseNodeValues[index].getAttribute("values")
             stringSymbol = coreComponent.createStringSymbol("FUSE_SYMBOL_NAME" + str(numfuses), fuseSettings)
@@ -135,7 +141,7 @@ for group in range(0, len(registerGroup)):
                     caption = valueGroupChildren[j].getAttribute("caption")
                     keyValueSymbol.addKey(name, str(value), caption)
                 keyValueSymbol.setDefaultValue(default[numfuses])
-                keyValueSymbol.setOutputMode("Key")
+                keyValueSymbol.setOutputMode("Value")
                 keyValueSymbol.setDisplayMode("Description")
 
             numfuses = numfuses + 1
