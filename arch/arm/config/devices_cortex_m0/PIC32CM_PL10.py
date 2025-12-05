@@ -89,10 +89,10 @@ default = [0,
            0,
            0,
            0,
-           0,
-           0,
-           0,
-           0]
+           0xFFFFFFFF,
+           0xFFFFFFFF,
+           0xFFFFFFFF,
+           0xFFFFFFFF]
 numfuses = 0
 
 for group in range(0, len(registerGroup)):
