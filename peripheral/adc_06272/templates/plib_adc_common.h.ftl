@@ -119,12 +119,22 @@ typedef enum
 
 typedef enum
 {
-    ADC_STARTMODE_STOP       = 0x0, // Stop an ongoing conversion
-    ADC_STARTMODE_IMMEDIATE  = 0x1, // Start conversion immediately
-    ADC_STARTMODE_INPUT      = 0x2, // Start conversion on INPUTCTRL register write
-    ADC_STARTMODE_EVENT      = 0x4  // Start conversion on event trigger (EVCTRL.STARTEI must be set)
+    ADC_STARTMODE_STOP       = ADC_COMMAND_START_STOP, // Stop an ongoing conversion
+    ADC_STARTMODE_IMMEDIATE  = ADC_COMMAND_START_IMMEDIATE, // Start conversion immediately
+    ADC_STARTMODE_INPUT      = ADC_COMMAND_START_INPUT, // Start conversion on INPUTCTRL register write
+    ADC_STARTMODE_EVENT      = ADC_COMMAND_START_EVENT  // Start conversion on event trigger (EVCTRL.STARTEI must be set)
 } ADC_STARTMODE;
 
+typedef enum
+{
+    ADC_INTERRUPT_RESRDY   = ADC_INTFLAG_RESRDY_Msk,  // Bit 0: Result Ready
+    ADC_INTERRUPT_SAMPRDY  = ADC_INTFLAG_SAMPRDY_Msk,  // Bit 1: Sample Ready  
+    ADC_INTERRUPT_WCMP     = ADC_INTFLAG_WCMP_Msk,  // Bit 2: Window Comparator
+    ADC_INTERRUPT_RESOVR   = ADC_INTFLAG_RESOVR_Msk,  // Bit 3: Result Overwrite
+    ADC_INTERRUPT_SAMPOVR  = ADC_INTFLAG_SAMPOVR_Msk,  // Bit 4: Sample Overwrite
+    ADC_INTERRUPT_TRIGOVR  = ADC_INTFLAG_TRIGOVR_Msk,  // Bit 5: Trigger Overrun
+    // Bits 6-31: Reserved (0)
+} ADC_INTERRUPTS;
 
 // *****************************************************************************
 

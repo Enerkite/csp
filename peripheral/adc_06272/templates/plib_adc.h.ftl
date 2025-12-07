@@ -108,13 +108,13 @@ void ${ADC_INSTANCE_NAME}_ComparisonWindowSet(uint16_t low_threshold, uint16_t h
 
 void ${ADC_INSTANCE_NAME}_WindowModeSet(ADC_WINMODE mode);
 
-void ${ADC_INSTANCE_NAME}_InterruptsClear(ADC_STATUS interruptMask);
+void ${ADC_INSTANCE_NAME}_InterruptsClear(ADC_INTERRUPTS interruptMask);
 
-void ${ADC_INSTANCE_NAME}_InterruptsEnable(ADC_STATUS interruptMask);
+void ${ADC_INSTANCE_NAME}_InterruptsEnable(ADC_INTERRUPTS interruptMask);
 
-void ${ADC_INSTANCE_NAME}_InterruptsDisable(ADC_STATUS interruptMask);
+void ${ADC_INSTANCE_NAME}_InterruptsDisable(ADC_INTERRUPTS interruptMask);
 
-<#if ADC_INTENSET_RESRDY == true || (ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == true)>
+<#if (ADC_INTENSET_RESRDY == true) || (ADC_INTENSET_RESOVR == true) || (ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == true) || (ADC_INTENSET_SAMPRDY == true) || (ADC_INTENSET_SAMPOVR == true)>
 
 void ${ADC_INSTANCE_NAME}_CallbackRegister( ADC_CALLBACK callback, uintptr_t context );
 </#if>

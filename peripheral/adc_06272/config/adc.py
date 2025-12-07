@@ -105,9 +105,22 @@ def updateADCInterruptStatus(symbol, event):
                 Database.setSymbolValue("core", InterruptHandler[2], adcInstanceName.getValue() + "_SAMPRDY_InterruptHandler", 2)
             else:
                 Database.setSymbolValue("core", InterruptHandler[2], adcInstanceName.getValue() + "_Handler", 2)
-
+        elif (event["id"] == "ADC_INTENSET_RESOVR"):
+            Database.setSymbolValue("core", InterruptVector[3], event["value"], 2)
+            Database.setSymbolValue("core", InterruptHandlerLock[3], event["value"], 2)
+            if event["value"] == True:
+                Database.setSymbolValue("core", InterruptHandler[3], adcInstanceName.getValue() + "_RRESOVR_InterruptHandler", 2)
+            else:
+                Database.setSymbolValue("core", InterruptHandler[4], adcInstanceName.getValue() + "_Handler", 2)    
+        elif (event["id"] == "ADC_INTENSET_SAMPOVR"):
+            Database.setSymbolValue("core", InterruptVector[4], event["value"], 2)
+            Database.setSymbolValue("core", InterruptHandlerLock[4], event["value"], 2)
+            if event["value"] == True:
+                Database.setSymbolValue("core", InterruptHandler[4], adcInstanceName.getValue() + "_SAMPOVR_InterruptHandler", 2)
+            else:
+                Database.setSymbolValue("core", InterruptHandler[4], adcInstanceName.getValue() + "_Handler", 2)
     else:
-        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True or adcSym_INTENSET_SAMPRDY.getValue() == True:
+        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_RESOVR.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True or adcSym_INTENSET_SAMPRDY.getValue() == True or adcSym_INTENSET_SAMPOVR.getValue() == True:
             Database.setSymbolValue("core", InterruptVector, True, 2)
             Database.setSymbolValue("core", InterruptHandlerLock, True, 2)
             Database.setSymbolValue("core", InterruptHandler, adcInstanceName.getValue() + "_InterruptHandler", 2)
@@ -130,12 +143,18 @@ def updateADCInterruptWarningStatus(symbol, event):
         if adcSym_INTENSET_SAMPRDY.getValue() == True:
             if (Database.getSymbolValue("core", InterruptVectorUpdate[2].split("core.")[1]) == True):
                 symVisible = True
+        if adcSym_INTENSET_RESOVR.getValue() == True:
+            if (Database.getSymbolValue("core", InterruptVectorUpdate[3].split("core.")[1]) == True):
+                symVisible = True
+        if adcSym_INTENSET_SAMPOVR.getValue() == True:
+            if (Database.getSymbolValue("core", InterruptVectorUpdate[4].split("core.")[1]) == True):
+                symVisible = True
         if symVisible == True:
             symbol.setVisible(True)
         else:
             symbol.setVisible(False)
     else:
-        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True or adcSym_INTENSET_SAMPRDY.getValue() == True:
+        if adcSym_INTENSET_RESRDY.getValue() == True or adcSym_INTENSET_RESOVR.getValue() == True or adcSym_INTENSET_WCMP.getValue() == True or adcSym_INTENSET_SAMPRDY.getValue() == True or adcSym_INTENSET_SAMPOVR.getValue() == True:
             if (Database.getSymbolValue("core", InterruptVectorUpdate) == True):
                 symbol.setVisible(True)
             else:
@@ -969,20 +988,6 @@ def instantiateComponent(adcComponent):
         adcSym_CTRLD_RESOLUTION.addKey(adcResultResolutionValues[index].getAttribute("name"), adcResultResolutionValues[index].getAttribute("value"),
         adcResultResolutionValues[index].getAttribute("caption"))
 
-    # Averaging
-    adcSym_CTRLD_SAMPNUM = adcComponent.createKeyValueSetSymbol("ADC_CTRLD_SAMPNUM", adcResultMenu)
-    adcSym_CTRLD_SAMPNUM.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:CTRLD")
-    adcSym_CTRLD_SAMPNUM.setLabel("Number of Accumulated Samples")
-    adcSym_CTRLD_SAMPNUM.setDefaultValue(0)
-    adcSym_CTRLD_SAMPNUM.setOutputMode("Key")
-    adcSym_CTRLD_SAMPNUM.setDisplayMode("Description")
-    adcSym_CTRLD_SAMPNUM.setVisible(True)
-    adcResultResolutionNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_CTRLD__SAMPNUM\"]")
-    adcResultResolutionValues = []
-    adcResultResolutionValues = adcResultResolutionNode.getChildren()
-    for index in range (0 , len(adcResultResolutionValues)):
-        adcSym_CTRLD_SAMPNUM.addKey(adcResultResolutionValues[index].getAttribute("name"), adcResultResolutionValues[index].getAttribute("value"),
-        adcResultResolutionValues[index].getAttribute("caption"))
     #adcSym_CTRLD_SAMPNUM.setDependencies(adcResultConfVisibility, ["ADC_CTRLC_RESSEL", "ADC_RES_BIT"])
 
     # # division coefficient
@@ -1015,6 +1020,11 @@ def instantiateComponent(adcComponent):
     adcSym_INTENSET_RESRDY.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:INTENSET")
     adcSym_INTENSET_RESRDY.setLabel("Enable Result Ready Interrupt")
 
+    global adcSym_INTENSET_RESOVR
+    adcSym_INTENSET_RESOVR = adcComponent.createBooleanSymbol("ADC_INTENSET_RESOVR", adcResultMenu)
+    adcSym_INTENSET_RESOVR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:INTENSET")
+    adcSym_INTENSET_RESOVR.setLabel("Enable Result Overwrite Interrupt")
+
     # event out mode
     adcSym_EVCTRL_RSERDYEO = adcComponent.createBooleanSymbol("ADC_EVCTRL_RESRDYEO", adcResultMenu)
     adcSym_EVCTRL_RSERDYEO.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:EVCTRL")
@@ -1033,15 +1043,37 @@ def instantiateComponent(adcComponent):
     for index in range (0 , len(adcResultScalingValues)):
         adcSym_CTRLD_SCALING.addKey(adcResultScalingValues[index].getAttribute("name"), adcResultScalingValues[index].getAttribute("value"),
         adcResultScalingValues[index].getAttribute("caption"))
-        
+    
+
+    #Sample menu
     adcSampleMenu = adcComponent.createMenuSymbol("ADC_SAMPLE_MENU", None)
     adcSampleMenu.setLabel("Sample Configuration")
     
+    # Sample Accumulation Number Select
+    adcSym_CTRLD_SAMPNUM = adcComponent.createKeyValueSetSymbol("ADC_CTRLD_SAMPNUM", adcSampleMenu)
+    adcSym_CTRLD_SAMPNUM.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:CTRLD")
+    adcSym_CTRLD_SAMPNUM.setLabel("Number of Accumulated Samples")
+    adcSym_CTRLD_SAMPNUM.setDefaultValue(0)
+    adcSym_CTRLD_SAMPNUM.setOutputMode("Key")
+    adcSym_CTRLD_SAMPNUM.setDisplayMode("Description")
+    adcSym_CTRLD_SAMPNUM.setVisible(True)
+    adcSampleNumNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_CTRLD__SAMPNUM\"]")
+    adcSampleNumValues = []
+    adcSampleNumValues = adcSampleNumNode.getChildren()
+    for index in range (0 , len(adcSampleNumValues)):
+        adcSym_CTRLD_SAMPNUM.addKey(adcSampleNumValues[index].getAttribute("name"), adcSampleNumValues[index].getAttribute("value"),
+        adcSampleNumValues[index].getAttribute("caption"))
+
     # interrupt mode
     global adcSym_INTENSET_SAMPRDY
     adcSym_INTENSET_SAMPRDY = adcComponent.createBooleanSymbol("ADC_INTENSET_SAMPRDY", adcSampleMenu)
     adcSym_INTENSET_SAMPRDY.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:INTENSET")
     adcSym_INTENSET_SAMPRDY.setLabel("Enable Sample Ready Interrupt")
+
+    global adcSym_INTENSET_SAMPOVR
+    adcSym_INTENSET_SAMPOVR = adcComponent.createBooleanSymbol("ADC_INTENSET_SAMPOVR", adcSampleMenu)
+    adcSym_INTENSET_SAMPOVR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_06272;register:INTENSET")
+    adcSym_INTENSET_SAMPOVR.setLabel("Enable Sample Overwrite Interrupt")
 
     # event out mode
     adcSym_EVCTRL_SAMPRDYEO = adcComponent.createBooleanSymbol("ADC_EVCTRL_SAMPRDYEO", adcSampleMenu)
@@ -1173,12 +1205,14 @@ def instantiateComponent(adcComponent):
 
         # Interrupt Dynamic settings
         adcSym_UpdateInterruptStatus = adcComponent.createBooleanSymbol("ADC_INTERRUPT_STATUS", None)
-        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP", "ADC_INTENSET_SAMPRDY"])
+        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY", "ADC_INTENSET_RESOVR", "ADC_INTENSET_WCMP", "ADC_INTENSET_SAMPRDY", "ADC_INTENSET_SAMPOVR"])
         adcSym_UpdateInterruptStatus.setVisible(False)
 
         InterruptVectorUpdate.append("ADC_INTENSET_RESRDY")
         InterruptVectorUpdate.append("ADC_INTENSET_WCMP")
         InterruptVectorUpdate.append("ADC_INTENSET_SAMPRDY")
+        InterruptVectorUpdate.append("ADC_INTENSET_RESOVR")
+        InterruptVectorUpdate.append("ADC_INTENSET_SAMPOVR")
 
         # Interrupt Warning status
         adcSym_IntEnComment = adcComponent.createCommentSymbol("ADC_INTERRUPT_ENABLE_COMMENT", None)
@@ -1194,14 +1228,14 @@ def instantiateComponent(adcComponent):
         InterruptVectorSecurity = adcInstanceName.getValue() + "_SET_NON_SECURE"
         # Interrupt Dynamic settings
         adcSym_UpdateInterruptStatus = adcComponent.createBooleanSymbol("ADC_INTERRUPT_STATUS", None)
-        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP","ADC_INTENSET_SAMPRDY"])
+        adcSym_UpdateInterruptStatus.setDependencies(updateADCInterruptStatus, ["ADC_INTENSET_RESRDY","ADC_INTENSET_RESOVR","ADC_INTENSET_WCMP","ADC_INTENSET_SAMPRDY","ADC_INTENSET_SAMPOVR"])
         adcSym_UpdateInterruptStatus.setVisible(False)
 
         # Interrupt Warning status
         adcSym_IntEnComment = adcComponent.createCommentSymbol("ADC_INTERRUPT_ENABLE_COMMENT", None)
         adcSym_IntEnComment.setVisible(False)
         adcSym_IntEnComment.setLabel("Warning!!! "+adcInstanceName.getValue()+" Interrupt is Disabled in Interrupt Manager")
-        adcSym_IntEnComment.setDependencies(updateADCInterruptWarningStatus, ["core." + InterruptVectorUpdate, "ADC_INTENSET_RESRDY", "ADC_INTENSET_WCMP", "ADC_INTENSET_SAMPRDY"])
+        adcSym_IntEnComment.setDependencies(updateADCInterruptWarningStatus, ["core." + InterruptVectorUpdate, "ADC_INTENSET_RESRDY", "ADC_INTENSET_RESOVR", "ADC_INTENSET_WCMP", "ADC_INTENSET_SAMPRDY", "ADC_INTENSET_SAMPOVR"])
 
     # Clock Warning status
     adcSym_ClkEnComment = adcComponent.createCommentSymbol("ADC_CLOCK_ENABLE_COMMENT", None)

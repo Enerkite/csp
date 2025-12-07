@@ -137,6 +137,20 @@
         <#assign ADC_INTENSET_VAL = "ADC_INTENSET_WCMP_Msk">
     </#if>
 </#if>
+<#if ADC_INTENSET_RESOVR == true>
+    <#if ADC_INTENSET_VAL != "">
+        <#assign ADC_INTENSET_VAL = ADC_INTENSET_VAL + " | ADC_INTENSET_RESOVR_Msk">
+    <#else>
+        <#assign ADC_INTENSET_VAL = "ADC_INTENSET_RESOVR_Msk">
+    </#if>
+</#if>
+<#if ADC_INTENSET_SAMPOVR == true>
+    <#if ADC_INTENSET_VAL != "">
+        <#assign ADC_INTENSET_VAL = ADC_INTENSET_VAL + " | ADC_INTENSET_SAMPOVR_Msk">
+    <#else>
+        <#assign ADC_INTENSET_VAL = "ADC_INTENSET_SAMPOVR_Msk">
+    </#if>
+</#if>
 
 <#if ADC_CTRLA_RUNSTDBY == true>
     <#assign ADC_CTRLA_VAL = "ADC_CTRLA_RUNSTDBY_Msk">
@@ -155,7 +169,7 @@
 // Section: Global Data
 // *****************************************************************************
 // *****************************************************************************
-<#if (ADC_INTENSET_RESRDY == true) || (ADC_WINCTRL_WINMODE != "0" && ADC_INTENSET_WCMP == true) || (ADC_INTENSET_SAMPRDY == true)>
+<#if (ADC_INTENSET_RESRDY == true) || (ADC_INTENSET_RESOVR == true) || (ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == true) || (ADC_INTENSET_SAMPRDY == true) || (ADC_INTENSET_SAMPOVR == true)>
 static volatile ADC_CALLBACK_OBJ ${ADC_INSTANCE_NAME}_CallbackObject;
 </#if>
 
@@ -364,22 +378,22 @@ uint32_t ${ADC_INSTANCE_NAME}_ConversionResultGet( void )
     return (uint32_t)${ADC_INSTANCE_NAME}_REGS->ADC_RESULT;
 }
 
-void ${ADC_INSTANCE_NAME}_InterruptsClear(ADC_STATUS interruptMask)
+void ${ADC_INSTANCE_NAME}_InterruptsClear(ADC_INTERRUPTS interruptMask)
 {
     ${ADC_INSTANCE_NAME}_REGS->ADC_INTFLAG = (uint8_t)interruptMask;
 }
 
-void ${ADC_INSTANCE_NAME}_InterruptsEnable(ADC_STATUS interruptMask)
+void ${ADC_INSTANCE_NAME}_InterruptsEnable(ADC_INTERRUPTS interruptMask)
 {
     ${ADC_INSTANCE_NAME}_REGS->ADC_INTENSET = (uint8_t)interruptMask;
 }
 
-void ${ADC_INSTANCE_NAME}_InterruptsDisable(ADC_STATUS interruptMask)
+void ${ADC_INSTANCE_NAME}_InterruptsDisable(ADC_INTERRUPTS interruptMask)
 {
     ${ADC_INSTANCE_NAME}_REGS->ADC_INTENCLR = (uint8_t)interruptMask;
 }
 
-<#if (ADC_INTENSET_RESRDY == true) || (ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == true) || (ADC_INTENSET_SAMPRDY == true)>
+<#if (ADC_INTENSET_RESRDY == true) || (ADC_INTENSET_RESOVR == true) || (ADC_WINCTRL_WINMODE != "0x0" && ADC_INTENSET_WCMP == true) || (ADC_INTENSET_SAMPRDY == true) || (ADC_INTENSET_SAMPOVR == true)>
 /* Register callback function */
 void ${ADC_INSTANCE_NAME}_CallbackRegister( ADC_CALLBACK callback, uintptr_t context )
 {
