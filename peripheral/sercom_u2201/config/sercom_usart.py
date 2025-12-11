@@ -29,6 +29,9 @@
 global getUSARTBaudValue
 global getValueGrp
 
+global sercomUSARTFracBaudname
+global sercomUSARTArithBaudname
+
 global sort_alphanumeric
 
 global dataBitsDict
@@ -165,6 +168,20 @@ def updateUSARTConfigurationVisibleProperty(symbol, event):
 def updateUSARTBaudValueProperty(symbol, event):
 
     symbol.setValue(getUSARTBaudValue(), 1)
+
+def updateUSARTBaudName(symbol, event):
+
+    if event["id"] == "USART_USE_FRACTIONAL_BAUD" and event['source'].getSymbolByID("USART_USE_FRACTIONAL_BAUD").getValue() == True:
+        if sercomUSARTFracBaudname != None:
+            symbol.setValue(sercomSymUSARTRegName.getValue() + "_BAUD_FRAC_BAUD")
+        else:
+            symbol.setValue(sercomSymUSARTRegName.getValue() + "_BAUD_BAUD")
+    else:
+        if sercomUSARTArithBaudname != None:
+            symbol.setValue(sercomSymUSARTRegName.getValue() + "_BAUD_ARITH_BAUD")
+        else:
+            symbol.setValue(sercomSymUSARTRegName.getValue() + "_BAUD_BAUD")
+
 
 def updateUSART7816BaudValueProperty(symbol, event):
 
@@ -549,11 +566,17 @@ usartSym_UseFractionalBaud.setValue(False)
 usartSym_UseFractionalBaud.setVisible(sampleRateSupported == True)
 usartSym_UseFractionalBaud.setDependencies(updateFractionalBaudConfig, ["USART_FORM", "SERCOM_MODE"])
 
-usartArithBaud = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/register-group@[name=\"SERCOM\"]/register@[modes=\"USART\",name=\"BAUD\"]/bitfield@[modes=\"ARITH\",name=\"BAUD\"]")
-if usartArithBaud != None:
-    usartSym_usartArithBaud = sercomComponent.createBooleanSymbol("USART_ARITH_BAUD", sercomSym_OperationMode)
-    usartSym_usartArithBaud.setVisible(False)
-    usartSym_usartArithBaud.setValue(True)
+sercomUSARTArithBaudname = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/register-group@[name=\"SERCOM\"]/register@[modes=\"USART\",name=\"BAUD\"]/bitfield@[modes=\"ARITH\",name=\"BAUD\"]")
+sercomUSARTFracBaudname = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/register-group@[name=\"SERCOM\"]/register@[modes=\"USART\",name=\"BAUD\"]/bitfield@[modes=\"FRAC\",name=\"BAUD\"]")
+
+sercomSymUSARTBaudName = sercomComponent.createStringSymbol("SERCOM_USART_BAUD_NAME", None)
+sercomSymUSARTBaudName.setVisible(False)
+if sercomUSARTArithBaudname is not None:
+    defaultBaudName = sercomSymUSARTRegName.getValue() + "_BAUD_ARITH_BAUD"
+else:
+    defaultBaudName = sercomSymUSARTRegName.getValue() + "_BAUD_BAUD"
+sercomSymUSARTBaudName.setDefaultValue(defaultBaudName)
+sercomSymUSARTBaudName.setDependencies(updateUSARTBaudName, ["SERCOM_MODE", "USART_USE_FRACTIONAL_BAUD"])
 
 #USART Baud Value
 usartSym_BAUD_VALUE = sercomComponent.createIntegerSymbol("USART_BAUD_VALUE", sercomSym_OperationMode)
