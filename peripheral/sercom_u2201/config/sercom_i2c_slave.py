@@ -119,7 +119,7 @@ if speedSupported == True:
     i2csSym_mode.setVisible(False)
 
     i2csTransferSpeedNode = getValueGrp("SERCOM", "SERCOM", "CTRLA", "SPEED", "I2CS")
-    
+
     i2csTransferSpeedNodeValues = i2csTransferSpeedNode.getChildren()
 
     for index in range((len(i2cmTransferSpeedNodeValues))):
@@ -237,12 +237,21 @@ TenBitAddrSupported = False
 TenBitAddrSupportReferenceNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SERCOM"]/register-group@[name="SERCOM"]/register@[modes="I2CS",name="ADDR"]')
 
 TenBitSupportValue = TenBitAddrSupportReferenceNode.getChildren()
+addrModePrefix = False
 
 for index in range(len(TenBitSupportValue)):
+    if ((str(TenBitSupportValue[index].getName()) == "mode") and
+        (str(TenBitSupportValue[index].getAttribute("name")) == 'SEVENBIT')):
+        addrModePrefix = True
     bitFieldName = str(TenBitSupportValue[index].getAttribute("name"))
     if bitFieldName == "TENBITEN":
         TenBitAddrSupported = True
         break
+
+i2cSym_ADDRMODE = sercomComponent.createBooleanSymbol("I2CS_ADDR_MODE_PREFIX", sercomSym_OperationMode)
+i2cSym_ADDRMODE.setVisible(False)
+i2cSym_ADDRMODE.setDefaultValue(addrModePrefix)
+
 
 if TenBitAddrSupported == True:
     i2csSym_TENBITEN = sercomComponent.createBooleanSymbol("I2CS_TENBITEN_SUPPORT", sercomSym_OperationMode)

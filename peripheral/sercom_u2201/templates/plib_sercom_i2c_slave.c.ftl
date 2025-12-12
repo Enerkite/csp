@@ -42,6 +42,16 @@
 *******************************************************************************/
 // DOM-IGNORE-END
 
+<#if I2CS_ADDR_MODE_PREFIX>
+    <#if I2CS_TENBITEN_SUPPORT!false>
+        <#assign ADDR_MACRO = "SERCOM_I2CS_ADDR_TENBIT_ADDR">
+    <#else>
+        <#assign ADDR_MACRO = "SERCOM_I2CS_ADDR_SEVENBIT_ADDR">
+    </#if>
+<#else>
+    <#assign ADDR_MACRO = "SERCOM_I2CS_ADDR_ADDR">
+</#if>
+
 
 // *****************************************************************************
 // *****************************************************************************
@@ -132,7 +142,7 @@ void ${SERCOM_INSTANCE_NAME}_I2C_Initialize(void)
     </#if>
 
     /* Set the slave address */
-    ${SERCOM_INSTANCE_NAME}_REGS->I2CS.SERCOM_ADDR = SERCOM_I2CS_ADDR_ADDR(0x${I2CS_SLAVE_ADDDRESS}UL) <#if I2CS_TENBITEN_SUPPORT??>${I2CS_TENBITEN_SUPPORT?then(' | SERCOM_I2CS_ADDR_TENBITEN_Msk', '')}</#if>;
+    ${SERCOM_INSTANCE_NAME}_REGS->I2CS.SERCOM_ADDR = ${ADDR_MACRO}(0x${I2CS_SLAVE_ADDDRESS}UL) <#if I2CS_TENBITEN_SUPPORT??>${I2CS_TENBITEN_SUPPORT?then(' | SERCOM_I2CS_ADDR_TENBITEN_Msk', '')}</#if>;
 
     <#if I2CS_SMEN == true>
     /* Enable Smart Mode */
