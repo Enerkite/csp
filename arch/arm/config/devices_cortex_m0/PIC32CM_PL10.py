@@ -59,9 +59,8 @@ def getMaxValue(mask):
 
 
 
-registerGroup = ["FUSES_BOOTCFG","FUSES_SIGNATURE"]
+registerGroup = ["FUSES_BOOTCFG"]
 
-#TO:DO Set Default fuse values once device arrives
 default = [0,
            0x7,
            0,
@@ -88,11 +87,7 @@ default = [0,
            0,
            0,
            0,
-           0,
-           0xFFFFFFFF,
-           0xFFFFFFFF,
-           0xFFFFFFFF,
-           0xFFFFFFFF]
+           0]
 numfuses = 0
 
 for group in range(0, len(registerGroup)):
