@@ -160,9 +160,9 @@ uint32_t ${FREQM_INSTANCE_NAME}_FrequencyGet(void)
 {
     uint64_t result = 0U;
 
-    result = ${FREQM_INSTANCE_NAME}_Mul32x32((${FREQM_INSTANCE_NAME}_REGS->FREQM_VALUE + 1), ${FREQM_REF_CLOCK_FREQUENCY}UL);
+    result = ${FREQM_INSTANCE_NAME}_Mul32x32((${FREQM_INSTANCE_NAME}_REGS->FREQM_VALUE + 1UL), ${FREQM_REF_CLOCK_FREQUENCY}UL);
 
-    result = result/(${FREQM_REF_CLK_CYCLES} + 1);
+    result = result/(${FREQM_REF_CLK_CYCLES}UL + 1UL);
 
     return (uint32_t)result;
 }

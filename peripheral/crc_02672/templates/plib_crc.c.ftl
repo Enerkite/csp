@@ -104,7 +104,7 @@ void ${CRC_INSTANCE_NAME}_CRCSetup(CRC_SETUP CRCSetup)
         CRCCONbits.LENDIAN = 1;
     }
 
-    CRCCONbits.PLEN = (gCRCSetup.polynomial_length - 1U);;
+    CRCCONbits.PLEN = (uint8_t)(gCRCSetup.polynomial_length - 1U);
 
     CRCCONbits.ON = 1;
 
