@@ -174,12 +174,8 @@ def adcCalcSampleTime(symbol, event):
         clock_freq = 1
     prescaler = adcSym_CTRLB_PRESCALER.getSelectedKey()[3:]
     sample_cycles = adcSym_CTRLE_SAMPLEN.getValue()
-    if (sample_cycles == 1):
-        offset_comp = 3
-    else:
-        offset_comp = 0
     data_width = adcSym_CTRLD_RESOLUTION.getSelectedKey()[:-3]
-    conv_time = float((((int(sample_cycles) + 1) * (int(prescaler) + 2)) + int(data_width) + 6) * 1000000.0) / clock_freq
+    conv_time = float(((((int(sample_cycles) + 1) + int(data_width)) * int(prescaler)) + 6) * 1000000.0) / clock_freq
     symbol.setLabel("**** Conversion Time is " + str(conv_time) + " uS ****")
 
 def adcCalcTimeBaseValue(symbole, event):
