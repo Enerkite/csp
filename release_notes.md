@@ -3,6 +3,40 @@
 
 # Microchip MPLAB® Harmony 3 Release Notes
 
+## CSP Release v3.25.0
+
+### New Features
+
+- **New part support**
+  - Added support for PIC32CM-PL10 family of devices
+  - Added support for PIC32WM_BZ6602 and PIC32CX_BZ66048 devices
+
+- **New Features and Enhancements**
+  - None
+
+- **Bug Fixes and Improvements**
+  - Fixed frequency calculation formula for FREQM PLIB
+  - Fixed DSWDT, CRC and CMP initialization issues
+  - Added separate EOS_InterruptHandler function in ADCHS PLIB
+  - Updated write protection mode condition in IPC PLIB
+  - Updated USART configuration error for SERCOM PLIB
+  - Updated DFLL initialization order in PIC32CM_GC_SG Clock PLIB 
+  - MISRA-C fixes
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+- [MPLAB® X IDE v6.25](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.00](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.3 or higher
+
 ## CSP Release v3.24.0
 
 ### New Features
