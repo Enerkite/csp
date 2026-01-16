@@ -1010,9 +1010,12 @@ static void __attribute__((used)) ${SERCOM_INSTANCE_NAME}_USART_ISR_RX_Handler( 
             /* Clear the receive break interrupt flag */
             ${SERCOM_INSTANCE_NAME}_REGS->${SERCOM_USART_REG_NAME}.SERCOM_INTFLAG = (uint8_t)SERCOM_${SERCOM_USART_REG_NAME}_INTFLAG_RXBRK_Msk;
 
-            uintptr_t rdContext = ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdContext;
+            if(${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdCallback != NULL)
+            {
+                uintptr_t rdContext = ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdContext;
 
-            ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdCallback(SERCOM_USART_EVENT_BREAK_SIGNAL_DETECTED, rdContext);
+                ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdCallback(SERCOM_USART_EVENT_BREAK_SIGNAL_DETECTED, rdContext);
+            }
         }
         if ((${SERCOM_INSTANCE_NAME}_REGS->${SERCOM_USART_REG_NAME}.SERCOM_INTFLAG & SERCOM_${SERCOM_USART_REG_NAME}_INTFLAG_RXC_Msk) == SERCOM_${SERCOM_USART_REG_NAME}_INTFLAG_RXC_Msk)
         {
@@ -1050,9 +1053,12 @@ static void __attribute__((used)) ${SERCOM_INSTANCE_NAME}_USART_ISR_RX_Handler( 
         /* Clear the receive break interrupt flag */
         ${SERCOM_INSTANCE_NAME}_REGS->${SERCOM_USART_REG_NAME}.SERCOM_INTFLAG = (uint8_t)SERCOM_${SERCOM_USART_REG_NAME}_INTFLAG_RXBRK_Msk;
 
-        uintptr_t rdContext = ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdContext;
+        if(${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdCallback != NULL)
+        {
+            uintptr_t rdContext = ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdContext;
 
-        ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdCallback(SERCOM_USART_EVENT_BREAK_SIGNAL_DETECTED, rdContext);
+            ${SERCOM_INSTANCE_NAME?lower_case}USARTObj.rdCallback(SERCOM_USART_EVENT_BREAK_SIGNAL_DETECTED, rdContext);
+        }
     }
     while ((${SERCOM_INSTANCE_NAME}_REGS->${SERCOM_USART_REG_NAME}.SERCOM_INTFLAG & SERCOM_${SERCOM_USART_REG_NAME}_INTFLAG_RXC_Msk) == SERCOM_${SERCOM_USART_REG_NAME}_INTFLAG_RXC_Msk)
     {
