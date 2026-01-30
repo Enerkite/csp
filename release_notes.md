@@ -3,6 +3,24 @@
 
 # Microchip MPLAB® Harmony 3 Release Notes
 
+## CSP Release v3.25.1
+
+### New Features
+
+- None
+
+### Bug fixes and Improvements
+
+- Added PIC32CZ-CA70 (256/384 KB) SRAM part support in harmony
+- Updated PIC32CZ-CA70_DFP version in package.yml
+
+### Development Tools
+
+- [MPLAB® X IDE v6.30](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.00](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.3 or higher
+	
 ## CSP Release v3.25.0
 
 ### New Features
