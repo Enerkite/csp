@@ -67,6 +67,9 @@
 #ifndef DONT_USE_PREDEFINED_PERIPHERALS_HANDLERS
     #define DONT_USE_PREDEFINED_PERIPHERALS_HANDLERS
 #endif //DONT_USE_PREDEFINED_PERIPHERALS_HANDLERS
+#ifndef DISABLE_CMSIS_INIT
+    #define DISABLE_CMSIS_INIT
+#endif //DISABLE_CMSIS_INIT
 #include "${__PROCESSOR?lower_case?remove_beginning("at")}.h"
 <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop

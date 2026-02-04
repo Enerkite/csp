@@ -345,7 +345,7 @@ __attribute__((ramfunc)) static void CLK_IntRegTrimmedCodeSet(void)
 
     EFC_REGS->EEFC_FCR = EEFC_FCR_FCMD_SPUI | EEFC_FCR_FKEY_PASSWD;
 
-    while ((EFC_REGS->EEFC_FSR & EEFC_FSR_FRDY_Msk) == 0)
+    while ((EFC_REGS->EEFC_FSR & EEFC_FSR_FRDY_Msk) == 0U)
     {
         // Wait for the flash ready
     }
@@ -355,7 +355,7 @@ __attribute__((ramfunc)) static void CLK_IntRegTrimmedCodeSet(void)
                             SUPC_PWMR_ECPWR1_Msk |
                             SUPC_PWMR_ECPWR2_Msk |
                             SUPC_PWMR_ECPWR3_Msk )) |
-                            (trimmed_code << SUPC_PWMR_ECPWR0_Pos) |
+                            ((uint32_t)trimmed_code << SUPC_PWMR_ECPWR0_Pos) |
                             SUPC_PWMR_ECPWRS_Msk |
                             SUPC_PWMR_KEY_PASSWD;
 }
