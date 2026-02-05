@@ -114,12 +114,14 @@ static void OSCCTRL_Initialize(void)
     </#if>
 </#if>
 <#if CONFIG_CLOCK_OSC48M_ENABLE == true>
+<#if DeviceFamily != "PIC32CM_JH00_JH01">
     <#if CALIBRATION_ROW == "0">
     uint32_t calibValue = (uint32_t)(((*(uint64_t*)${SW_CALIB_ROW_ADDR}UL) >> 19 ) & 0x3fffffUL);
     <#else>
     uint32_t calibValue = (uint32_t)(((*(uint64_t*)${SW_CALIB_ROW_ADDR}UL) >> 41 ) & 0x3fffffUL);
     </#if>
     OSCCTRL_REGS->OSCCTRL_CAL48M = calibValue;
+</#if>
     <#if (CONFIG_CLOCK_OSC48M_RUNSTDY == true) || (CONFIG_CLOCK_OSC48M_ONDEMAND == "DISABLE")>
     /* Configure 48MHz Oscillator */
     <@compress single_line=true>OSCCTRL_REGS->OSCCTRL_OSC48MCTRL = (uint8_t)(OSCCTRL_OSC48MCTRL_ENABLE_Msk
