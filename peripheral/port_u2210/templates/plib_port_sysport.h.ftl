@@ -54,6 +54,7 @@ typedef enum
 <#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
   <#list 0..PORT_PIN_COUNT as k>
       <#assign pinIndex = k + 1>
+	  <#assign PORT_PIN_INDEX_TZ = "PORT_PIN_INDEX_TZ_" + pinIndex>
       <#assign pinisSecure = "PIN_" + pinIndex + "_IS_NON_SECURE">
       <#assign PORT_PIN  = "PIN_" + pinIndex + "_PORT_PIN">
       <#assign PORT_GROUP = "PIN_" + pinIndex + "_PORT_GROUP">
@@ -61,7 +62,7 @@ typedef enum
           <#if .vars[PORT_PIN]?has_content>
               <#if .vars[PORT_GROUP]?has_content>
                   <#lt>    /* P${.vars[PORT_GROUP]}${.vars[PORT_PIN]?string["00"]} pin */
-                  <#lt>    SYS_PORT_PIN_P${.vars[PORT_GROUP]}${.vars[PORT_PIN]?string["00"]} = ${.vars[PORT_PIN]},
+                  <#lt>    SYS_PORT_PIN_P${.vars[PORT_GROUP]}${.vars[PORT_PIN]?string["00"]} = ${.vars[PORT_PIN_INDEX_TZ]},
 
               </#if>
           </#if>
