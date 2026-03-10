@@ -14,5 +14,7 @@
         <package diagram="QFN64" id="11" name="QFN64" />
         <package diagram="TFBGA343" id="12" name="TFBGA343" />
         <package diagram="TFBGA427" id="13" name="TFBGA427" />
+		<package diagram="TFBGA375" id="14" name="TFBGA375" />
+		<package diagram="TFBGA442" id="15" name="TFBGA442" />
     </packages>
 </pinfile>
