@@ -523,18 +523,16 @@ max_pin_package = None
 max_pin_count = 0
 
 ## get the pin count
-if deviceSeries == "SAMA7D6" or deviceSeries == "SAMA7G5":
+for pkg in package.keys():
+    match = re.search(r'\d+', pkg)
+    if match:
+        count = int(match.group())
+        if count > max_pin_count:
+            max_pin_count = count
+            max_pin_package = pkg
 
-    for pkg in package.keys():
-        match = re.search(r'\d+', pkg)
-        if match:
-            count = int(match.group())
-            if count > max_pin_count:
-                max_pin_count = count
-                max_pin_package = pkg
-
-    #Log.writeInfoMessage("max_pin_count:: " + str(max_pin_count))
-    #Log.writeInfoMessage("packagePinPackage:: " + str(max_pin_package))
+#Log.writeInfoMessage("max_pin_count:: " + str(max_pin_count))
+#Log.writeInfoMessage("packagePinPackage:: " + str(max_pin_package))
 
 packagePinCount = int(re.findall(r'\d+', package.keys()[0])[0])
 
