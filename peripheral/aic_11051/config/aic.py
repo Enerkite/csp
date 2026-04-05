@@ -256,7 +256,14 @@ def setupEnableAndHandler( component, anInterrupt, aicVectorEnable, aicVectorHan
 
     enableDependencies = []
     interruptName = getInterruptName( anInterrupt )
-    moduleInstance = anInterrupt.getAttribute( "module-instance" ).split()
+
+    moduleInstanceAttr = anInterrupt.getAttribute( "module-instance" )
+    if not moduleInstanceAttr:
+        moduleNameAttr = anInterrupt.getAttribute( "name" )
+        moduleInstance = moduleNameAttr.split()
+    else:
+        moduleInstance = moduleInstanceAttr.split()
+
     sharedVectorMaxShares = len( moduleInstance )
     if 1 < sharedVectorMaxShares:
         aicVectorHandler.setReadOnly( True )
@@ -297,7 +304,13 @@ def setupSharedVectorFtlSymbols( component, anInterrupt, aicVectorEnable ):
     global numSharedVectors
 
     interruptName = getInterruptName( anInterrupt )
-    moduleInstance = anInterrupt.getAttribute( "module-instance" ).split()
+    moduleInstanceAttr = anInterrupt.getAttribute( "module-instance" )
+    if not moduleInstanceAttr:
+        moduleNameAttr = anInterrupt.getAttribute( "name" )
+        moduleInstance = moduleNameAttr.split()
+    else:
+        moduleInstance = moduleInstanceAttr.split()
+
     numShares = len( moduleInstance )
     if 1 < numShares:
         numSharedVectors = numSharedVectors + 1
