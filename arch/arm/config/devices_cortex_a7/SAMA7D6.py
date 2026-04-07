@@ -260,7 +260,7 @@ coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "IN
 #execfile(Variables.get("__CORE_DIR") + "/../peripheral/matrix_6342/config/matrix.py")
 
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11264/plugin/pio_11264.jar")
 
 # load generic timer peripheral

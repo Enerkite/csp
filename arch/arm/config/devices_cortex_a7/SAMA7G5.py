@@ -250,7 +250,7 @@ execfile(Variables.get("__CORE_DIR") + "/../peripheral/gic/config/gic.py")
 coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "INTERRUPT_GIC_MANAGER", {"plugin_name": "Interrupt Configuration", "main_html_path": "csp/plugins/configurators/interrupt_configurators/gic_interrupt_configuration/build/index.html"})
 
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11264/plugin/pio_11264.jar")
 
 # load generic timer peripheral
