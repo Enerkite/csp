@@ -170,7 +170,7 @@ coreComponent.addPlugin(
         }
     )
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11004/plugin/pio_11004.jar")
 
 # load AIC

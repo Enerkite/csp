@@ -176,7 +176,7 @@ execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_9x7/config/clk.py
 coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "CLOCK_UI_MANAGER_ID_MX7", {"plugin_name": "Clock Manager", "main_html_path": "csp/plugins/configurators/clock-configurators/clock-sam-9x7/build/index.html"})
 
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11004/plugin/pio_11004.jar")
 
 # load AIC
