@@ -107,7 +107,7 @@ void ${WDT_INSTANCE_NAME}_Clear( void )
     /* Writing specific value to only upper 16 bits of WDTCON register clears WDT counter */
     /* Only write to the upper 16 bits of the register when clearing. */
     /* WDTCLRKEY = 0x5743 */
-    volatile uint16_t * wdtclrkey = ( (volatile uint16_t *)&WDTCON ) + 1;
+    uint16_t * volatile wdtclrkey = ((uint16_t *)&WDTCON) + 1;
     *wdtclrkey = 0x5743;
 }
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
