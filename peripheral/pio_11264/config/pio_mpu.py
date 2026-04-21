@@ -274,12 +274,6 @@ def packageChange(symbol, pinout):
                 pin_position = sorted(pin_map.keys())
                 pin_position_internal = sorted(pin_map_internal.keys())
 
-        #Log.writeInfoMessage("pin_map $$" + json.dumps(pin_map, indent=2, sort_keys=True))
-        #Log.writeInfoMessage("pin_position ##" + json.dumps(pin_position, indent=2))
-
-        #for index, value in enumerate(pin_position):
-        #Log.writeInfoMessage("PIN len" + str(len(pin_list)))
-
         for index in range(1, len(pin_list) + 1):
             if index <= len(pin_position):
                 if not pin_list[index - 1].getVisible():
@@ -328,9 +322,7 @@ def portFunc(pin, func):
     pin_num = int(str(pin.getID()).split("PIN_")[1].split("_PIO_PIN")[0])
     port = Database.getSymbolValue("core", "PIN_" + str(pin_num) + "_PIO_CHANNEL")
     bit_pos = Database.getSymbolValue("core", "PIN_" + str(pin_num) + "_PIO_PIN")
-    #Log.writeInfoMessage("port step23::  " + str(port))
-    #Log.writeInfoMessage("bit_pos step24::  " + str(bit_pos))
-    #Log.writeInfoMessage("pin_num step25:: " + str(int(pin_num)))
+
     if port:
         # If a function is assigned to the pin and that function is not something
         # PIO understands,configure the PIN as GPIO. Useful in BSP configured functions.
@@ -339,7 +331,7 @@ def portFunc(pin, func):
             function = "GPIO"
         else:
             function = func["value"]
-            #Log.writeInfoMessage("function step26::  " + str(function))
+
         key = port + "_" + function
         if function in per_func:
             for id in per_func:
@@ -353,7 +345,6 @@ def portFunc(pin, func):
 
         for id in per_func:
             Database.setSymbolValue("core", "PORT_" + str(port) + "_MSKR_Value" + str(id), str(hex(port_mskr[port + "_" + id])), 2)
-            #Log.writeInfoMessage("MSKR_Value step27::  " + str(Database.getSymbolValue("core", "PORT_" + str(port) + "_MSKR_Value" + str(id))))
 
 def pinCFGR (pin, cfgr_reg):
     cfgr = 0
@@ -516,8 +507,6 @@ uniquePinout = len(set(package.values()))
 
 deviceSeries = ATDF.getNode("/avr-tools-device-file/devices/device").getAttribute("series")
 deviceID = ATDF.getNode("/avr-tools-device-file/devices/device").getAttribute("name")
-Log.writeInfoMessage("deviceSeries:: " + deviceSeries)
-Log.writeInfoMessage("deviceID:: " + deviceID)
 
 max_pin_package = None
 max_pin_count = 0
@@ -531,9 +520,6 @@ for pkg in package.keys():
             max_pin_count = count
             max_pin_package = pkg
 
-#Log.writeInfoMessage("max_pin_count:: " + str(max_pin_count))
-#Log.writeInfoMessage("packagePinPackage:: " + str(max_pin_package))
-
 packagePinCount = int(re.findall(r'\d+', package.keys()[0])[0])
 
 pioPackage = coreComponent.createComboSymbol("COMPONENT_PACKAGE", pioEnable, package.values())
@@ -541,7 +527,6 @@ pioPackage.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_1
 pioPackage.setLabel("Pin Package")
 pioPackage.setReadOnly(True)
 
-#Log.writeInfoMessage("pioPackage:: $$$ " + str(pioPackage.getValue()))
 ###################################################################################################
 ################################# Pin Configuration related code ##################################
 ###################################################################################################
@@ -565,9 +550,6 @@ for id in range(0,len(portBitPositionNode.getChildren())):
     else:
         pin_map_internal[portBitPositionNode.getChildren()[id].getAttribute("type").split("INTERNAL_")[1]] = portBitPositionNode.getChildren()[id].getAttribute("pad")
 
-#for key, value in pin_map.items():
-#    Log.writeInfoMessage("Key: %s | pin:: %s" % (key, value))
-
 for i in range(max_pin_count - packagePinCount):
     dummy_key = "ZZZ_{0}".format(i)
     pin_map[dummy_key] = "NC"
@@ -579,15 +561,6 @@ else:
     pin_position = sorted(pin_map.keys())
     pin_position_internal = sorted(pin_map_internal.keys())
 
-#Log.writeInfoMessage("***PIN_Position***")
-#for index, value in enumerate(pin_position):
-#    Log.writeInfoMessage("Index: %s | pin:: %s" % (index, value))
-#
-#Log.writeInfoMessage("***pin_position_internal***")
-#for index, value in enumerate(pin_position_internal):
-#    Log.writeInfoMessage("index: %s | pin:: %s" % (index, value))
-
-#Log.writeInfoMessage("pin_map_internal length:: %d" % len(pin_map_internal.keys()))
 internalpackagePinCount = max_pin_count + len(pin_map_internal.keys())
 
 pinTotalPins = coreComponent.createIntegerSymbol("PIO_PIN_TOTAL" , pinConfiguration)
@@ -778,7 +751,6 @@ for pinNumber in range(1, internalpackagePinCount + 1):
 
 if deviceID == "SAMA7D65" or deviceID == "SAMA7G54":
     pioPackage.setDefaultValue("TFBGA343")
-    Log.writeInfoMessage("set package step55::  " + str(pioPackage.getValue()))
 elif deviceID == "SAMA7D65D4G":
     pioPackage.setDefaultValue("TFBGA427")
 elif deviceID == "SAMA5D27":

@@ -439,12 +439,10 @@ def packageChange(pinoutSymbol, pinout):
         pinoutSymbol.setReadOnly(True)
         return
 
-    Log.writeInfoMessage("Inside packageChange")
     ### No need to process if the device has only one pinout but multiple packages eg: TQFP, LQFP and QFN
     if uniquePinout > 1:
 
         cur_package = package.get(pinout["value"])
-        Log.writeInfoMessage("PC cur_package:: Step-77 " + str(cur_package))
 
         if cur_package != prev_package and prev_package != "":
             pin_map.clear()
@@ -461,10 +459,6 @@ def packageChange(pinoutSymbol, pinout):
                 pin_position = sort_alphanumeric(pin_map.keys())
             else:
                 pin_position = sorted(pin_map.keys())
-
-            #Log.writeInfoMessage("pin_map $$" + json.dumps(pin_map, indent=2, sort_keys=True))
-            #Log.writeInfoMessage("pin_position ##" + json.dumps(pin_position, indent=2))
-            #Log.writeInfoMessage("pin_position:: Step-79 " + str(int(len(pin_position))))
 
             for index in range(1, len(pin_list) + 1):
                 if index <= len(pin_position):
@@ -589,8 +583,6 @@ for id in range(0,len(packageNode.getChildren())):
 
 deviceSeries = ATDF.getNode("/avr-tools-device-file/devices/device").getAttribute("series")
 deviceID = ATDF.getNode("/avr-tools-device-file/devices/device").getAttribute("name")
-Log.writeInfoMessage("deviceSeries:: " + deviceSeries)
-Log.writeInfoMessage("deviceID:: " + deviceID)
 
 pioPackage = coreComponent.createComboSymbol("COMPONENT_PACKAGE", pioEnable, package.keys())
 pioPackage.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11004;register:%NOREGISTER%")
@@ -609,9 +601,6 @@ for pkg in package.keys():
         if count > max_pin_count:
             max_pin_count = count
             max_pin_package = pkg
-
-Log.writeInfoMessage("max_pin_count:: " + str(max_pin_count))
-Log.writeInfoMessage("max_pin_package:: " + str(max_pin_package))
 
 global packagePinCount
 packagePinCount = int(re.findall(r'\d+', package.keys()[0])[0])
@@ -796,10 +785,8 @@ if deviceID == "SAM9X60":
             pioPackage.setDefaultValue("TFBGA228")
         elif packageNode.getChildren()[id].getAttribute("package") == "BGA228":
             pioPackage.setDefaultValue("BGA228")
-    Log.writeInfoMessage("set package step55::  " + str(pioPackage.getValue()))
 elif deviceID == "SAM9X70" or deviceID == "SAM9X72" or deviceID == "SAM9X75":
     pioPackage.setDefaultValue("TFBGA240")
-    Log.writeInfoMessage("set package step56::  " + str(pioPackage.getValue()))
 
 pioPackage.setDependencies(packageChange, ["COMPONENT_PACKAGE"])
 ###################################################################################################
