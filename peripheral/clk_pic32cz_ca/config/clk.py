@@ -88,7 +88,7 @@ calculatedFreq_Menu.setLabel("Calculated Clock Frequencies")
 ################################################################################
 def update_XOSC_GRES(symbol, event):
     xosc_oscillator_mode = event["symbol"].getSelectedKey()
-            
+
     if xosc_oscillator_mode == "EXTERNAL_CLOCK":
         symbol.setReadOnly(True)
         symbol.setValue(False)
@@ -462,7 +462,18 @@ for i in range(0, 2):
         oscctrlSym_PLLPOSTDIVA_POSTDIV.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cz_ca;register:FRACDIV0")
         oscctrlSym_PLLPOSTDIVA_POSTDIV.setLabel("PLL" + str(i) + " output " + str(index) + " clock division factor")
         oscctrlSym_PLLPOSTDIVA_POSTDIV.setDescription("PLL" + str(i) + " output " + str(index) + " clock division factor")
-        oscctrlSym_PLLPOSTDIVA_POSTDIV.setDefaultValue(3)
+        if i == 0:
+            if index == 0:
+                oscctrlSym_PLLPOSTDIVA_POSTDIV.setDefaultValue(3)
+            elif index == 1:
+                oscctrlSym_PLLPOSTDIVA_POSTDIV.setDefaultValue(4)
+            elif index == 2:
+                oscctrlSym_PLLPOSTDIVA_POSTDIV.setDefaultValue(6)
+            elif index == 3:
+                oscctrlSym_PLLPOSTDIVA_POSTDIV.setDefaultValue(12)
+        else:
+            oscctrlSym_PLLPOSTDIVA_POSTDIV.setDefaultValue(3)
+
         oscctrlSym_PLLPOSTDIVA_POSTDIV.setMin(1)
         oscctrlSym_PLLPOSTDIVA_POSTDIV.setMax(63)
 
@@ -1427,7 +1438,7 @@ for index in sorted(channelMap.iterkeys()):
     key = channelMap[index]
     name = indexSymbolMap.get(key)
     name = " ".join(name)
-    
+
     gclk_io_clk_ui_list_sym.addKey(key, name , str(index))
 
     # GCLK Peripheral Channel Enable
@@ -1657,6 +1668,9 @@ gclkSym_GENCTRL_SRC[1].setSelectedKey("PLL0_1")
 gclkSym_GENCTRL_DIV[1].setValue(2)
 Database.setSymbolValue("core", "CONFIG_CLOCK_PLL0_ENABLE", True)
 Database.setSymbolValue("core", "CONFIG_CLOCK_PLL0_PLLPOSTDIVA_OUTEN0", True)
+Database.setSymbolValue("core", "CONFIG_CLOCK_PLL0_PLLPOSTDIVA_OUTEN1", True)
+Database.setSymbolValue("core", "CONFIG_CLOCK_PLL0_PLLPOSTDIVA_OUTEN2", True)
+Database.setSymbolValue("core", "CONFIG_CLOCK_PLL0_PLLPOSTDIVA_OUTEN3", True)
 gclkSym_GENCTRL_SRC[0].setSelectedKey("PLL0_1")
 ################################################################################
 ###########             CODE GENERATION                     ####################
