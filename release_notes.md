@@ -11,7 +11,8 @@
 
 ### Bug fixes and Improvements
 
-- Fix pin manager issues, added multiple packages support for MPU devices 
+- Fix pin manager issues for MPU devices
+- Resolved compatibility issues to support both old and new DFP Packages. 
 - Added PIC32CZ-CA70 (256/384 KB) SRAM part support in harmony
 - Updated PIC32CX-SG41 DFP version to 1.6.172 in package.yml
 - Updated package.yml file to support newer dfp version of SAM9X6 and SAM9X7 projects
@@ -24,7 +25,7 @@
 - [MPLAB® X IDE v6.30](https://www.microchip.com/mplab/mplab-x-ide) or higher
 - [MPLAB® XC32 C/C++ Compiler v5.10](https://www.microchip.com/mplab/compilers) or higher
 - MPLAB® X IDE plug-ins:
-    - MPLAB® Code Configurator 5.6.3 or higher
+    - MPLAB® Code Configurator 5.6.4 or higher
 	
 ## CSP Release v3.25.1
 
