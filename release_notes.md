@@ -3,6 +3,29 @@
 
 # Microchip MPLAB® Harmony 3 Release Notes
 
+## CSP Release v3.25.2
+
+### New Features
+
+- None
+
+### Bug fixes and Improvements
+
+- Fix pin manager issues, added multiple packages support for MPU devices 
+- Added PIC32CZ-CA70 (256/384 KB) SRAM part support in harmony
+- Updated PIC32CX-SG41 DFP version to 1.6.172 in package.yml
+- Updated package.yml file to support newer dfp version of SAM9X6 and SAM9X7 projects
+- Removed OSC48M CAL value settings for PIC32CM JH00/JH01 devices
+- Added functions for PLL Ramp-up and Ramp-Down for pic32cz-ca family
+- Added trustZone pin index in port plib
+
+### Development Tools
+
+- [MPLAB® X IDE v6.30](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.10](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.3 or higher
+	
 ## CSP Release v3.25.1
 
 ### New Features
