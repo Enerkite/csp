@@ -218,7 +218,7 @@ oscctrlSym_XOSC_OSCILLATORMODE.addKey(
 oscctrlSym_XOSC_OSCILLATORMODE.addKey(
     "CRYSTAL", "1", "crystal oscillator enable")
 oscctrlSym_XOSC_OSCILLATORMODE.setOutputMode("Value")
-oscctrlSym_XOSC_OSCILLATORMODE.setDefaultValue(1
+oscctrlSym_XOSC_OSCILLATORMODE.setDefaultValue(1)
 
 oscctrlSym_XOSC_GRES = coreComponent.createBooleanSymbol("CONFIG_CLOCK_XOSC_GRES", oscctrlXosc_Menu)
 oscctrlSym_XOSC_GRES.setLabel("Use internal XOSC shunt Gain resistor")
