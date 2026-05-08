@@ -48,7 +48,7 @@
 
 #include "device.h"
 #include "plib_${WDT_INSTANCE_NAME?lower_case}.h"
-
+    
 // *****************************************************************************
 // *****************************************************************************
 // Section: ${WDT_INSTANCE_NAME} Implementation
@@ -107,8 +107,8 @@ void ${WDT_INSTANCE_NAME}_Clear( void )
     /* Writing specific value to only upper 16 bits of WDTCON register clears WDT counter */
     /* Only write to the upper 16 bits of the register when clearing. */
     /* WDTCLRKEY = 0x5743 */
-    uint16_t * volatile wdtclrkey = ((uint16_t *)&WDTCON) + 1;
-    *wdtclrkey = 0x5743;
+    WDT_REG_T *wdt_reg = (WDT_REG_T *)&WDTCON;
+    wdt_reg->wdt_val.high = 0x5743U;
 }
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 #pragma coverity compliance end_block "MISRA C-2023 Rule 11.3"
