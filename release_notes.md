@@ -3,6 +3,26 @@
 
 # Microchip MPLAB® Harmony 3 Release Notes
 
+## CSP Release v3.18.2
+
+### New Features
+
+- Fixed MISRA-C violations in plibs
+- Removed hard-coding in trustzone project paths
+- Bug fixes
+- Version dependencies for the following DFPs are updated
+  - PIC32CX-MT_DFP to version 1.3.132
+
+
+## CSP Release v3.18.1
+
+### New Features
+
+- Removed dependency on dev_packs package
+- Version dependencies for the following DFPs are updated
+  - PIC32CX-BZ_DFP to version 1.3.238
+  - PIC32CX-BZ3_DFP to version 1.1.171
+
 ## CSP Release v3.18.0
 
 ### New Features
