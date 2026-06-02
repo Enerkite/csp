@@ -55,17 +55,17 @@
 
 <#if ADCHS_INTERRUPT == true>
     <#lt>/* Object to hold callback function and context */
-    <#lt>volatile static ADCHS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_CallbackObj[${ADCHS_NUM_SIGNALS - 1}];
+    <#lt>static volatile ADCHS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_CallbackObj[${ADCHS_NUM_SIGNALS - 1}];
 </#if>
 
 <#if ADCCON2__EOSIEN == true>
     <#lt>/* Object to hold callback function and context for end of scan interrupt*/
-    <#lt>volatile static ADCHS_EOS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_EOSCallbackObj;
+    <#lt>static volatile ADCHS_EOS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_EOSCallbackObj;
 </#if>
 <#if ADC_IS_DMA_AVAILABLE == true && (ADC_DMA_ENABLED?? && ADC_DMA_ENABLED == true)>
 <#if ADC_DMA_INT_ENABLED?? && ADC_DMA_INT_ENABLED == true>
     <#lt>/* Object to hold callback function and context for ADC DMA interrupt*/
-    <#lt>volatile static ADCHS_DMA_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DMACallbackObj;
+    <#lt>static volatile ADCHS_DMA_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DMACallbackObj;
 </#if>
 </#if>
 
@@ -81,7 +81,7 @@
 </#list>
 
 <#if ADCHS_MAX_FILTER_NUM gt 0>
-volatile static ADCHS_DF_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${ADCHS_MAX_FILTER_NUM}];
+static volatile ADCHS_DF_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${ADCHS_MAX_FILTER_NUM}];
 </#if>
 
 <#assign ADCHS_MAX_COMPARATOR_NUM = 0>
@@ -95,7 +95,7 @@ volatile static ADCHS_DF_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${
 </#list>
 
 <#if ADCHS_MAX_COMPARATOR_NUM gt 0>
-volatile static ADCHS_DC_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DCCallbackObj[${ADCHS_MAX_COMPARATOR_NUM}];
+static volatile ADCHS_DC_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DCCallbackObj[${ADCHS_MAX_COMPARATOR_NUM}];
 </#if>
 </#compress>
 
@@ -551,16 +551,16 @@ void ${ADCHS_INSTANCE_NAME}_Filter${i}CallbackRegister(ADCHS_DF_CALLBACK callbac
 
 void __attribute__((used)) ADC_DF${i}_InterruptHandler(void)
 {
+    if (${ADCHS_INSTANCE_NAME}_DFCallbackObj[${i-1}].callback_fn != NULL)
+    {
+      ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${i-1}].callback_fn(${ADCHS_INSTANCE_NAME}_DFCallbackObj[${i-1}].context);
+    }
 <#if core.PRODUCT_FAMILY?contains("PIC32MZ")>
     ${.vars[ADCHS_DFx_IFS_REG]}CLR = _${.vars[ADCHS_DFx_IFS_REG]}_ADCDF${i}IF_MASK;
 </#if>
 <#if core.PRODUCT_FAMILY?contains("PIC32MK")>
     ${.vars[ADCHS_DFx_IFS_REG]}CLR = _${.vars[ADCHS_DFx_IFS_REG]}_AD1DF${i}IF_MASK;
 </#if>
-    if (${ADCHS_INSTANCE_NAME}_DFCallbackObj[${i-1}].callback_fn != NULL)
-    {
-      ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${i-1}].callback_fn(${ADCHS_INSTANCE_NAME}_DFCallbackObj[${i-1}].context);
-    }
 }
 <#else>
 bool ${ADCHS_INSTANCE_NAME}_Filter${i}IsReady(void)

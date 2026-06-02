@@ -23,6 +23,21 @@
 
 import re
 
+
+def getMaxValue(mask):
+    import re
+    
+    if mask == 0 :
+        return hex(0)
+
+    mask = "0x" + re.findall(r'[a-f, 0-9]+', mask.lower())[1]
+    
+    mask = int(mask, 16)
+    while (mask % 2) == 0:
+        mask = mask >> 1
+
+    return mask
+
 def _find_default_value(bitfieldNode, initialRegValue):
     '''
     Helper function to lookup default value for a particular bitfield within a given register from atdf node
@@ -56,7 +71,7 @@ def _find_key(value, keypairs):
     for keyname, val in keypairs.items():
         if(val == str(value)):
             return keyname
-    print("_find_key: could not find value in dictionary") # should never get here
+    Log.writeDebugMessage("_find_key: could not find value in dictionary") # should never get here
     return ""
 
 def _process_valuegroup_entry(node):
@@ -158,7 +173,7 @@ def calcWaitStates(symbol, event):
 
 processor = Variables.get("__PROCESSOR")
 
-print("Loading System Services for " + processor)
+Log.writeInfoMessage("Loading System Services for " + processor)
 
 fuseSettings = coreComponent.createBooleanSymbol("FUSE_CONFIG_ENABLE", devCfgMenu)
 fuseSettings.setLabel("Generate Fuse Settings")
@@ -196,13 +211,16 @@ for ii in range(len(register)):
                     valuenode = submodnode[kk].getChildren()  # look at all the <value ..> entries underneath <value-group >
                     keyVals = {}
                     for ll in range(len(valuenode)):  # do this for each child <value ..> attribute for this bitfield
-                        keyVals[valuenode[ll].getAttribute("name")] = _process_valuegroup_entry(valuenode[ll])
+                        if valuenode[ll].getAttribute("name") !=  "Reserved":
+                            keyVals[valuenode[ll].getAttribute("name")] = _process_valuegroup_entry(valuenode[ll])
             bitfielditem = coreComponent.createComboSymbol('CONFIG_'+bitfieldName, menuitem, sort_alphanumeric(keyVals.keys()))
             bitfielditem.setDefaultValue(_find_key(_find_default_value(bitfields[jj], porValue),keyVals))
 
         bitfielditem.setVisible(True)
 
         if(bitfieldName in bitfieldHexSymbols):
+            bitfielditem.setMin(0)
+            bitfielditem.setMax(getMaxValue(bitfields[jj].getAttribute('mask')))
             bitfielditem.setDefaultValue(_find_default_value(bitfields[jj], porValue))
 
         label = bitfields[jj].getAttribute('caption')+' ('+bitfields[jj].getAttribute('name')+')'

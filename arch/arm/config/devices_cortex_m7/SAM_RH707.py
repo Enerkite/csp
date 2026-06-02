@@ -38,9 +38,9 @@ def xc32SetStackInTcm(symbol, event):
 # Channel x Configuration Register[0..31] defaults
 #"TYPE" "DSYNC" "SWREQ" "SAM" "DAM" "SIF" "DIF" "DWIDTH" "CSIZE" "MBSIZE"
 def setXDMACDefaultSettings():
-    triggerSettings = {"Software Trigger":  ["MEM_TRAN", "PER2MEM", "HWR_CONNECTED", "INCREMENTED_AM", "INCREMENTED_AM", "AHB_IF1", "AHB_IF1", "BYTE", "CHK_1", "SINGLE"],
-                       "Standard_Transmit": ["PER_TRAN", "MEM2PER", "HWR_CONNECTED", "INCREMENTED_AM", "FIXED_AM",       "AHB_IF0", "AHB_IF1", "BYTE", "CHK_1", "SINGLE"],
-                       "Standard_Receive":  ["PER_TRAN", "PER2MEM", "HWR_CONNECTED", "FIXED_AM",       "INCREMENTED_AM", "AHB_IF1", "AHB_IF0", "BYTE", "CHK_1", "SINGLE"]}
+    triggerSettings = {"Software Trigger":  ["MEM_TRAN", "PER2MEM", "HWR_CONNECTED", "INCREMENTED_AM", "INCREMENTED_AM", "AHB_IF0", "AHB_IF1", "BYTE", "CHK_1", "SINGLE"],
+                       "Standard_Transmit": ["PER_TRAN", "MEM2PER", "HWR_CONNECTED", "INCREMENTED_AM", "FIXED_AM",       "AHB_IF1", "AHB_IF0", "BYTE", "CHK_1", "SINGLE"],
+                       "Standard_Receive":  ["PER_TRAN", "PER2MEM", "HWR_CONNECTED", "FIXED_AM",       "INCREMENTED_AM", "AHB_IF0", "AHB_IF1", "BYTE", "CHK_1", "SINGLE"]}
 
     return triggerSettings
 
@@ -53,7 +53,6 @@ def setMPUDefaultSettings():
                    "SRAM":        ["MPU_ATTR_NORMAL_WB_WA",     "MPU_RASR_AP_READWRITE_Val",    "True",     "",     "0x21000000",   "1MB"],
                    "PERIPHERALS": ["MPU_ATTR_DEVICE",           "MPU_RASR_AP_READWRITE_Val",    "",         "",     "0x40000000",   "256MB"],
                    "HEMC":     ["MPU_ATTR_STRONGLY_ORDERED", "MPU_RASR_AP_READWRITE_Val",    "True",     "",     "0x60000000",   "256MB"],
-                   "QSPI":        ["MPU_ATTR_STRONGLY_ORDERED", "MPU_RASR_AP_READWRITE_Val",    "True",     "",     "0x18000000",   "256MB"],
                    "USBHS_RAM":   ["MPU_ATTR_DEVICE",           "MPU_RASR_AP_READWRITE_Val",    "",         "",     "0xA0100000",   "1MB"],
                    "SYSTEM":      ["MPU_ATTR_STRONGLY_ORDERED", "MPU_RASR_AP_READWRITE_Val",    "",         "",     "0xE0000000",   "1MB"]}
     mpuSetUpLogicList = ['ITCM', 'FLASH', 'DTCM', 'SRAM', 'HEMC', 'QSPI']
@@ -61,7 +60,7 @@ def setMPUDefaultSettings():
     return mpuRegions, mpuSettings, mpuSetUpLogicList
 
 
-print ("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 # DEVICE & PROJECT CONFIGURATION MENU
 deviceFamily = coreComponent.createStringSymbol("DeviceFamily", devCfgMenu)
@@ -140,7 +139,15 @@ cacheAlign.setDefaultValue(32)
 
 # load clock manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_rh707/config/clk.py")
-coreComponent.addPlugin("../peripheral/clk_sam_rh707/plugin/clk_sam_rh707.jar")
+coreComponent.addPlugin(
+        "../../harmony-services/plugins/generic_plugin.jar",
+        "CLK_UI_MANAGER_ID_CLK_SAMRH707",
+        {
+            "plugin_name": "Clock Configuration",
+            "main_html_path": "csp/plugins/configurators/clock-configurators/clk_sam_rh707_configurator/build/index.html",
+            "componentId": coreComponent.getID()
+        }
+    )
 
 # load device specific pin manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio.py")

@@ -78,9 +78,9 @@ def setDRAMAddresses(symbol, event):
     comp.setSymbolValue("DDRAM_NO_CACHE_END_ADDR", "0x%08X" % no_cache_end)
     comp.setSymbolValue("DDRAM_CACHE_START_ADDR", "0x%08X" % cache_start)
     comp.setSymbolValue("DDRAM_CACHE_SIZE", "0x%08X" % cache_size)
-    
-    
-print ("Loading System Services for " + Variables.get("__PROCESSOR"))
+
+
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 deviceFamily = coreComponent.createStringSymbol("DeviceFamily", devCfgMenu)
 deviceFamily.setLabel("Device Family")
@@ -238,7 +238,7 @@ execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_a5d2/config/clk.p
 coreComponent.addPlugin("../peripheral/clk_sam_a5d2/plugin/clk_sam_a5d2.jar")
 
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11264/plugin/pio_11264.jar")
 
 # load AIC
@@ -312,3 +312,9 @@ faultSourceFile.setOverwrite(True)
 faultSourceFile.setDestPath("")
 faultSourceFile.setProjectPath("config/" + configName + "/")
 faultSourceFile.setType("SOURCE")
+
+xc32MPUARMCompilerFlag = coreComponent.createSettingSymbol("XC32_MPU_ARM_FLAG", None)
+xc32MPUARMCompilerFlag.setCategory("C32")
+xc32MPUARMCompilerFlag.setKey("appendMe")
+xc32MPUARMCompilerFlag.setValue("-marm")
+xc32MPUARMCompilerFlag.setAppend(True, " ")

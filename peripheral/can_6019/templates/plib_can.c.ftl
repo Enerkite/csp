@@ -66,7 +66,7 @@
 <#assign CAN_SJW    = SJW - 1>
 #define BYTE_MASK  (0xFFU)
 <#if INTERRUPT_MODE == true>
-volatile static CAN_OBJ ${CAN_INSTANCE_NAME?lower_case}Obj;
+static volatile CAN_OBJ ${CAN_INSTANCE_NAME?lower_case}Obj;
 </#if>
 static const uint32_t can_mb_number = CAN_MB_NUMBER;
 <#if INTERRUPT_MODE == true>
@@ -121,7 +121,7 @@ void ${CAN_INSTANCE_NAME}_Initialize(void)
     ${CAN_INSTANCE_NAME}_REGS->CAN_MB[${mailbox}].CAN_MCR = 0;
     <#if .vars[MMR_MOT] == "MB_RX" || .vars[MMR_MOT] == "MB_RX_OVERWRITE" || .vars[MMR_MOT] == "MB_CONSUMER">
     ${CAN_INSTANCE_NAME}_REGS->CAN_MB[${mailbox}].CAN_MID = ${(.vars[MID_ID]?number > 2047)?then('${.vars[MID_ID]}', 'CAN_MID_MIDvA(${.vars[MID_ID]})')} | CAN_MID_MIDE_Msk;
-    ${CAN_INSTANCE_NAME}_REGS->CAN_MB[${mailbox}].CAN_MAM = ${(.vars[MAM_ID]?number > 2047)?then('${.vars[MAM_ID]} | CAN_MAM_MIDE_Msk', 'CAN_MAM_MIDvA(${.vars[MAM_ID]})')};
+    ${CAN_INSTANCE_NAME}_REGS->CAN_MB[${mailbox}].CAN_MAM = ${(.vars[MAM_ID]?number > 2047)?then('${.vars[MAM_ID]}U | CAN_MAM_MIDE_Msk', 'CAN_MAM_MIDvA(${.vars[MAM_ID]})')};
     </#if>
     ${CAN_INSTANCE_NAME}_REGS->CAN_MB[${mailbox}].CAN_MMR = CAN_MMR_MOT_${.vars[MMR_MOT]};
     </#list>
@@ -168,17 +168,17 @@ void ${CAN_INSTANCE_NAME}_Initialize(void)
     false - Request has failed.
 */
 
-/* MISRA C-2012 Rule 16.1, 16.3 and 16.6 deviated below. Deviation record ID -
-   H3_MISRAC_2012_R_16_1_DR_1, H3_MISRAC_2012_R_16_3_DR_1 & H3_MISRAC_2012_R_16_6_DR_1*/
+/* MISRA C-2023 Rule 16.1, 16.3 and 16.6 deviated below. Deviation record ID -
+   H3_MISRAC_2023_R_16_1_DR_1, H3_MISRAC_2023_R_16_3_DR_1 & H3_MISRAC_2023_R_16_6_DR_1*/
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
 <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 </#if>
 #pragma coverity compliance block \
-(deviate:2 "MISRA C-2012 Rule 16.1" "H3_MISRAC_2012_R_16_1_DR_1" )\
-(deviate:2 "MISRA C-2012 Rule 16.3" "H3_MISRAC_2012_R_16_3_DR_1" )\
-(deviate:1 "MISRA C-2012 Rule 16.6" "H3_MISRAC_2012_R_16_6_DR_1" )
+(deviate:2 "MISRA C-2023 Rule 16.1" "H3_MISRAC_2023_R_16_1_DR_1" )\
+(deviate:2 "MISRA C-2023 Rule 16.3" "H3_MISRAC_2023_R_16_3_DR_1" )\
+(deviate:1 "MISRA C-2023 Rule 16.6" "H3_MISRAC_2023_R_16_6_DR_1" )
 </#if>
 
 bool ${CAN_INSTANCE_NAME}_MessageTransmit(uint32_t id, uint8_t length, uint8_t* data, CAN_MAILBOX_TX_ATTRIBUTE mailboxAttr)
@@ -457,14 +457,14 @@ bool ${CAN_INSTANCE_NAME}_MessageReceive(uint32_t *id, uint8_t *length, uint8_t 
 }
 
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 16.1"
-#pragma coverity compliance end_block "MISRA C-2012 Rule 16.3"
-#pragma coverity compliance end_block "MISRA C-2012 Rule 16.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 16.1"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 16.3"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 16.6"
 <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop
 </#if>
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 
 // *****************************************************************************
 /* Function:

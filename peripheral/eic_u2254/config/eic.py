@@ -141,6 +141,52 @@ def debounceMenu(symbol, event):
 def filterMenu(symbol, event):
     symbol.setVisible((event["value"] > 0))
 
+def handleMessage(messageID, args):
+    global eicInstanceName
+    
+    retDict = {}
+    if (messageID == "EIC_CONFIG_HW_IO"):
+        component = eicInstanceName.getValue().lower()
+        channel, intMode, enable = args['config']
+        if channel == "NMI":
+            symbolId = "NMI_CTRL"
+        else:
+            symbolId = "EIC_CHAN_{}".format(int(channel))
+
+        if enable == True:
+            res = Database.setSymbolValue(component, symbolId, enable)
+        else:
+            res = Database.clearSymbolValue(component, symbolId)
+
+        if channel != "NMI":
+            symbolId = "EIC_INT_{}".format(int(channel))
+            if enable == True:
+                res = Database.setSymbolValue(component, symbolId, enable)
+            else:
+                res = Database.clearSymbolValue(component, symbolId)
+
+            if intMode is not None:
+                symbolId = "EIC_CONFIG_SENSE_{}".format(int(channel))
+                eicComponent = Database.getComponentByID(component)
+                symbol = eicComponent.getSymbolByID(symbolId)
+                if symbol is not None:
+                    keyCount = symbol.getKeyCount()
+                    for index in range(0, keyCount):
+                        descr = symbol.getKeyDescription(index)
+                        if intMode.lower() in descr.lower():
+                            symbol.setValue(index)
+                            break
+                
+            if res == True:
+                retDict = {"Result": "Success"}
+            else:
+                retDict = {"Result": "Fail"}
+            
+    else:
+        retDict= {"Result": "EIC UnImplemented Command"}
+    
+    return retDict
+
 ###################################################################################################
 ######################################### Component ###############################################
 ###################################################################################################
@@ -186,6 +232,7 @@ def instantiateComponent(eicComponent):
 
     # CTRLA - Clock Selection
     CTRLA_CKSEL_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_CLKSEL" , None)
+    CTRLA_CKSEL_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:CTRLA")
     CTRLA_CKSEL_SelectionSymbol.setLabel("EIC Clock Source Selection")
 
     eicClkselNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_CTRLA__CKSEL\"]")
@@ -202,6 +249,7 @@ def instantiateComponent(eicComponent):
 
     #Non-Maskable Interrupt Control
     eicPLX4 = eicComponent.createBooleanSymbol("NMI_CTRL", None)
+    eicPLX4.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:CTRL")
     eicPLX4.setLabel("Non Maskable Interrupt Control")
 
     nmiConfMenu = eicComponent.createMenuSymbol("NMI_MENU", eicPLX4)
@@ -211,17 +259,29 @@ def instantiateComponent(eicComponent):
 
     #NMIASYNCH
     NMI_ASYNCH_Selection = eicComponent.createKeyValueSetSymbol("NMI_ASYNCH" , nmiConfMenu)
+    NMI_ASYNCH_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:NMICTRL")
     NMI_ASYNCH_Selection.setLabel("NMI Detection Clock")
 
     eicNMIAsyncNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_NMICTRL__NMIASYNCH\"]")
-    eicNMIAsyncValues = []
-    eicNMIAsyncValues = eicNMIAsyncNode.getChildren()
+    if eicNMIAsyncNode is not None:
+        eicNMIAsyncValues = []
+        eicNMIAsyncValues = eicNMIAsyncNode.getChildren()
 
-    for index in range(len(eicNMIAsyncNode.getChildren())):
-        eicNMIAsyncKeyName = eicNMIAsyncNode.getChildren()[index].getAttribute("name")
-        eicNMIAsyncKeyDescription = eicNMIAsyncNode.getChildren()[index].getAttribute("caption")
-        eicNMIAsyncKeyValue = eicNMIAsyncNode.getChildren()[index].getAttribute("value")
-        NMI_ASYNCH_Selection.addKey(eicNMIAsyncKeyName, eicNMIAsyncKeyValue , eicNMIAsyncKeyDescription)
+        for index in range(len(eicNMIAsyncNode.getChildren())):
+            eicNMIAsyncKeyName = eicNMIAsyncNode.getChildren()[index].getAttribute("name")
+            eicNMIAsyncKeyDescription = eicNMIAsyncNode.getChildren()[index].getAttribute("caption")
+            eicNMIAsyncKeyValue = eicNMIAsyncNode.getChildren()[index].getAttribute("value")
+            NMI_ASYNCH_Selection.addKey(eicNMIAsyncKeyName, eicNMIAsyncKeyValue , eicNMIAsyncKeyDescription)
+    else:
+        entries = [
+            {"name": "SYNC", "caption": "Edge detection is clock synchronously operated", "value": "0"},
+            {"name": "ASYNC", "caption": "Edge detection is clock asynchronously operated", "value": "1"}
+        ]
+        for entry in entries:
+            eicNMIAsyncKeyName = entry["name"]
+            eicNMIAsyncKeyDescription = entry["caption"]
+            eicNMIAsyncKeyValue = entry["value"]
+            NMI_ASYNCH_Selection.addKey(eicNMIAsyncKeyName, eicNMIAsyncKeyValue , eicNMIAsyncKeyDescription)
 
     NMI_ASYNCH_Selection.setDefaultValue(0)
     NMI_ASYNCH_Selection.setOutputMode("Value")
@@ -229,10 +289,12 @@ def instantiateComponent(eicComponent):
 
     #NMIFILTEN
     NMI_FILTEN_Selection = eicComponent.createBooleanSymbol("NMI_FILTEN" , nmiConfMenu)
+    NMI_FILTEN_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:NMICTRL")
     NMI_FILTEN_Selection.setLabel("Enable filter")
 
     # NMI - SENSE
     NMI_SENSE_SelectionSymbol = eicComponent.createKeyValueSetSymbol("NMI_SENSE" , nmiConfMenu)
+    NMI_SENSE_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:NMICTRL")
     NMI_SENSE_SelectionSymbol.setLabel("NMI Interrupt Edge Selection")
 
     eicNMISenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_NMICTRL__NMISENSE\"]")
@@ -251,6 +313,7 @@ def instantiateComponent(eicComponent):
     for extIntIndex in range(0 , extIntCount):
 
         eicPLX1 = eicComponent.createBooleanSymbol("EIC_CHAN_" + str(extIntIndex) , None)
+        eicPLX1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:CTRLA")
         eicPLX1.setLabel("Enable EIC Channel" + str(extIntIndex))
 
         eicConfiguration = eicComponent.createMenuSymbol("EIC_MENU" + str(extIntIndex), eicPLX1)
@@ -262,11 +325,13 @@ def instantiateComponent(eicComponent):
         eicSym_Channel.append("EIC_CHAN_" + str(extIntIndex))
 
         eicINT = eicComponent.createBooleanSymbol("EIC_INT_" + str(extIntIndex) , eicConfiguration)
+        eicINT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:CTRLA")
         eicINT.setLabel("Enable Interrupt")
         eicSym_InterruptList.append("EIC_INT_" + str(extIntIndex))
 
         #EVCTRL - External Interrupt Event Output Enable 0..7 Channel number
         EVCCTRL_EXTINTEO_Selection = eicComponent.createBooleanSymbol("EIC_EXTINTEO_" + str(extIntIndex) , eicConfiguration)
+        EVCCTRL_EXTINTEO_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:EVCTRL")
         EVCCTRL_EXTINTEO_Selection.setLabel("Enable Event Output")
 
         # populate a list with IDs for code generation dependency
@@ -274,15 +339,27 @@ def instantiateComponent(eicComponent):
 
         #ASYNCH
         ASYNCH_ASYNCH_Selection = eicComponent.createKeyValueSetSymbol("EIC_ASYNCH_" + str(extIntIndex) , eicConfiguration)
+        ASYNCH_ASYNCH_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:ASYNCH")
         ASYNCH_ASYNCH_Selection.setLabel("External Interrupt" + str(extIntIndex) + " Detection Clock")
 
         eicAsynchNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_ASYNCH__ASYNCH\"]")
 
-        for index in range(len(eicAsynchNode.getChildren())):
-            eicAsynchKeyName = eicAsynchNode.getChildren()[index].getAttribute("name")
-            eicAsynchKeyDescription = eicAsynchNode.getChildren()[index].getAttribute("caption")
-            eicAsynchKeyValue = eicAsynchNode.getChildren()[index].getAttribute("value")
-            ASYNCH_ASYNCH_Selection.addKey(eicAsynchKeyName, eicAsynchKeyValue , eicAsynchKeyDescription)
+        if eicAsynchNode is not None:
+            for index in range(len(eicAsynchNode.getChildren())):
+                eicAsynchKeyName = eicAsynchNode.getChildren()[index].getAttribute("name")
+                eicAsynchKeyDescription = eicAsynchNode.getChildren()[index].getAttribute("caption")
+                eicAsynchKeyValue = eicAsynchNode.getChildren()[index].getAttribute("value")
+                ASYNCH_ASYNCH_Selection.addKey(eicAsynchKeyName, eicAsynchKeyValue , eicAsynchKeyDescription)
+        else:
+            entries = [
+                {"name": "SYNC", "caption": "Edge detection is clock synchronously operated", "value": "0"},
+                {"name": "ASYNC", "caption": "Edge detection is clock asynchronously operated", "value": "1"}
+            ]
+            for entry in entries:
+                eicAsynchKeyName = entry["name"]
+                eicAsynchKeyDescription = entry["caption"]
+                eicAsynchKeyValue = entry["value"]
+                ASYNCH_ASYNCH_Selection.addKey(eicAsynchKeyName, eicAsynchKeyValue, eicAsynchKeyDescription)
 
         ASYNCH_ASYNCH_Selection.setDefaultValue(0)
         ASYNCH_ASYNCH_Selection.setOutputMode("Value")
@@ -293,12 +370,17 @@ def instantiateComponent(eicComponent):
 
         #CONFIG - Sense Enable
         CONFIG_SENSE_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_CONFIG_SENSE_" + str(extIntIndex) , eicConfiguration)
+        CONFIG_SENSE_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:CONFIG")
         CONFIG_SENSE_SelectionSymbol.setLabel("External Interrupt" + str(extIntIndex) + " Edge Selection")
 
         eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_CONFIG__SENSE0\"]")
         if eicConfigSenseNode == None:
            eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_CONFIG__SENSE\"]") 
-
+        if eicConfigSenseNode == None:
+           if ATDF.getNode('/avr-tools-device-file/modules/module@[name=\"EIC\"]/register-group@[name="EIC"]/register@[name=\"CONFIG0\"]') is not None:
+                eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/register-group@[name=\"EIC\"]/register@[name=\"CONFIG0\"]/bitfield@[name=\"SENSE0\"]")
+                eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"" + eicConfigSenseNode.getAttribute("values") + "\"]")
+                
         for index in range(len(eicConfigSenseNode.getChildren())):
             eicConfigSenseKeyName = eicConfigSenseNode.getChildren()[index].getAttribute("name")
             eicConfigSenseKeyDescription = eicConfigSenseNode.getChildren()[index].getAttribute("caption")
@@ -312,12 +394,14 @@ def instantiateComponent(eicComponent):
         if debounceSupported.getValue():
             #DEBOUNCEN
             DEBOUNCEN_Selection = eicComponent.createBooleanSymbol("EIC_DEBOUNCEN_" + str(extIntIndex) , eicConfiguration)
+            DEBOUNCEN_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:DEBOUNCEN")
             DEBOUNCEN_Selection.setLabel("Enable Debounce")
             DEBOUNCEN_Selection.setVisible(False)
             DEBOUNCEN_Selection.setDependencies(debounceEnable,["EIC_CONFIG_SENSE_" + str(extIntIndex)])
 
         #CONFIG - Filter Enable
         CONFIG_FILTER_Selection = eicComponent.createBooleanSymbol("EIC_CONFIG_FILTEN_" + str(extIntIndex) , eicConfiguration)
+        CONFIG_FILTER_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:CONFIG")
         CONFIG_FILTER_Selection.setLabel("Enable filter")
         CONFIG_FILTER_Selection.setVisible(False)
         CONFIG_FILTER_Selection.setDependencies(filterMenu, ["EIC_CONFIG_SENSE_" + str(extIntIndex)])
@@ -365,6 +449,7 @@ def instantiateComponent(eicComponent):
 
         #DEBOUNCER - TICKON
         PRESCALER_TICKON_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_PRESCALER_TICKON" , eicDebounceMenu)
+        PRESCALER_TICKON_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:DPRESCALER")
         PRESCALER_TICKON_SelectionSymbol.setLabel("Debouncer Sampler Clock Source")
 
         eicTickOnNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_DPRESCALER__TICKON\"]")
@@ -381,6 +466,7 @@ def instantiateComponent(eicComponent):
 
         #DEBOUNCER - Number of States x (7:0)
         DEBOUNCER_NO_STATES_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_DEBOUNCER_NO_STATES_0" , eicDebounceMenu)
+        DEBOUNCER_NO_STATES_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:DPRESCALER")
         DEBOUNCER_NO_STATES_SelectionSymbol.setLabel("Valid Pin States for EXTINT[7:0]")
 
         eicStates0Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/register-group@[name=\"EIC\"]/register@[name=\"DPRESCALER\"]/bitfield@[name=\"STATES0\"]")
@@ -398,6 +484,7 @@ def instantiateComponent(eicComponent):
 
         #BOUNCER - Prescaler x (7:0)
         DEBOUNCER_PRESCALER_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_DEBOUNCER_PRESCALER_0" , eicDebounceMenu)
+        DEBOUNCER_PRESCALER_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:DPRESCALER")
         DEBOUNCER_PRESCALER_SelectionSymbol.setLabel("Debouncer Prescaler for EXTINT[7:0]")
 
         eicPrescaler0Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/register-group@[name=\"EIC\"]/register@[name=\"DPRESCALER\"]/bitfield@[name=\"PRESCALER0\"]")
@@ -419,6 +506,7 @@ def instantiateComponent(eicComponent):
             eicStatesxNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"" + eicStates0Node.getAttribute("values") + "\"]")
 
             DEBOUNCER_NO_STATES_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_DEBOUNCER_NO_STATES_1" , eicDebounceMenu)
+            DEBOUNCER_NO_STATES_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:DPRESCALER")
             DEBOUNCER_NO_STATES_SelectionSymbol.setLabel("Valid Pin States Duration for EXTINT[15:8]")
 
             for index in range(len(eicStatesxNode.getChildren())):
@@ -433,6 +521,7 @@ def instantiateComponent(eicComponent):
 
             #BOUNCER - Prescaler x (8:15)
             DEBOUNCER_PRESCALER_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_DEBOUNCER_PRESCALER_1" , eicDebounceMenu)
+            DEBOUNCER_PRESCALER_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2254;register:DPRESCALER")
             DEBOUNCER_PRESCALER_SelectionSymbol.setLabel("Debouncer Prescaler for EXTINT[15:8]")
 
             eicPrescaler0Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/register-group@[name=\"EIC\"]/register@[name=\"DPRESCALER\"]/bitfield@[name=\"PRESCALER1\"]")

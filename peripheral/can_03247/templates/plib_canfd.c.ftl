@@ -146,11 +146,11 @@
 #define CANFD_MSG_FLT_EXT_EID_MASK    (0x0003FFFFU)
 
 <#if CAN_INTERRUPT_MODE == true>
-volatile static CANFD_OBJ ${CAN_INSTANCE_NAME?lower_case}Obj;
-volatile static CANFD_RX_MSG ${CAN_INSTANCE_NAME?lower_case}RxMsg[CANFD_NUM_OF_FIFO][CANFD_FIFO_MESSAGE_BUFFER_MAX];
-volatile static CANFD_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}CallbackObj[CANFD_NUM_OF_FIFO + 1];
-volatile static CANFD_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}ErrorCallbackObj;
-volatile static uint32_t ${CAN_INSTANCE_NAME?lower_case}MsgIndex[CANFD_NUM_OF_FIFO];
+static volatile CANFD_OBJ ${CAN_INSTANCE_NAME?lower_case}Obj;
+static volatile CANFD_RX_MSG ${CAN_INSTANCE_NAME?lower_case}RxMsg[CANFD_NUM_OF_FIFO][CANFD_FIFO_MESSAGE_BUFFER_MAX];
+static volatile CANFD_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}CallbackObj[CANFD_NUM_OF_FIFO + 1];
+static volatile CANFD_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}ErrorCallbackObj;
+static volatile uint32_t ${CAN_INSTANCE_NAME?lower_case}MsgIndex[CANFD_NUM_OF_FIFO];
 </#if>
 static uint8_t __attribute__((coherent, aligned(16))) can_message_buffer[CANFD_MESSAGE_RAM_CONFIG_SIZE];
 static const uint8_t dlcToLength[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64};
@@ -215,15 +215,15 @@ static inline void ${CAN_INSTANCE_NAME}_ZeroInitialize(volatile void* pData, siz
 <#if TX_EVENT_FIFO_USE == true>
 <#assign COUNT_11_6_DEVIATION = COUNT_11_6_DEVIATION + 1>
 </#if>
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 11.6 deviated ${COUNT_11_6_DEVIATION} times. Deviation record ID -  H3_MISRAC_2012_R_11_6_DR_1 */
-/* MISRA C-2012 Rule 5.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2012_R_5_1_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 11.6 deviated ${COUNT_11_6_DEVIATION} times. Deviation record ID -  H3_MISRAC_2023_R_11_6_DR_1 */
+/* MISRA C-2023 Rule 5.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2023_R_5_1_DR_1 */
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma coverity compliance block \
-(deviate:${COUNT_11_6_DEVIATION} "MISRA C-2012 Rule 11.6" "H3_MISRAC_2012_R_11_6_DR_1") \
-(deviate:1 "MISRA C-2012 Rule 5.1" "H3_MISRAC_2012_R_5_1_DR_1")
+(deviate:${COUNT_11_6_DEVIATION} "MISRA C-2023 Rule 11.6" "H3_MISRAC_2023_R_11_6_DR_1") \
+(deviate:1 "MISRA C-2023 Rule 5.1" "H3_MISRAC_2023_R_5_1_DR_1")
 </#if>
 
 // *****************************************************************************
@@ -1510,8 +1510,8 @@ void __attribute__((used)) ${CAN_INSTANCE_NAME}_InterruptHandler(void)
 </#if>
 
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 11.6"
-#pragma coverity compliance end_block "MISRA C-2012 Rule 5.1"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 11.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 5.1"
 #pragma GCC diagnostic pop
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */

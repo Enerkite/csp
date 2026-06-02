@@ -27,6 +27,7 @@ Log.writeInfoMessage( "Loading Interrupt Manager for " + Variables.get( "__PROCE
 ################################################################################
 #### Public Globals -- variables used in this module and accessible from other files
 ################################################################################
+global aicConfigHwIO
 global getInterruptName
 
 global interruptNamespace
@@ -73,6 +74,7 @@ global aicSrcTypes
 global aicMinPriorityName
 global aicMaxPriorityName
 
+global pinActiveList
 
 interruptLastNameMapType =  "_INTERRUPT_MAP_TYPE"
 interruptLastNameVector =   "_INTERRUPT_VECTOR"
@@ -95,9 +97,40 @@ alwaysSecureList =          []
 programmedSecureList =      []
 externalList =              []
 
+pinActiveList =             []
+
 ################################################################################
 #### Global Methods
 ################################################################################
+def aicConfigHwIO(messageID, args):
+    global pinActiveList
+    
+    retDict = {}
+    if (messageID == "AIC_CONFIG_HW_IO"):
+        component = "core"
+        pinId, enable = args['config']
+        symbolId = "EXT_FIQ_INTERRUPT_ENABLE"
+        if enable == True:
+            res = Database.setSymbolValue(component, symbolId, enable)
+            if res == True:
+                pinActiveList.append(pinId)
+        else:
+            if pinId in pinActiveList:
+                pinActiveList.remove(pinId)
+                
+            if len(pinActiveList) == 0:
+                res = Database.clearSymbolValue(component, symbolId)
+
+        if res == True:
+            retDict = {"Result": "Success"}
+        else:
+            retDict = {"Result": "Fail"}
+            
+    else:
+        retDict = {"Result": "EIC UnImplemented Command"}
+    
+    return retDict
+
 def getInterruptName( interruptNode ):
     if "header:alternate-name" in interruptNode.getAttributeList():
         retval = interruptNode.getAttribute( "header:alternate-name" )
@@ -223,7 +256,14 @@ def setupEnableAndHandler( component, anInterrupt, aicVectorEnable, aicVectorHan
 
     enableDependencies = []
     interruptName = getInterruptName( anInterrupt )
-    moduleInstance = anInterrupt.getAttribute( "module-instance" ).split()
+
+    moduleInstanceAttr = anInterrupt.getAttribute( "module-instance" )
+    if not moduleInstanceAttr:
+        moduleNameAttr = anInterrupt.getAttribute( "name" )
+        moduleInstance = moduleNameAttr.split()
+    else:
+        moduleInstance = moduleInstanceAttr.split()
+
     sharedVectorMaxShares = len( moduleInstance )
     if 1 < sharedVectorMaxShares:
         aicVectorHandler.setReadOnly( True )
@@ -237,6 +277,7 @@ def setupEnableAndHandler( component, anInterrupt, aicVectorEnable, aicVectorHan
         for elem in moduleInstance:
             subVectorToSharedVector[ elem ] = interruptName
             subVectorEnable = component.createBooleanSymbol( elem + interruptLastNameEnable, aicVectorEnable )
+            subVectorEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:AIC_SSR")
             subVectorEnable.setLabel( "Enable " + elem )
             subVectorEnable.setDefaultValue( False )
             enableDependencies.append( elem + interruptLastNameEnable )     # Parent enable depends on children
@@ -246,6 +287,7 @@ def setupEnableAndHandler( component, anInterrupt, aicVectorEnable, aicVectorHan
             subVectorHandlerLock.setVisible( False )
 
             subVectorHandler = component.createStringSymbol( elem + interruptLastNameHandler, subVectorEnable )
+            subVectorHandler.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:AIC_SMR")
             subVectorHandler.setLabel( elem + " Handler" )
             subVectorHandler.setDefaultValue( elem + "_Handler" )
 
@@ -262,7 +304,13 @@ def setupSharedVectorFtlSymbols( component, anInterrupt, aicVectorEnable ):
     global numSharedVectors
 
     interruptName = getInterruptName( anInterrupt )
-    moduleInstance = anInterrupt.getAttribute( "module-instance" ).split()
+    moduleInstanceAttr = anInterrupt.getAttribute( "module-instance" )
+    if not moduleInstanceAttr:
+        moduleNameAttr = anInterrupt.getAttribute( "name" )
+        moduleInstance = moduleNameAttr.split()
+    else:
+        moduleInstance = moduleInstanceAttr.split()
+
     numShares = len( moduleInstance )
     if 1 < numShares:
         numSharedVectors = numSharedVectors + 1
@@ -361,6 +409,7 @@ aicMenu.setDescription( "Configuration for AIC Initialization" )
 
 ### Symbol for interrupt redirection decision
 aicRedirection = coreComponent.createBooleanSymbol( "SECURE_TO_NONSECURE_REDIRECTION", aicMenu )
+aicRedirection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:%NOREGISTER%")
 aicRedirection.setLabel( "Secure to NonSecure Redirection" )
 aicRedirection.setDefaultValue( True )
 aicRedirection.setVisible( aicRedirectionVisibility )
@@ -395,6 +444,7 @@ for interrupt in interruptsChildren:
     aicInterruptFirstName.setVisible( False )
     ###
     aicVectorEnable = coreComponent.createBooleanSymbol( interruptName + interruptLastNameEnable, aicMenu )
+    aicVectorEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:AIC_SSR")
     aicVectorEnable.setLabel( "Enable " + aicNumber + " -- " + getInterruptDescription( interrupt ) )
     aicVectorEnable.setDefaultValue( False )
     ###
@@ -420,6 +470,7 @@ for interrupt in interruptsChildren:
     aicVectorLock.setVisible( False )
 
     aicVectorHandler = coreComponent.createStringSymbol( interruptName + interruptLastNameHandler, aicVectorEnable )
+    aicVectorHandler.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:AIC_SVR")
     aicVectorHandler.setLabel( "Handler" )
     aicVectorHandler.setDefaultValue( interruptName + "_Handler" )
     ###
@@ -427,6 +478,7 @@ for interrupt in interruptsChildren:
     setupSharedVectorFtlSymbols( coreComponent, interrupt, aicVectorEnable )
     #
     aicMapType = coreComponent.createStringSymbol( interruptName + interruptLastNameMapType, aicVectorEnable )
+    aicMapType.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:AIC_SMR")
     aicMapType.setLabel( "Map Type" )
     aicMapType.setDefaultValue( mapTypeDefault )
     aicMapType.setVisible( aicMapTypeVisibility )
@@ -435,6 +487,7 @@ for interrupt in interruptsChildren:
     aicMapType.setDependencies( aicMapTypeRedirectionCallback, [ "SECURE_TO_NONSECURE_REDIRECTION" ] )
 
     aicVectorSourceType = coreComponent.createKeyValueSetSymbol( interruptName + interruptLastNameSrcType, aicVectorEnable )
+    aicVectorSourceType.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:AIC_SMR")
     aicVectorSourceType.setLabel( "Source Type" )
     for tupleElem in aicSrcTypes:
         if (aicNumber not in externalList) and ("internal" not in tupleElem[ 2 ]):
@@ -447,6 +500,7 @@ for interrupt in interruptsChildren:
     aicVectorSourceType.setSelectedKey( str( aicSrcTypes[ 0 ][ 0 ] ), 0 )
 
     aicVectorPriority = coreComponent.createKeyValueSetSymbol( interruptName + interruptLastNamePriority, aicVectorEnable )
+    aicVectorPriority.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:aic_11051;register:AIC_SMR")
     aicVectorPriority.setLabel( "Priority" )
     for tupleElem in aicPriorityChoices:
         aicVectorPriority.addKey( tupleElem[ 0 ], tupleElem[ 1 ], tupleElem[ 2 ] )

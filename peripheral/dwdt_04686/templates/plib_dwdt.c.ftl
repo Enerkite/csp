@@ -72,7 +72,7 @@ typedef struct
 <#if .vars["WDT" + i + "_IDLEHLT"]>
     <#assign WDT_MODE_VAL =WDT_MODE_VAL + "DWDT_WDT" + i + "_MR_WDIDLEHLT_Msk | ">
 </#if>
-<#if .vars["WDT" + i + "_NRSTDIS"]>
+<#if .vars["WDT" + i + "_NRSTDIS"] == false>
     <#assign WDT_MODE_VAL =WDT_MODE_VAL + "DWDT_WDT" + i + "_MR_WDNRSTDIS_Msk | ">
 </#if>
 <#if .vars["WDT" + i + "_EVENT"] == "Reset">
@@ -127,7 +127,7 @@ typedef struct
 </#compress>
 <#if .vars["WDT" + i + "_INTERRUPT_ENABLE"]>
 
-volatile static dwdtCallback_t dwdt${i}CallbackObj;
+static volatile dwdtCallback_t dwdt${i}CallbackObj;
 </#if>
 
 

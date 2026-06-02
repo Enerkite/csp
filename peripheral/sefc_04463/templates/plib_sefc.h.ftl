@@ -73,6 +73,8 @@ bool ${SEFC_INSTANCE_NAME}_Read( uint32_t *data, uint32_t length, uint32_t addre
 
 bool ${SEFC_INSTANCE_NAME}_SectorErase( uint32_t address );
 
+bool ${SEFC_INSTANCE_NAME}_PageErase( uint32_t address );
+
 bool ${SEFC_INSTANCE_NAME}_PageBufferWrite( uint32_t *data, const uint32_t address);
 
 bool ${SEFC_INSTANCE_NAME}_PageBufferCommit( const uint32_t address);
@@ -115,6 +117,10 @@ uint32_t ${SEFC_INSTANCE_NAME}_WriteProtectionGet(void);
 
 <#if INTERRUPT_ENABLE == true>
     <#lt>void ${SEFC_INSTANCE_NAME}_CallbackRegister( SEFC_CALLBACK callback, uintptr_t context );
+</#if>
+
+<#if SEFC_DUAL_PANEL == true>
+uint32_t ${SEFC_INSTANCE_NAME}_FlashPanelBaseAddrGet(void);
 </#if>
 
 // DOM-IGNORE-BEGIN

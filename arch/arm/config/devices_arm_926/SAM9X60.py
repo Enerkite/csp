@@ -46,7 +46,7 @@ def setDRAMAddresses(symbol, event):
     comp.setSymbolValue("DDRAM_CACHE_START_ADDR", "0x%08X" % cache_start)
     comp.setSymbolValue("DDRAM_CACHE_SIZE", "0x%08X" % cache_size)
 
-print ("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 deviceFamily = coreComponent.createStringSymbol("DeviceFamily", devCfgMenu)
 deviceFamily.setLabel("Device Family")
@@ -160,10 +160,17 @@ execfile(Variables.get("__CORE_DIR") + "/../peripheral/mmu_v5/config/mmu.py")
 
 # load clock manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_9x60/config/clk.py")
-coreComponent.addPlugin("../peripheral/clk_sam_9x60/plugin/clk_sam_9x60.jar")
-
+coreComponent.addPlugin(
+        "../../harmony-services/plugins/generic_plugin.jar",
+        "CLK_UI_MANAGER_ID_CLK_SAM9X60",
+        {
+            "plugin_name": "Clock Configuration",
+            "main_html_path": "csp/plugins/configurators/clock-configurators/clk_sam_9x60_configurator/build/index.html",
+            "componentId": coreComponent.getID()
+        }
+    )
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11004/plugin/pio_11004.jar")
 
 # load AIC
@@ -253,5 +260,11 @@ linkerFile.setProjectPath("config/" + configName + "/")
 linkerFile.setType("LINKER")
 linkerFile.setEnabled(compiler_choice.getSelectedKey() == "IAR")
 linkerFile.setDependencies(lambda symbol, event: symbol.setEnabled(event["symbol"].getSelectedKey() == "IAR"), ["COMPILER_CHOICE"])
+
+xc32MPUARMCompilerFlag = coreComponent.createSettingSymbol("XC32_MPU_ARM_FLAG", None)
+xc32MPUARMCompilerFlag.setCategory("C32")
+xc32MPUARMCompilerFlag.setKey("appendMe")
+xc32MPUARMCompilerFlag.setValue("-marm")
+xc32MPUARMCompilerFlag.setAppend(True, " ")
 
 

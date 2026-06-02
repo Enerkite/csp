@@ -104,7 +104,7 @@ static void SlowClockInitialize(void)
     /* 32KHz Crystal Oscillator is selected as the Slow Clock (SLCK) source.
        Enable 32KHz Crystal Oscillator  */
 </#if>
-    SUPC_REGS->SUPC_CR |= SUPC_CR_KEY_PASSWD | SUPC_CR_TDXTALSEL_XTAL;
+    SUPC_REGS->SUPC_CR = SUPC_CR_KEY_PASSWD | SUPC_CR_TDXTALSEL_XTAL;
 
     /* Wait until Slow Clock (SLCK) is switched from RC */
     while ((SUPC_REGS->SUPC_SR & SUPC_SR_TDOSCSEL_XTAL) == 0U)
@@ -119,7 +119,7 @@ void CLK_TDSCLKSelectXTAL(void)
     /* 32KHz Crystal Oscillator is selected as the Slow Clock (SLCK) source.
     Enable 32KHz Crystal Oscillator  */
 
-    SUPC_REGS->SUPC_CR |= SUPC_CR_KEY_PASSWD | SUPC_CR_TDXTALSEL_XTAL;
+    SUPC_REGS->SUPC_CR = SUPC_CR_KEY_PASSWD | SUPC_CR_TDXTALSEL_XTAL;
 
     /* Wait until Slow Clock (SLCK) is switched from RC */
     while ((SUPC_REGS->SUPC_SR & SUPC_SR_TDOSCSEL_XTAL) == 0U)
@@ -692,14 +692,19 @@ static void PeripheralClockInitialize(void)
             <#if .vars["CLK_ID_NAME_"+i]?has_content>
                 <#assign name = .vars["CLK_ID_NAME_"+i]>
                 <#assign clken = .vars[name+"_CLOCK_ENABLE"]>
-                <#if .vars["CLK_"+name+"_GCLKEN"]?has_content && .vars["CLK_"+name+"_GCLKEN"]>
+                <#if name?matches("TC[0-9]_CHANNEL0")>
+                    <#assign gclk_name = name[0..2]>
+                <#else>
+                    <#assign gclk_name = name>
+                </#if>
+                <#if .vars["CLK_"+ gclk_name +"_GCLKEN"]?has_content && .vars["CLK_"+ gclk_name +"_GCLKEN"]>
                     <#assign gclken = true>
                 <#else>
                     <#assign gclken = false>
                 </#if>
                 <#if gclken>
-                    <#assign gclkcss = .vars["CLK_"+name+"_GCLKCSS"]>
-                    <#assign gclkdiv = .vars["CLK_"+name+"_GCLKDIV"]>
+                    <#assign gclkcss = .vars["CLK_"+ gclk_name +"_GCLKCSS"]>
+                    <#assign gclkdiv = .vars["CLK_"+ gclk_name +"_GCLKDIV"]>
                 <#else>
                     <#assign gclkcss = "0">
                     <#assign gclkdiv = "0">
@@ -788,7 +793,7 @@ void CLK_PeripheralClockConfigSet(ID_PERIPH periphID, bool periphClkEn, bool gcl
 /*********************************************************************************
                                 Clock Initialize
 *********************************************************************************/
-void CLK_Initialize( void )
+void CLOCK_Initialize( void )
 {
 <#if CPU_CORE_ID == 0>
     if(RSTC_PMCResetStatusGet())

@@ -26,10 +26,27 @@
 ########################################## Callbacks  #############################################
 ###################################################################################################
 
+global sercomSymSPIRegName
+global sercomSymSPISlaveRegName
+global sercomSymUSARTRegName
 global SERCOMfilesArray
 global InterruptVectorSecurity
 InterruptVectorSecurity = []
 SERCOMfilesArray = []
+
+def getValueGrp(module, reg_grp, reg_name, bitfield_name , mode = None):
+    node_str = ""
+    val_grp_node = None
+    if mode != None:
+        node_str = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[modes=\"{2}\",name=\"{3}\"]/bitfield@[name=\"{4}\"]".format(module, reg_grp, mode, reg_name, bitfield_name)
+    else:
+         node_str = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[name=\"{2}\"]/bitfield@[name=\"{3}\"]".format(module, reg_grp, reg_name, bitfield_name)
+    bitfield_node = ATDF.getNode(node_str)
+    if bitfield_node != None:
+        val_grp = bitfield_node.getAttribute("values")
+        node_str = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/value-group@[name=\"{1}\"]".format(module, val_grp)
+        val_grp_node = ATDF.getNode(node_str)
+    return val_grp_node
 
 def fileUpdate(symbol, event):
     global SERCOMfilesArray
@@ -52,6 +69,8 @@ def fileUpdate(symbol, event):
         SERCOMfilesArray[14].setSecurity("SECURE")
         SERCOMfilesArray[15].setOutputName("core.LIST_SYSTEM_SECURE_INIT_C_SYS_INITIALIZE_PERIPHERALS")
         SERCOMfilesArray[16].setOutputName("core.LIST_SYSTEM_DEFINITIONS_SECURE_H_INCLUDES")
+        SERCOMfilesArray[17].setSecurity("SECURE")
+        SERCOMfilesArray[18].setSecurity("SECURE")
         if len(InterruptVectorSecurity) != 1:
             for vector in InterruptVectorSecurity:
                 Database.setSymbolValue("core", vector, False)
@@ -75,11 +94,67 @@ def fileUpdate(symbol, event):
         SERCOMfilesArray[14].setSecurity("NON_SECURE")
         SERCOMfilesArray[15].setOutputName("core.LIST_SYSTEM_INIT_C_SYS_INITIALIZE_PERIPHERALS")
         SERCOMfilesArray[16].setOutputName("core.LIST_SYSTEM_DEFINITIONS_H_INCLUDES")
+        SERCOMfilesArray[17].setSecurity("NON_SECURE")
+        SERCOMfilesArray[18].setSecurity("NON_SECURE")
         if len(InterruptVectorSecurity) != 1:
             for vector in InterruptVectorSecurity:
                 Database.setSymbolValue("core", vector, True)
         else:
             Database.setSymbolValue("core", InterruptVectorSecurity, True)
+
+def getSERCOMSymbolValues(mode, signalId, padId):
+    symbolName = ""
+    symbolValue = ""
+    if mode == "USART":
+        if signalId == 'rx':
+            symbolName = "USART_RXPO"
+            symbolValue = int(padId)
+        else:
+            symbolName = "USART_TXPO"
+            txpoNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/value-group@[name=\"SERCOM_USART_CTRLA__TXPO\"]")
+            txpoValues = txpoNode.getChildren()
+
+            ctrlATXPO = []
+            for index in range(len(txpoValues)):
+                ctrlATXPO.append(txpoValues[index].getAttribute("caption").replace(" ", ""))
+
+            if signalId == 'tx':
+                for index in range(len(ctrlATXPO)):
+                    if "PAD[{}]=TxD".format(padId) in ctrlATXPO[index]:
+                        symbolValue = index
+                        break
+            elif signalId in ['rts', 'cts']:
+                for index in range(len(ctrlATXPO)):
+                    if "PAD[{}]=CTS".format(padId) in ctrlATXPO[index]:
+                        symbolValue = index
+                        break
+
+    elif mode =="SPI":
+        if signalId == 'miso':
+            symbolName = "SPI_DIPO"
+            symbolValue = int(padId)
+        elif signalId == 'mosi':
+            symbolName = "SPI_DOPO"
+            dopoNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/value-group@[name=\"SERCOM_SPIM_CTRLA__DOPO\"]")
+            dopoValues = dopoNode.getChildren()
+
+            ctrlADOPO = []
+            for index in range(len(dopoValues)):
+                ctrlADOPO.append(dopoValues[index].getAttribute("caption").replace(" ", ""))
+
+            if signalId == 'mosi':
+                for index in range(len(ctrlADOPO)):
+                    if "DOonPAD[{}]".format(padId) in ctrlADOPO[index]:
+                        symbolValue = index
+                        break
+        elif signalId == 'cs':
+            symbolName = "SPI_MSSEN"
+            symbolValue = True
+        else:
+            symbolName = ""
+            symbolValue = ""
+
+    return (symbolName, symbolValue)
 
 def handleMessage(messageID, args):
     global sercomSym_OperationMode
@@ -93,6 +168,7 @@ def handleMessage(messageID, args):
     global i2csSym_CTRLB_SMEN
     global usartSym_OperatingMode
     result_dict = {}
+    global sercomInstanceName
 
     if (messageID == "I2C_MASTER_MODE"):
         if args.get("isReadOnly") != None:
@@ -150,13 +226,13 @@ def handleMessage(messageID, args):
             sercomSym_OperationMode.setReadOnly(args["isReadOnly"])
         if args.get("isEnabled") != None and args["isEnabled"] == True:
             sercomSym_OperationMode.setSelectedKey("SPIS", 2)
-            
+
     elif (messageID == "SPI_SLAVE_RX_BUFFER_SIZE"):
         if args.get("isReadOnly") != None:
             spisSym_RXBuffer_Size.setReadOnly(args["isReadOnly"])
         if args.get("size") != None:
             spisSym_RXBuffer_Size.setValue(args["size"], 2)
-            
+
     elif (messageID == "SPI_SLAVE_TX_BUFFER_SIZE"):
         if args.get("isReadOnly") != None:
             spisSym_TXBuffer_Size.setReadOnly(args["isReadOnly"])
@@ -200,6 +276,34 @@ def handleMessage(messageID, args):
         if args.get("isEnabled") != None:
             if args["isEnabled"] == True:
                 usartSym_OperatingMode.setSelectedKey("RING_BUFFER")
+
+    elif (messageID == "SERCOM_CONFIG_HW_IO"):
+        mode, pinCtrl, enable = args['config']
+
+        signalId = pinCtrl.get("signalId")
+        padId = pinCtrl.get("padId")
+
+        if mode == "USART":
+            sercomSym_OperationMode.setSelectedKey("USART_INT", 2)
+        elif mode == "SPI":
+            sercomSym_OperationMode.setSelectedKey("SPIM", 2)
+        elif mode == "I2C":
+            sercomSym_OperationMode.setSelectedKey("I2CM", 2)
+
+        (symbolName, symbolValue) = getSERCOMSymbolValues(mode, signalId, padId)
+
+        deviceNamespace = sercomInstanceName.getValue().lower()
+        res = False
+        if enable == True:
+            if symbolValue != "":
+                res = Database.setSymbolValue(deviceNamespace, symbolName, symbolValue)
+        else:
+            res = Database.clearSymbolValue(deviceNamespace, symbolName)
+
+        if res == True:
+            result_dict = {"Result": "Success"}
+        else:
+            result_dict = {"Result": "Fail"}
 
     return result_dict
 
@@ -368,13 +472,15 @@ def updateSERCOMClockWarningStatus(symbol, event):
     symbol.setVisible(not event["value"])
 
 def updateSERCOMDMATransferRegister(symbol, event):
+    global sercomSymUSARTRegName
+    global sercomSymSPIRegName
 
     symObj = event["symbol"]
 
     if symObj.getSelectedKey() == "USART_INT":
-        symbol.setValue("&(" + sercomInstanceName.getValue() + "_REGS->USART_INT.SERCOM_DATA)", 2)
+        symbol.setValue("&(" + sercomInstanceName.getValue() + "_REGS->" + sercomSymUSARTRegName.getValue() + ".SERCOM_DATA)", 2)
     elif symObj.getSelectedKey() == "SPIM":
-        symbol.setValue("&(" + sercomInstanceName.getValue() + "_REGS->SPIM.SERCOM_DATA)", 2)
+        symbol.setValue("&(" + sercomInstanceName.getValue() + "_REGS->" + sercomSymSPIRegName.getValue() + ".SERCOM_DATA)", 2)
     elif symObj.getSelectedKey() == "I2CS":
         # To be implemented
         pass
@@ -391,6 +497,22 @@ def USARTFileGeneration(symbol, event):
     componentID = symbol.getID()
     filepath = ""
     ringBufferModeEnabled = event["value"]
+
+    if componentID == "SERCOM_USART_7816_SOURCE":
+        usart_form = event['source'].getSymbolByID("USART_FORM").getSelectedKey()
+        if usart_form == "USART_FRAME_ISO_7816" or usart_form == "ISO7816" :
+            symbol.setEnabled(True)
+            filepath = "../peripheral/sercom_u2201/templates/plib_sercom_7816.c.ftl"
+        elif usart_form != "USART_FRAME_ISO_7816" or usart_form != "ISO7816" :
+            symbol.setEnabled(False)
+
+    if componentID == "SERCOM_USART_7816_HEADER":
+        usart_form = event['source'].getSymbolByID("USART_FORM").getSelectedKey()
+        if usart_form == "USART_FRAME_ISO_7816" or usart_form == "ISO7816" :
+            symbol.setEnabled(True)
+            filepath = "../peripheral/sercom_u2201/templates/plib_sercom_7816.h.ftl"
+        elif usart_form != "USART_FRAME_ISO_7816" or usart_form != "ISO7816" :
+            symbol.setEnabled(False)
 
     if componentID == "SERCOM_USART_HEADER":
         if ringBufferModeEnabled == True:
@@ -422,6 +544,9 @@ def instantiateComponent(sercomComponent):
     global sercomSym_OperationMode
     global sercomClkFrequencyId
     global InterruptVectorSecurity
+    global sercomSymUSARTRegName
+    global sercomSymSPIRegName
+    global sercomSymSPISlaveRegName
 
     InterruptVector = []
     InterruptHandler = []
@@ -437,6 +562,22 @@ def instantiateComponent(sercomComponent):
     uartCapabilityId = sercomInstanceName.getValue() + "_UART"
     spiCapabilityId = sercomInstanceName.getValue() + "_SPI"
     i2cCapabilityId = sercomInstanceName.getValue() + "_I2C"
+
+    sercomSPIMMode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SERCOM"]/register-group@[name="SERCOM"]/mode@[name="SPIM"]')
+
+    sercomSymSPIRegName = sercomComponent.createStringSymbol("SERCOM_SPI_REG_NAME", None)
+    sercomSymSPIRegName.setDefaultValue("SPI" if sercomSPIMMode == None else "SPIM")
+    sercomSymSPIRegName.setVisible(False)
+
+    sercomSymSPISlaveRegName = sercomComponent.createStringSymbol("SERCOM_SPI_SLAVE_REG_NAME", None)
+    sercomSymSPISlaveRegName.setDefaultValue("SPI" if sercomSPIMMode == None else "SPIS")
+    sercomSymSPISlaveRegName.setVisible(False)
+
+    sercomUSARTMMode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SERCOM"]/register-group@[name="SERCOM"]/mode@[name="USART_INT"]')
+
+    sercomSymUSARTRegName = sercomComponent.createStringSymbol("SERCOM_USART_REG_NAME", None)
+    sercomSymUSARTRegName.setDefaultValue("USART" if sercomUSARTMMode == None else "USART_INT")
+    sercomSymUSARTRegName.setVisible(False)
 
     sercomClkFrequencyId = sercomInstanceName.getValue() + "_CORE_CLOCK_FREQUENCY"
 
@@ -467,7 +608,71 @@ def instantiateComponent(sercomComponent):
 
     #SERCOM operation mode Menu - Serial Communication Interfaces
     sercomSym_OperationMode = sercomComponent.createKeyValueSetSymbol("SERCOM_MODE", None)
+    sercomSym_OperationMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:%NOREGISTER%")
     sercomSym_OperationMode.setLabel("Select SERCOM Operation Mode")
+
+#-------------------------------------------------------------------------------------------#
+    SERCOMIntSrcMap = {
+        '0':{
+            "symbol_list": ["USART_TX_READY_INT_SRC", "SPI_TX_READY_INT_SRC"],
+            "irq_name" : ""
+            },
+        '1':{
+            "symbol_list": ["USART_TX_COMPLETE_INT_SRC", "SPI_TX_COMPLETE_INT_SRC"],
+            "irq_name" : ""
+            },
+        '2':{
+            "symbol_list": ["USART_RX_INT_SRC", "SPI_RX_INT_SRC", "I2C_1_INT_SRC"],
+            "irq_name" : ""
+            },
+        '3':{
+            "symbol_list": ["I2C_2_INT_SRC"],
+            "irq_name" : ""
+            },
+        '4':{
+            "symbol_list": ["I2C_3_INT_SRC"],
+            "irq_name" : ""
+            },
+        '6':{
+            "symbol_list": ["USART_ERROR_INT_SRC", "I2C_0_INT_SRC"],
+            "irq_name" : ""
+            }
+    }
+
+    for key in SERCOMIntSrcMap:
+        SERCOMIntSrcMap[key]["irq_name"] = sercomInstanceName.getValue() + "_OTHER_IRQn"
+
+    sercomVectorNameList = []
+    vectorValues = ATDF.getNode("/avr-tools-device-file/devices/device/interrupts").getChildren()
+
+    for id in range(0, len(vectorValues)):
+        if vectorValues[id].getAttribute("module-instance") != None:
+            module_instance_list = vectorValues[id].getAttribute("module-instance").split(" ")
+            for instance_name in module_instance_list:
+                if instance_name == sercomInstanceName.getValue():
+                    sercomVectorName = vectorValues[id].getAttribute("name")
+                    sercomVectorNameList.append(sercomVectorName)
+
+
+    if len(sercomVectorNameList) > 1:
+        nvicMultiVector = sercomComponent.createBooleanSymbol("MULTI_IRQn", None)
+        nvicMultiVector.setDefaultValue(True)
+        nvicMultiVector.setVisible(False)
+
+        for vector_name in sercomVectorNameList:
+            vname = vector_name.split("_")[1]
+            for idx in range (0, len(vname)):
+                for key in SERCOMIntSrcMap:
+                    if key == vname[idx]:
+                        SERCOMIntSrcMap[key]["irq_name"] = vector_name + "_IRQn"
+
+        for key in SERCOMIntSrcMap:
+            for sym_name in SERCOMIntSrcMap[key]["symbol_list"]:
+                nvicVectorNumber = sercomComponent.createStringSymbol(sym_name, None)
+                nvicVectorNumber.setDefaultValue(SERCOMIntSrcMap[key]["irq_name"])
+                nvicVectorNumber.setVisible(False)
+
+#-------------------------------------------------------------------------------------------#
 
     if sercomDisableUSART != 1:
         sercomSym_OperationMode.addKey("USART_INT", "1", "USART with internal Clock")
@@ -503,17 +708,17 @@ def instantiateComponent(sercomComponent):
 
     #SERCOM Transmit data register
     sercomSym_TxRegister = sercomComponent.createStringSymbol("TRANSMIT_DATA_REGISTER", sercomSym_OperationMode)
-    sercomSym_TxRegister.setDefaultValue("&(" + sercomInstanceName.getValue() + "_REGS->USART_INT.SERCOM_DATA)")
+    sercomSym_TxRegister.setDefaultValue("&(" + sercomInstanceName.getValue() + "_REGS->" + sercomSymUSARTRegName.getValue() + ".SERCOM_DATA)")
     sercomSym_TxRegister.setVisible(False)
     sercomSym_TxRegister.setDependencies(updateSERCOMDMATransferRegister, ["SERCOM_MODE"])
 
     #SERCOM Receive data register
     sercomSym_RxRegister = sercomComponent.createStringSymbol("RECEIVE_DATA_REGISTER", sercomSym_OperationMode)
-    sercomSym_RxRegister.setDefaultValue("&(" + sercomInstanceName.getValue() + "_REGS->USART_INT.SERCOM_DATA)")
+    sercomSym_RxRegister.setDefaultValue("&(" + sercomInstanceName.getValue() + "_REGS->" + sercomSymUSARTRegName.getValue() + ".SERCOM_DATA)")
     sercomSym_RxRegister.setVisible(False)
     sercomSym_RxRegister.setDependencies(updateSERCOMDMATransferRegister, ["SERCOM_MODE"])
 
-    syncbusyNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SERCOM"]/register-group@[name="SERCOM"]/register@[modes="USART_INT",name="SYNCBUSY"]')
+    syncbusyNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/register-group@[name=\"SERCOM\"]/register@[modes=\""+ sercomSymUSARTRegName.getValue()+"\",name=\"SYNCBUSY\"]")
 
     #SERCOM is SYNCBUSY present
     sercomSym_SYNCBUSY = sercomComponent.createBooleanSymbol("SERCOM_SYNCBUSY", sercomSym_OperationMode)
@@ -528,9 +733,9 @@ def instantiateComponent(sercomComponent):
     if sercomDisableSPI != 1:
         execfile(Variables.get("__CORE_DIR") + "/../peripheral/sercom_u2201/config/sercom_spi_master.py")
         execfile(Variables.get("__CORE_DIR") + "/../peripheral/sercom_u2201/config/sercom_spi_slave.py")
-    if sercomDisableI2CM != 1:        
+    if sercomDisableI2CM != 1:
         execfile(Variables.get("__CORE_DIR") + "/../peripheral/sercom_u2201/config/sercom_i2c_master.py")
-    if sercomDisableI2CS != 1:        
+    if sercomDisableI2CS != 1:
         execfile(Variables.get("__CORE_DIR") + "/../peripheral/sercom_u2201/config/sercom_i2c_slave.py")
 
     ############################################################################
@@ -608,6 +813,21 @@ def instantiateComponent(sercomComponent):
     usartSourceFile.setEnabled(sercomSym_OperationMode.getSelectedKey() == "USART_INT")
     usartSourceFile.setDependencies(USARTFileGeneration, ["USART_RING_BUFFER_MODE_ENABLE"])
 
+    usart7816SourceFile = sercomComponent.createFileSymbol("SERCOM_USART_7816_SOURCE", None)
+    usart7816SourceFile.setType("STRING")
+    usart7816SourceFile.setSourcePath("../peripheral/sercom_u2201/templates/plib_sercom_7816.c.ftl")
+    usart7816SourceFile.setOutputName(sercomComponent.getID() + ".LIST_SERCOM_7816_C")
+    usart7816SourceFile.setMarkup(True)
+    usart7816SourceFile.setEnabled(False)
+    usart7816SourceFile.setDependencies(USARTFileGeneration, ["USART_FORM"])
+
+    usart7816HeaderFile = sercomComponent.createFileSymbol("SERCOM_USART_7816_HEADER", None)
+    usart7816HeaderFile.setType("STRING")
+    usart7816HeaderFile.setSourcePath("../peripheral/sercom_u2201/templates/plib_sercom_7816.h.ftl")
+    usart7816HeaderFile.setOutputName(sercomComponent.getID() + ".LIST_SERCOM_7816_H")
+    usart7816HeaderFile.setMarkup(True)
+    usart7816HeaderFile.setEnabled(False)
+    usart7816HeaderFile.setDependencies(USARTFileGeneration, ["USART_FORM"])
 
     spiSym_HeaderFile = sercomComponent.createFileSymbol("SERCOM_SPIM_HEADER", None)
     spiSym_HeaderFile.setSourcePath("../peripheral/sercom_u2201/templates/plib_sercom_spi_master.h.ftl")
@@ -619,7 +839,7 @@ def instantiateComponent(sercomComponent):
     spiSym_HeaderFile.setEnabled(sercomSym_OperationMode.getSelectedKey() == "SPIM")
 
     spiSym_Header1File = sercomComponent.createFileSymbol("SERCOM_SPIM_COMMON_HEADER", None)
-    spiSym_Header1File.setSourcePath("../peripheral/sercom_u2201/templates/plib_sercom_spi_master_common.h")
+    spiSym_Header1File.setSourcePath("../peripheral/sercom_u2201/templates/plib_sercom_spi_master_common.h.ftl")
     spiSym_Header1File.setOutputName("plib_sercom_spi_master_common.h")
     spiSym_Header1File.setDestPath("/peripheral/sercom/spi_master/")
     spiSym_Header1File.setProjectPath("config/" + configName + "/peripheral/sercom/spi_master/")
@@ -646,7 +866,7 @@ def instantiateComponent(sercomComponent):
     spiSlaveSym_HeaderFile.setEnabled(sercomSym_OperationMode.getSelectedKey() == "SPIS")
 
     spiSlaveSym_Header1File = sercomComponent.createFileSymbol("SERCOM_SPIS_COMMON_HEADER", None)
-    spiSlaveSym_Header1File.setSourcePath("../peripheral/sercom_u2201/templates/plib_sercom_spi_slave_common.h")
+    spiSlaveSym_Header1File.setSourcePath("../peripheral/sercom_u2201/templates/plib_sercom_spi_slave_common.h.ftl")
     spiSlaveSym_Header1File.setOutputName("plib_sercom_spi_slave_common.h")
     spiSlaveSym_Header1File.setDestPath("/peripheral/sercom/spi_slave/")
     spiSlaveSym_Header1File.setProjectPath("config/" + configName + "/peripheral/sercom/spi_slave/")
@@ -750,6 +970,8 @@ def instantiateComponent(sercomComponent):
         SERCOMfilesArray.append(i2csSourceFile)
         SERCOMfilesArray.append(sercomSystemInitFile)
         SERCOMfilesArray.append(sercomSystemDefFile)
+        SERCOMfilesArray.append(usart7816SourceFile)
+        SERCOMfilesArray.append(usart7816HeaderFile)
         if len(InterruptVectorSecurity) != 1:
             for vector in InterruptVectorSecurity:
                 Database.setSymbolValue("core", vector, sercomIsNonSecure)
@@ -774,3 +996,5 @@ def instantiateComponent(sercomComponent):
             SERCOMfilesArray[14].setSecurity("SECURE")
             SERCOMfilesArray[15].setOutputName("core.LIST_SYSTEM_SECURE_INIT_C_SYS_INITIALIZE_PERIPHERALS")
             SERCOMfilesArray[16].setOutputName("core.LIST_SYSTEM_DEFINITIONS_SECURE_H_INCLUDES")
+            SERCOMfilesArray[17].setSecurity("SECURE")
+            SERCOMfilesArray[18].setSecurity("SECURE")

@@ -73,6 +73,23 @@ def instantiateComponent(sefcComponent):
     sefcInstanceName.setVisible(False)
     sefcInstanceName.setDefaultValue(sefcComponent.getID().upper())
 
+    sefcInstanceNum = sefcComponent.createStringSymbol("SEFC_INSTANCE_NUM", None)
+    sefcInstanceNum.setVisible(False)
+    sefcInstanceNum.setDefaultValue(sefcInstanceName.getValue()[-1])
+
+    sefcDualPanel = sefcComponent.createBooleanSymbol("SEFC_DUAL_PANEL", None)
+    sefcDualPanel.setVisible(False)
+
+    sefcFlashNode = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"SEFC\"]/instance@[name=\"SEFC0\"]")
+    if sefcFlashNode != None:
+        sefcFlashNode = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"SEFC\"]/instance@[name=\"SEFC1\"]")
+
+    if sefcFlashNode != None:
+        sefcDualPanel.setDefaultValue(True)
+    else:
+        sefcDualPanel.setDefaultValue(False)
+
+
     Log.writeInfoMessage("Running " + sefcInstanceName.getValue())
 
     #Create the top menu
@@ -87,21 +104,29 @@ def instantiateComponent(sefcComponent):
 
     ##### Do not modify below symbol names as they are used by Memory Driver #####
     #Flash Details
-    sefcFlashNode = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space/memory-segment@[name=\"" + sefcMemSegName.getValue() + "\"]")
-    if sefcFlashNode is not None:
+    sefc0FlashNode = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space/memory-segment@[name=\"IFLASH0\"]")
+    sefc1FlashNode = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space/memory-segment@[name=\"IFLASH1\"]")
+    
+    if sefc0FlashNode is not None:
         sefcFlashStartAddress = sefcComponent.createStringSymbol("FLASH_START_ADDRESS", sefcMenu)
-        sefcFlashStartAddress.setVisible(False)
-        sefcFlashStartAddress.setDefaultValue(sefcFlashNode.getAttribute("start"))
+        sefcFlashStartAddress.setVisible(True)
+        sefcFlashStartAddress.setDefaultValue(sefc0FlashNode.getAttribute("start"))
 
         #Flash size
         sefcFlashSize = sefcComponent.createStringSymbol("FLASH_SIZE", sefcMenu)
-        sefcFlashSize.setVisible(False)
-        sefcFlashSize.setDefaultValue(sefcFlashNode.getAttribute("size"))
+        sefcFlashSize.setVisible(True)
+        if sefc1FlashNode is not None:
+            sefc0_size = int(sefc0FlashNode.getAttribute("size"), 0)
+            sefc1_size = int(sefc1FlashNode.getAttribute("size"), 0)
+            sefc_size = str(hex(sefc0_size + sefc1_size))
+            sefcFlashSize.setDefaultValue(sefc_size)
+        else:
+            sefcFlashSize.setDefaultValue(sefc0FlashNode.getAttribute("size"))
 
         #Flash Page size
         sefcFlashProgramSize = sefcComponent.createStringSymbol("FLASH_PROGRAM_SIZE", sefcMenu)
         sefcFlashProgramSize.setVisible(False)
-        sefcFlashProgramSize.setDefaultValue(sefcFlashNode.getAttribute("pagesize"))
+        sefcFlashProgramSize.setDefaultValue(sefc0FlashNode.getAttribute("pagesize"))
 
     #Flash Erase size
     sefcFlashEraseSize = sefcComponent.createStringSymbol("FLASH_ERASE_SIZE", sefcMenu)
@@ -115,6 +140,7 @@ def instantiateComponent(sefcComponent):
 
     # Flash Read Wait State (RWS).
     nvm_rws = sefcComponent.createIntegerSymbol("NVM_RWS", sefcMenu)
+    nvm_rws.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sefc_04463;register:EEFC_FMR")
     nvm_rws.setLabel("Wait States")
     nvm_rws.setMin(0)
     nvm_rws.setMax(15)
@@ -123,9 +149,11 @@ def instantiateComponent(sefcComponent):
 
     #Create a Checkbox to enable disable interrupts
     sefcInterrupt = sefcComponent.createBooleanSymbol("INTERRUPT_ENABLE", sefcMenu)
+    sefcInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sefc_04463;register:%NOREGISTER%")
     sefcInterrupt.setLabel("Enable Interrupts")
 
     sefcMemoryDriver = sefcComponent.createBooleanSymbol("DRV_MEMORY_CONNECTED", sefcMenu)
+    sefcMemoryDriver.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sefc_04463;register:%NOREGISTER%")
     sefcMemoryDriver.setLabel("Memory Driver Connected")
     sefcMemoryDriver.setVisible(False)
     sefcMemoryDriver.setDefaultValue(False)
@@ -135,6 +163,7 @@ def instantiateComponent(sefcComponent):
     nvmOffset = str(hex(int(sefcFlashStartAddress.getValue(),16) + offsetStart))
 
     sefcMemoryStartAddr = sefcComponent.createStringSymbol("START_ADDRESS", sefcMenu)
+    sefcMemoryStartAddr.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sefc_04463;register:%NOREGISTER%")
     sefcMemoryStartAddr.setLabel("NVM Media Start Address")
     sefcMemoryStartAddr.setVisible(False)
     sefcMemoryStartAddr.setDefaultValue(nvmOffset[2:])
@@ -143,6 +172,7 @@ def instantiateComponent(sefcComponent):
     memMediaSizeKB = (offsetStart / 1024)
 
     sefcMemoryMediaSize = sefcComponent.createIntegerSymbol("MEMORY_MEDIA_SIZE", sefcMenu)
+    sefcMemoryMediaSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sefc_04463;register:%NOREGISTER%")
     sefcMemoryMediaSize.setLabel("NVM Media Size (KB)")
     sefcMemoryMediaSize.setVisible(False)
     sefcMemoryMediaSize.setDefaultValue(memMediaSizeKB)
@@ -150,11 +180,13 @@ def instantiateComponent(sefcComponent):
 
     sefcMemoryEraseEnable = sefcComponent.createBooleanSymbol("ERASE_ENABLE", None)
     sefcMemoryEraseEnable.setLabel("NVM Erase Enable")
+    sefcMemoryEraseEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sefc_04463;register:%NOREGISTER%")
     sefcMemoryEraseEnable.setVisible(False)
     sefcMemoryEraseEnable.setDefaultValue(True)
     sefcMemoryEraseEnable.setReadOnly(True)
 
     sefcMemoryEraseBufferSize = sefcComponent.createIntegerSymbol("ERASE_BUFFER_SIZE", sefcMenu)
+    sefcMemoryEraseBufferSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sefc_04463;register:%NOREGISTER%")
     sefcMemoryEraseBufferSize.setLabel("NVM Erase Buffer Size")
     sefcMemoryEraseBufferSize.setVisible(False)
     sefcMemoryEraseBufferSize.setDefaultValue(int(sefcFlashEraseSize.getValue()))
@@ -170,8 +202,10 @@ def instantiateComponent(sefcComponent):
     interruptHandlerLock = sefcInstanceName.getValue() + "_INTERRUPT_HANDLER_LOCK"
     interruptVectorUpdate = sefcInstanceName.getValue() + "_INTERRUPT_ENABLE_UPDATE"
 
-    writeApiName = sefcInstanceName.getValue() + "_PageWrite"
-    eraseApiName = sefcInstanceName.getValue() + "_SectorErase"
+    writeApiName = "SEFC_PageWrite"
+    eraseApiName = "SEFC_PageErase"
+    isbusyApiName = "SEFC_IsBusy"
+    panelSwapApiName = "SEFC_BankSwap"
 
     sefcWriteApiName = sefcComponent.createStringSymbol("WRITE_API_NAME", sefcMenu)
     sefcWriteApiName.setVisible(False)
@@ -182,6 +216,21 @@ def instantiateComponent(sefcComponent):
     sefcEraseApiName.setVisible(False)
     sefcEraseApiName.setReadOnly(True)
     sefcEraseApiName.setDefaultValue(eraseApiName)
+    
+    sefcIsBusyApiName = sefcComponent.createStringSymbol("ISBUSY_API_NAME", sefcMenu)
+    sefcIsBusyApiName.setVisible(False)
+    sefcIsBusyApiName.setReadOnly(True)
+    sefcIsBusyApiName.setDefaultValue(isbusyApiName)
+    
+    sefcPanelSwapApiName = sefcComponent.createStringSymbol("PANEL_SWAP_API_NAME", sefcMenu)
+    sefcPanelSwapApiName.setVisible(False)
+    sefcPanelSwapApiName.setReadOnly(True)
+    sefcPanelSwapApiName.setDefaultValue(panelSwapApiName)
+    
+    sefcPanelSwapApiResets = sefcComponent.createBooleanSymbol("PANEL_SWAP_API_RESETS", sefcMenu)
+    sefcPanelSwapApiResets.setVisible(False)
+    sefcPanelSwapApiResets.setReadOnly(True)
+    sefcPanelSwapApiResets.setDefaultValue(False)
 
     # NVIC Dynamic settings
     sefcinterruptControl = sefcComponent.createBooleanSymbol("NVIC_SEFC_ENABLE", None)
@@ -202,8 +251,8 @@ def instantiateComponent(sefcComponent):
 
     #Generate Output common Header
     sefcCommonHeaderFile = sefcComponent.createFileSymbol("SEFC_FILE_COMMON_H", None)
-    sefcCommonHeaderFile.setSourcePath("../peripheral/sefc_04463/templates/plib_sefc_common.h")
-    sefcCommonHeaderFile.setMarkup(False)
+    sefcCommonHeaderFile.setSourcePath("../peripheral/sefc_04463/templates/plib_sefc_common.h.ftl")
+    sefcCommonHeaderFile.setMarkup(True)
     sefcCommonHeaderFile.setOutputName("plib_sefc_common.h")
     sefcCommonHeaderFile.setOverwrite(True)
     sefcCommonHeaderFile.setDestPath("peripheral/sefc/")
@@ -231,6 +280,18 @@ def instantiateComponent(sefcComponent):
     sefcSystemInitFile.setOutputName("core.LIST_SYSTEM_INIT_C_SYS_INITIALIZE_START")
     sefcSystemInitFile.setSourcePath("../peripheral/sefc_04463/templates/system/initialization.c.ftl")
     sefcSystemInitFile.setMarkup(True)
+
+    if sefcDualPanel.getValue() == True:
+        #Generate Output source
+        sefcCommonSourceFile = sefcComponent.createFileSymbol("SEFC_COMMON_FILE_C", None)
+        sefcCommonSourceFile.setSourcePath("../peripheral/sefc_04463/templates/plib_sefc_common.c.ftl")
+        sefcCommonSourceFile.setMarkup(True)
+        sefcCommonSourceFile.setOutputName("plib_sefc_common.c")
+        sefcCommonSourceFile.setOverwrite(True)
+        sefcCommonSourceFile.setDestPath("peripheral/sefc/")
+        sefcCommonSourceFile.setProjectPath("config/" + configName + "/peripheral/sefc/")
+        sefcCommonSourceFile.setType("SOURCE")
+
 
 def destroyComponent(sefcComponent):
 

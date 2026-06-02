@@ -171,6 +171,40 @@ def symbolVisible(symbol, event):
     else :
         symbol.setVisible(False)
 
+def symbolISO7816NoVisible(symbol, event):
+    value  = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
+
+    if flexcomSym_OperatingMode.getSelectedKey() == "USART":
+        if value in ["ISO7816_T_0", "IS07816_T_0"]:
+            symbol.setVisible(False)
+        else :
+            symbol.setVisible(True)
+    else :
+        symbol.setVisible(False)
+
+def symbolISO7816Visible(symbol, event):
+    value  = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
+
+    if flexcomSym_OperatingMode.getSelectedKey() == "USART":
+        if value in ["ISO7816_T_0", "IS07816_T_0"]:
+            symbol.setVisible(True)
+        else :
+            symbol.setVisible(False)
+    else :
+        symbol.setVisible(False)
+
+def symbolLINNoVisible(symbol, event):
+    value  = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
+
+    if flexcomSym_OperatingMode.getSelectedKey() == "USART":
+        if value == "LIN_SLAVE"  or value == "LIN_MASTER":
+            symbol.setVisible(False)
+        else :
+            symbol.setVisible(True)
+    else :
+        symbol.setVisible(False)
+
+
 def fifoOptionsVisible(symbol, event):
    usartMode = flexcomSym_UsartMode.getSelectedKey()
    fifoEnable = event["source"].getSymbolByID("FLEXCOM_USART_FIFO_ENABLE").getValue()
@@ -189,9 +223,7 @@ def updateUSARTDataBits (symbol, event):
     symbol.setValue(dataBitsDict[dataBits])
 
 def updateInterruptMode (symbol, event):
-    print "updateInterruptMode - " + str(event["value"])
     if symbol.getLabel() != "---":
-        print "entered"
         if event["value"] == True and event["source"].getSymbolByID("FLEXCOM_USART_OPERATING_MODE").getSelectedKey() != "RING_BUFFER" :
             event["source"].getSymbolByID("FLEXCOM_USART_OPERATING_MODE").setSelectedKey("NON_BLOCKING")
         elif event["value"] == False:
@@ -200,9 +232,7 @@ def updateInterruptMode (symbol, event):
         symbol.setVisible(False)
 
 def updateRingBufferMode (symbol, event):
-    print "updateRingBufferMode - " + str(event["value"])
     if symbol.getLabel() != "---":
-        print "entered"
         if event["value"] == True:
             event["source"].getSymbolByID("FLEXCOM_USART_OPERATING_MODE").setSelectedKey("RING_BUFFER")
         symbol.setLabel("---")
@@ -276,6 +306,7 @@ global flexcomSym_RingBuffer_Mode
 
 #Interrupt/Non-Interrupt Mode
 flexcomSym_UsartInterrupt = flexcomComponent.createBooleanSymbol("USART_INTERRUPT_MODE", flexcomSym_OperatingMode)
+flexcomSym_UsartInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_IER")
 flexcomSym_UsartInterrupt.setLabel("Interrupt Mode")
 flexcomSym_UsartInterrupt.setDefaultValue(True)
 flexcomSym_UsartInterrupt.setVisible(False)
@@ -284,6 +315,7 @@ flexcomSym_UsartInterrupt.setDependencies(updateInterruptMode, ["USART_INTERRUPT
 
 #Enable Ring buffer?
 flexcomSym_RingBuffer_Enable = flexcomComponent.createBooleanSymbol("USART_RING_BUFFER_ENABLE", flexcomSym_OperatingMode)
+flexcomSym_RingBuffer_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_RingBuffer_Enable.setLabel("Enable Ring Buffer ?")
 flexcomSym_RingBuffer_Enable.setDefaultValue(False)
 flexcomSym_RingBuffer_Enable.setVisible(False)
@@ -301,6 +333,7 @@ flexcomSym_UsartFIFOSize.setVisible(False)
 
 #Interrupt/Non-Interrupt Mode
 flexcomSym_UsartIntMode = flexcomComponent.createBooleanSymbol("FLEXCOM_USART_INTERRUPT_MODE_ENABLE", flexcomSym_OperatingMode)
+flexcomSym_UsartIntMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_IER")
 flexcomSym_UsartIntMode.setLabel("Enable Interrupts ?")
 flexcomSym_UsartIntMode.setDefaultValue(True)
 flexcomSym_UsartIntMode.setVisible(False)
@@ -308,21 +341,29 @@ flexcomSym_UsartIntMode.setReadOnly(True)
 
 #Enable Ring buffer?
 flexcomSym_RingBuffer_Mode = flexcomComponent.createBooleanSymbol("FLEXCOM_USART_RING_BUFFER_MODE_ENABLE", flexcomSym_OperatingMode)
+flexcomSym_RingBuffer_Mode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_RingBuffer_Mode.setLabel("Enable Ring Buffer ?")
 flexcomSym_RingBuffer_Mode.setDefaultValue(False)
 flexcomSym_RingBuffer_Mode.setVisible(False)
 flexcomSym_RingBuffer_Mode.setReadOnly(True)
 
 flexcomSym_UsartMode = flexcomComponent.createKeyValueSetSymbol("FLEXCOM_USART_MR_USART_MODE", flexcomSym_OperatingMode)
+flexcomSym_UsartMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_FMR")
 flexcomSym_UsartMode.setLabel("Mode")
 flexcomSym_USART_MODE_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FLEXCOM\"]/value-group@[name=\"FLEX_US_MR__USART_MODE\"]")
 flexcomSym_UsartMode_Values = []
 flexcomSym_UsartMode_Values = flexcomSym_USART_MODE_Node.getChildren()
 for index in range(len(flexcomSym_UsartMode_Values)):
+
+    '''
+    In old ATDFs, ISO7816 mode is incorrectly labelled as 'IS07816'(i.e. zero instead of letter O), newer devices correctly label the mode as ISO7816_*
+    Use the name as per atdf. Since this is a key value set symbol, only the index is saved in the database, so changing the name here should not affect
+    compatibility.
+    '''
     flexcomSym_UsartMode_Key_Name = flexcomSym_UsartMode_Values[index].getAttribute("name")
     flexcomSym_UsartMode_Key_Value = flexcomSym_UsartMode_Values[index].getAttribute("value")
     flexcomSym_UsartMode_Key_Description = flexcomSym_UsartMode_Values[index].getAttribute("caption")
-    if flexcomSym_UsartMode_Key_Name == "NORMAL" or flexcomSym_UsartMode_Key_Name == "RS485" or flexcomSym_UsartMode_Key_Name == "HW_HANDSHAKING" or flexcomSym_UsartMode_Key_Name == "IRDA":
+    if flexcomSym_UsartMode_Key_Name in ["NORMAL", "RS485", "HW_HANDSHAKING", "IRDA", "ISO7816_T_0", "IS07816_T_0", "LIN_SLAVE", "LIN_MASTER", "LON"]:
         flexcomSym_UsartMode.addKey(flexcomSym_UsartMode_Key_Name, flexcomSym_UsartMode_Key_Value, flexcomSym_UsartMode_Key_Description)
 flexcomSym_UsartMode.setDisplayMode("Key")
 flexcomSym_UsartMode.setOutputMode("Key")
@@ -334,6 +375,7 @@ ptcr_register = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FLEX
 
 
 flexcomSym_UsartOperatingMode = flexcomComponent.createKeyValueSetSymbol("FLEXCOM_USART_OPERATING_MODE", flexcomSym_OperatingMode)
+flexcomSym_UsartOperatingMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_CR")
 flexcomSym_UsartOperatingMode.setLabel("Operating Mode")
 flexcomSym_UsartOperatingMode.addKey("BLOCKING", "0", "Blocking mode")
 flexcomSym_UsartOperatingMode.addKey("BLOCKING_FIFO", "1", "Blocking mode with FIFO")
@@ -363,6 +405,7 @@ flexcomSym_UsartRingBufferSizeConfig.setVisible(False)
 flexcomSym_UsartRingBufferSizeConfig.setDependencies(updateRingBufferSizeVisibleProperty, ["FLEXCOM_MODE", "FLEXCOM_USART_RING_BUFFER_MODE_ENABLE"])
 
 flexcomSym_TXRingBuffer_Size = flexcomComponent.createIntegerSymbol("USART_TX_RING_BUFFER_SIZE", flexcomSym_UsartRingBufferSizeConfig)
+flexcomSym_TXRingBuffer_Size.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_IDR")
 flexcomSym_TXRingBuffer_Size.setLabel("TX Ring Buffer Size")
 flexcomSym_TXRingBuffer_Size.setMin(2)
 flexcomSym_TXRingBuffer_Size.setMax(65535)
@@ -371,6 +414,7 @@ flexcomSym_TXRingBuffer_Size.setVisible(False)
 flexcomSym_TXRingBuffer_Size.setDependencies(updateRingBufferSizeVisibleProperty, ["FLEXCOM_MODE", "FLEXCOM_USART_RING_BUFFER_MODE_ENABLE"])
 
 flexcomSym_RXRingBuffer_Size = flexcomComponent.createIntegerSymbol("USART_RX_RING_BUFFER_SIZE", flexcomSym_UsartRingBufferSizeConfig)
+flexcomSym_RXRingBuffer_Size.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_IDR")
 flexcomSym_RXRingBuffer_Size.setLabel("RX Ring Buffer Size")
 flexcomSym_RXRingBuffer_Size.setMin(2)
 flexcomSym_RXRingBuffer_Size.setMax(65535)
@@ -379,16 +423,19 @@ flexcomSym_RXRingBuffer_Size.setVisible(False)
 flexcomSym_RXRingBuffer_Size.setDependencies(updateRingBufferSizeVisibleProperty, ["FLEXCOM_MODE", "FLEXCOM_USART_RING_BUFFER_MODE_ENABLE"])
 
 flexcomSym_UsartReceiveDMAEnable = flexcomComponent.createBooleanSymbol("USE_USART_RECEIVE_DMA", flexcomSym_OperatingMode)
+flexcomSym_UsartReceiveDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_CR")
 flexcomSym_UsartReceiveDMAEnable.setLabel("Enable DMA for Receive")
 flexcomSym_UsartReceiveDMAEnable.setVisible(False)
 flexcomSym_UsartReceiveDMAEnable.setReadOnly(True)
 
 flexcomSym_UsartTransmitDMAEnable = flexcomComponent.createBooleanSymbol("USE_USART_TRANSMIT_DMA", flexcomSym_OperatingMode)
+flexcomSym_UsartTransmitDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_CR")
 flexcomSym_UsartTransmitDMAEnable.setLabel("Enable DMA for Transmit")
 flexcomSym_UsartTransmitDMAEnable.setVisible(False)
 flexcomSym_UsartTransmitDMAEnable.setReadOnly(True)
 
 flexcomSym_UsartFIFOEnable = flexcomComponent.createBooleanSymbol("FLEXCOM_USART_FIFO_ENABLE", flexcomSym_OperatingMode)
+flexcomSym_UsartFIFOEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_CR")
 flexcomSym_UsartFIFOEnable.setLabel("Enable FIFO")
 flexcomSym_UsartFIFOEnable.setDefaultValue(False)
 flexcomSym_UsartFIFOEnable.setVisible(False)
@@ -399,6 +446,7 @@ flexcomSym_UsartFIFOThresholdsConfig.setVisible(False)
 flexcomSym_UsartFIFOThresholdsConfig.setDependencies(fifoOptionsVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_FIFO_ENABLE"])
 
 flexcomSym_UsartFIFORXThreshold = flexcomComponent.createIntegerSymbol("FLEXCOM_USART_RX_FIFO_THRESHOLD", flexcomSym_UsartFIFOThresholdsConfig)
+flexcomSym_UsartFIFORXThreshold.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_FMR")
 flexcomSym_UsartFIFORXThreshold.setLabel("RX FIFO Threshold")
 flexcomSym_UsartFIFORXThreshold.setMin(1)
 flexcomSym_UsartFIFORXThreshold.setMax(flexcomUSARTFIFOSize)
@@ -407,6 +455,7 @@ flexcomSym_UsartFIFORXThreshold.setVisible(False)
 flexcomSym_UsartFIFORXThreshold.setDependencies(fifoOptionsVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_FIFO_ENABLE"])
 
 flexcomSym_UsartFIFOTXThreshold = flexcomComponent.createIntegerSymbol("FLEXCOM_USART_TX_FIFO_THRESHOLD", flexcomSym_UsartFIFOThresholdsConfig)
+flexcomSym_UsartFIFOTXThreshold.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_IDR")
 flexcomSym_UsartFIFOTXThreshold.setLabel("TX FIFO Threshold")
 flexcomSym_UsartFIFOTXThreshold.setMin(0)
 flexcomSym_UsartFIFOTXThreshold.setMax(flexcomUSARTFIFOSize-1)
@@ -415,6 +464,7 @@ flexcomSym_UsartFIFOTXThreshold.setVisible(False)
 flexcomSym_UsartFIFOTXThreshold.setDependencies(fifoOptionsVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_FIFO_ENABLE"])
 
 flexcomSym_UsartFIFORX2Threshold = flexcomComponent.createIntegerSymbol("FLEXCOM_USART_RX_FIFO_THRESHOLD_2", flexcomSym_UsartFIFOThresholdsConfig)
+flexcomSym_UsartFIFORX2Threshold.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_FMR")
 flexcomSym_UsartFIFORX2Threshold.setLabel("RX FIFO Threshold 2")
 flexcomSym_UsartFIFORX2Threshold.setMin(1)
 flexcomSym_UsartFIFORX2Threshold.setMax(flexcomUSARTFIFOSize)
@@ -422,15 +472,26 @@ flexcomSym_UsartFIFORX2Threshold.setDefaultValue(flexcomUSARTFIFOSize/2)
 flexcomSym_UsartFIFORX2Threshold.setVisible(False)
 flexcomSym_UsartFIFORX2Threshold.setDependencies(rxFifo2OptionVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
 
+flexcomSym_OutputClock = flexcomComponent.createIntegerSymbol("FLEXCOM_USART_OUTPUTCLOCK", flexcomSym_OperatingMode)
+flexcomSym_OutputClock.setHelp("USART_7816_CLOCK_OUTPUT")
+flexcomSym_OutputClock.setLabel("Output clock in Hz")
+flexcomSym_OutputClock.setDefaultValue(2000000)
+flexcomSym_OutputClock.setMin(1000000)
+flexcomSym_OutputClock.setMax(5000000)
+flexcomSym_OutputClock.setVisible(False)
+flexcomSym_OutputClock.setDependencies(symbolISO7816Visible, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
+
 flexcomSym_TimeGuardValue = flexcomComponent.createIntegerSymbol("FLEXCOM_USART_TTGR", flexcomSym_OperatingMode)
+flexcomSym_TimeGuardValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_TTGR")
 flexcomSym_TimeGuardValue.setLabel("Time Guard Value")
 flexcomSym_TimeGuardValue.setDefaultValue(0)
 flexcomSym_TimeGuardValue.setMin(0)
 flexcomSym_TimeGuardValue.setMax(255)
 flexcomSym_TimeGuardValue.setVisible(False)
-flexcomSym_TimeGuardValue.setDependencies(symbolVisible, ["FLEXCOM_MODE"])
+flexcomSym_TimeGuardValue.setDependencies(symbolLINNoVisible, ["FLEXCOM_MODE"])
 
 flexcomSym_UsartClkSrc = flexcomComponent.createKeyValueSetSymbol("FLEXCOM_USART_MR_USCLKS", flexcomSym_OperatingMode)
+flexcomSym_UsartClkSrc.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_UsartClkSrc.setLabel("Select Clock Source")
 flexcomSym_UsartClkSrc_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FLEXCOM\"]/value-group@[name=\"FLEX_US_MR__USCLKS\"]")
 flexcomSym_UsartClkSrc_Values = []
@@ -447,6 +508,7 @@ flexcomSym_UsartClkSrc.setVisible(False)
 flexcomSym_UsartClkSrc.setDependencies(symbolVisible, ["FLEXCOM_MODE"])
 
 flexcomSym_UsartExternalClkValue = flexcomComponent.createIntegerSymbol("EXTERNAL_CLOCK_FREQ", flexcomSym_UsartClkSrc)
+flexcomSym_UsartExternalClkValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_UsartExternalClkValue.setLabel("External Clock Source")
 flexcomSym_UsartExternalClkValue.setDefaultValue(clock_source.get("Ext_clk_src_Freq"))
 flexcomSym_UsartExternalClkValue.setMin(1)
@@ -455,6 +517,7 @@ flexcomSym_UsartExternalClkValue.setVisible(False)
 flexcomSym_UsartExternalClkValue.setDependencies(ExternalClkSymbolVisible, ["FLEXCOM_USART_MR_USCLKS"])
 
 flexcomSym_UsartClkValue = flexcomComponent.createIntegerSymbol("FLEX_USART_CLOCK_FREQ", flexcomSym_OperatingMode)
+flexcomSym_UsartClkValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_UsartClkValue.setLabel("Clock Source Value")
 flexcomSym_UsartClkValue.setReadOnly(True)
 flexcomSym_UsartClkValue.setDefaultValue(int(Database.getSymbolValue("core", flexcomInstanceName.getValue() + "_CLOCK_FREQUENCY")))
@@ -462,6 +525,7 @@ flexcomSym_UsartClkValue.setVisible(False)
 flexcomSym_UsartClkValue.setDependencies(clockSourceFreq, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USCLKS", "core." + flexcomInstanceName.getValue() + "_CLOCK_FREQUENCY"])
 
 flexcomSym_UsartIRDAFilterValue = flexcomComponent.createIntegerSymbol("FLEX_USART_IRDA_FILTER_VAL", flexcomSym_OperatingMode)
+flexcomSym_UsartIRDAFilterValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_IF")
 flexcomSym_UsartIRDAFilterValue.setLabel("Clock Source Value")
 flexcomSym_UsartIRDAFilterValue.setReadOnly(True)
 flexcomSym_UsartIRDAFilterValue.setDefaultValue(int(Database.getSymbolValue("core", flexcomInstanceName.getValue() + "_CLOCK_FREQUENCY")))
@@ -469,6 +533,7 @@ flexcomSym_UsartIRDAFilterValue.setVisible(False)
 flexcomSym_UsartIRDAFilterValue.setDependencies(irdaFilterVal, ["core." + flexcomInstanceName.getValue() + "_CLOCK_FREQUENCY"])
 
 flexcomSym_UsartBaud = flexcomComponent.createIntegerSymbol("BAUD_RATE", flexcomSym_OperatingMode)
+flexcomSym_UsartBaud.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_BRGR")
 flexcomSym_UsartBaud.setLabel("Baud Rate")
 flexcomSym_UsartBaud.setDefaultValue(115200)
 flexcomSym_UsartBaud.setMin(1)
@@ -497,6 +562,7 @@ flexcomSym_UsartFPValue.setDefaultValue(fp)
 flexcomSym_UsartFPValue.setDependencies(baudRateTrigger, ["BAUD_RATE", "FLEX_USART_CLOCK_FREQ", "EXTERNAL_CLOCK_FREQ"])
 
 flexcomSym_Usart_MR_CHRL = flexcomComponent.createKeyValueSetSymbol("FLEX_USART_MR_CHRL", flexcomSym_OperatingMode)
+flexcomSym_Usart_MR_CHRL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_Usart_MR_CHRL.setLabel("Data")
 flexcomSym_Usart_MR_CHRL_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FLEXCOM\"]/value-group@[name=\"FLEX_US_MR__CHRL\"]")
 flexcomSym_Usart_MR_CHRL_Values = []
@@ -513,9 +579,10 @@ flexcomSym_Usart_MR_CHRL.setDisplayMode("Description")
 flexcomSym_Usart_MR_CHRL.setOutputMode("Key")
 flexcomSym_Usart_MR_CHRL.setDefaultValue(3)
 flexcomSym_Usart_MR_CHRL.setVisible(False)
-flexcomSym_Usart_MR_CHRL.setDependencies(symbolVisible, ["FLEXCOM_MODE"])
+flexcomSym_Usart_MR_CHRL.setDependencies(symbolISO7816NoVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
 
 flexcomSym_Usart_MR_MODE9 = flexcomComponent.createBooleanSymbol("FLEX_USART_MR_MODE9", flexcomSym_OperatingMode)
+flexcomSym_Usart_MR_MODE9.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_Usart_MR_MODE9.setVisible(False)
 flexcomSym_Usart_MR_MODE9.setDependencies(dataWidthLogic, ["FLEX_USART_MR_CHRL"])
 flexcomSym_Usart_MR_MODE9.setLabel("9 Bit Data Width")
@@ -547,6 +614,7 @@ flexcomSym_Usart_MR_CHRL_9_Mask.setDefaultValue("0x20000")
 flexcomSym_Usart_MR_CHRL_9_Mask.setVisible(False)
 
 flexcomSym_Usart_MR_PAR = flexcomComponent.createKeyValueSetSymbol("FLEX_USART_MR_PAR", flexcomSym_OperatingMode)
+flexcomSym_Usart_MR_PAR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_Usart_MR_PAR.setLabel("Parity")
 flexcomSym_Usart_MR_PAR_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FLEXCOM\"]/value-group@[name=\"FLEX_US_MR__PAR\"]")
 flexcomSym_Usart_MR_PAR_Values = []
@@ -560,7 +628,7 @@ flexcomSym_Usart_MR_PAR.setDefaultValue(4)
 flexcomSym_Usart_MR_PAR.setDisplayMode("Key")
 flexcomSym_Usart_MR_PAR.setOutputMode("Key")
 flexcomSym_Usart_MR_PAR.setVisible(False)
-flexcomSym_Usart_MR_PAR.setDependencies(symbolVisible, ["FLEXCOM_MODE"])
+flexcomSym_Usart_MR_PAR.setDependencies(symbolISO7816NoVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
 
 #FLEXCOM USART EVEN Parity Mask
 flexcomSym_Usart_MR_PAR_EVEN_Mask = flexcomComponent.createStringSymbol("USART_PARITY_EVEN_MASK", flexcomSym_OperatingMode)
@@ -593,6 +661,7 @@ flexcomSym_Usart_MR_PAR_MULTIDROP_Mask.setDefaultValue("0xC00")
 flexcomSym_Usart_MR_PAR_MULTIDROP_Mask.setVisible(False)
 
 flexcomSym_Usart_MR_NBSTOP = flexcomComponent.createKeyValueSetSymbol("FLEX_USART_MR_NBSTOP", flexcomSym_OperatingMode)
+flexcomSym_Usart_MR_NBSTOP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11268;register:FLEX_US_MR")
 flexcomSym_Usart_MR_NBSTOP.setLabel("Stop")
 flexcomSym_Usart_MR_NBSTOP_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FLEXCOM\"]/value-group@[name=\"FLEX_US_MR__NBSTOP\"]")
 flexcomSym_Usart_MR_NBSTOP_Values = []
@@ -606,7 +675,7 @@ flexcomSym_Usart_MR_NBSTOP.setDisplayMode("Description")
 flexcomSym_Usart_MR_NBSTOP.setOutputMode("Key")
 flexcomSym_Usart_MR_NBSTOP.setDefaultValue(0)
 flexcomSym_Usart_MR_NBSTOP.setVisible(False)
-flexcomSym_Usart_MR_NBSTOP.setDependencies(symbolVisible, ["FLEXCOM_MODE"])
+flexcomSym_Usart_MR_NBSTOP.setDependencies(symbolISO7816NoVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
 
 #FLEXCOM USART Stop 1-bit Mask
 flexcomSym_Usart_MR_NBSTOP_1_Mask = flexcomComponent.createStringSymbol("USART_STOP_1_BIT_MASK", flexcomSym_OperatingMode)
@@ -647,3 +716,134 @@ flexcomSym_Usart_DataBits = flexcomComponent.createStringSymbol("USART_DATA_BITS
 flexcomSym_Usart_DataBits.setDefaultValue(dataBitsDict[flexcomSym_Usart_MR_CHRL.getSelectedKey()])
 flexcomSym_Usart_DataBits.setVisible(False)
 flexcomSym_Usart_DataBits.setDependencies(updateUSARTDataBits, ["FLEX_USART_MR_CHRL"])
+
+
+#### LIN ####
+
+def flexcomLinInterruptVisibility(symbol, event):
+    value = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
+    if flexcomSym_OperatingMode.getSelectedKey() == "USART":
+        if flexcomSym_UsartOperatingMode.getSelectedKey() == "NON_BLOCKING" or flexcomSym_UsartOperatingMode.getSelectedKey() == "NON_BLOCKING_FIFO" or flexcomSym_UsartOperatingMode.getSelectedKey() == "RING_BUFFER" or flexcomSym_UsartOperatingMode.getSelectedKey() == "RING_BUFFER_FIFO":
+            if value == "LIN_SLAVE"  or value == "LIN_MASTER":
+                symbol.setVisible(True)
+            else :
+                symbol.setVisible(False)
+        else :
+            symbol.setVisible(False)
+
+def symbolLinVisible(symbol, event):
+    value  = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
+
+    if flexcomSym_OperatingMode.getSelectedKey() == "USART":
+        if value == "LIN_SLAVE"  or value == "LIN_MASTER":
+            symbol.setVisible(True)
+        else :
+            symbol.setVisible(False)
+    else :
+        symbol.setVisible(False)
+
+flexcomLINSym_Menu = flexcomComponent.createMenuSymbol("USART_LIN_MENU", None)
+flexcomLINSym_Menu.setLabel ("LIN Configurations")
+flexcomLINSym_Menu.setVisible(False)
+flexcomLINSym_Menu.setDependencies(symbolLinVisible, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
+
+flexcomLINSym_LINMR_PARDIS = flexcomComponent.createBooleanSymbol("USART_LIN_LINMR_PARDIS", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_PARDIS.setLabel("Identifier Parity Disable")
+flexcomLINSym_LINMR_PARDIS.setDefaultValue(False)
+flexcomLINSym_LINMR_PARDIS.setVisible(True)
+
+flexcomLINSym_LINMR_CHKDIS = flexcomComponent.createBooleanSymbol("USART_LIN_LINMR_CHKDIS", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_CHKDIS.setLabel("Checksum Disable")
+flexcomLINSym_LINMR_CHKDIS.setDefaultValue(False)
+flexcomLINSym_LINMR_CHKDIS.setVisible(True)
+
+flexcomLINSym_LINMR_CHKTYP = flexcomComponent.createKeyValueSetSymbol("USART_LIN_LINMR_CHKTYP", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_CHKTYP.setLabel("Select Checksum Type")
+flexcomLINSym_LINMR_CHKTYP.addKey("ENHANCED", "0x0", "LIN 2.0 Enhanced Checksum")
+flexcomLINSym_LINMR_CHKTYP.addKey("CLASSIC", "0x1", "LIN 1.3 Classic Checksum")
+flexcomLINSym_LINMR_CHKTYP.setOutputMode("Value")
+flexcomLINSym_LINMR_CHKTYP.setDisplayMode("Description")
+flexcomLINSym_LINMR_CHKTYP.setDefaultValue(0)
+flexcomLINSym_LINMR_CHKTYP.setVisible(True)
+
+flexcomLINSym_LINMR_DLM = flexcomComponent.createKeyValueSetSymbol("USART_LIN_LINMR_DLM", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_DLM.setLabel("Select Data Length Mode")
+flexcomLINSym_LINMR_DLM.addKey("DLC", "0x0", "Data length is defined by DLC")
+flexcomLINSym_LINMR_DLM.addKey("IDCHR", "0x1", "Data length is defined by bits 5 and 6 of the identifier")
+flexcomLINSym_LINMR_DLM.setOutputMode("Value")
+flexcomLINSym_LINMR_DLM.setDisplayMode("Description")
+flexcomLINSym_LINMR_DLM.setDefaultValue(0)
+flexcomLINSym_LINMR_DLM.setVisible(True)
+
+flexcomLINSym_LINMR_DLC = flexcomComponent.createIntegerSymbol("USART_LIN_LINMR_DLC", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_DLC.setLabel("Response Data Length (bytes)")
+flexcomLINSym_LINMR_DLC.setDefaultValue(8)
+flexcomLINSym_LINMR_DLC.setMin(0)
+flexcomLINSym_LINMR_DLC.setMax(255)
+flexcomLINSym_LINMR_DLC.setVisible(False)
+
+
+def flexcomLinSymVisibility(symbol,event):
+    value  = event["source"].getSymbolByID("FLEXCOM_USART_MR_USART_MODE").getSelectedKey()
+    if symbol.getID() == "USART_LIN_LINMR_FSDIS":
+        if value == "LIN_MASTER":
+            symbol.setVisible(True)
+        else:
+            symbol.setVisible(False)
+    elif symbol.getID() == "USART_LIN_LINMR_SYNCDIS":
+        if value == "LIN_SLAVE":
+            symbol.setVisible(True)
+        else:
+            symbol.setVisible(False)
+
+# LIN master only
+flexcomLINSym_LINMR_FSDIS = flexcomComponent.createBooleanSymbol("USART_LIN_LINMR_FSDIS", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_FSDIS.setLabel("Frame Slot Mode Disable")
+flexcomLINSym_LINMR_FSDIS.setDefaultValue(False)
+flexcomLINSym_LINMR_FSDIS.setVisible(True)
+flexcomLINSym_LINMR_FSDIS.setDependencies(flexcomLinSymVisibility, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
+
+# LIN slave only
+flexcomLINSym_LINMR_SYNCDIS = flexcomComponent.createBooleanSymbol("USART_LIN_LINMR_SYNCDIS", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_SYNCDIS.setLabel("Synchronization Disable")
+flexcomLINSym_LINMR_SYNCDIS.setDefaultValue(False)
+flexcomLINSym_LINMR_SYNCDIS.setVisible(True)
+flexcomLINSym_LINMR_SYNCDIS.setDependencies(flexcomLinSymVisibility, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE"])
+
+flexcomLINSym_LINMR_WKUPTYP = flexcomComponent.createKeyValueSetSymbol("USART_LIN_LINMR_WKUPTYP", flexcomLINSym_Menu)
+flexcomLINSym_LINMR_WKUPTYP.setLabel("Select Wakeup Signal Type")
+flexcomLINSym_LINMR_WKUPTYP.addKey("LIN2_0", "0x0", "LIN 2.0 Wakeup Signal")
+flexcomLINSym_LINMR_WKUPTYP.addKey("LIN1_3", "0x1", "LIN 1.3 Wakeup Signal")
+flexcomLINSym_LINMR_WKUPTYP.setOutputMode("Value")
+flexcomLINSym_LINMR_WKUPTYP.setDisplayMode("Description")
+flexcomLINSym_LINMR_WKUPTYP.setDefaultValue(0)
+flexcomLINSym_LINMR_WKUPTYP.setVisible(True)
+
+# LIN Interrupt Menu
+
+flexcomLINSym_LIN_INTERRUPT_Menu = flexcomComponent.createMenuSymbol("USART_LIN_INTERRUPT_MENU", flexcomLINSym_Menu)
+flexcomLINSym_LIN_INTERRUPT_Menu.setLabel ("LIN Interrupt Configurations")
+flexcomLINSym_LIN_INTERRUPT_Menu.setVisible(True)
+flexcomLINSym_LIN_INTERRUPT_Menu.setDependencies(flexcomLinInterruptVisibility, ["FLEXCOM_MODE", "FLEXCOM_USART_MR_USART_MODE", "FLEXCOM_USART_OPERATING_MODE"])
+
+flexcomLINSym_LINIER_LINID_INTERRUPT_ENABLE = flexcomComponent.createBooleanSymbol("USART_LIN_LINID_INTERRUPT_ENABLE", flexcomLINSym_LIN_INTERRUPT_Menu)
+flexcomLINSym_LINIER_LINID_INTERRUPT_ENABLE.setLabel("LIN ID Receive/Transmit Interrupt")
+flexcomLINSym_LINIER_LINID_INTERRUPT_ENABLE.setDefaultValue(False)
+flexcomLINSym_LINIER_LINID_INTERRUPT_ENABLE.setVisible(True)
+
+flexcomLINSym_LINIER_LINTC_INTERRUPT_ENABLE = flexcomComponent.createBooleanSymbol("USART_LIN_LINTC_INTERRUPT_ENABLE", flexcomLINSym_LIN_INTERRUPT_Menu)
+flexcomLINSym_LINIER_LINTC_INTERRUPT_ENABLE.setLabel("LIN Data Transfer Complete Interrupt")
+flexcomLINSym_LINIER_LINTC_INTERRUPT_ENABLE.setDefaultValue(False)
+flexcomLINSym_LINIER_LINTC_INTERRUPT_ENABLE.setVisible(True)
+
+flexcomLINSym_LINIER_LINBK_INTERRUPT_ENABLE = flexcomComponent.createBooleanSymbol("USART_LIN_LINBK_INTERRUPT_ENABLE", flexcomLINSym_LIN_INTERRUPT_Menu)
+flexcomLINSym_LINIER_LINBK_INTERRUPT_ENABLE.setLabel("LIN Header-Break Receive/Transmit Interrupt")
+flexcomLINSym_LINIER_LINBK_INTERRUPT_ENABLE.setDefaultValue(False)
+flexcomLINSym_LINIER_LINBK_INTERRUPT_ENABLE.setVisible(True)
+
+#### end LIN ####
+
+
+
+
+

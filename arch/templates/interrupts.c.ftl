@@ -20,7 +20,7 @@
 
 // DOM-IGNORE-BEGIN
 /*******************************************************************************
-* Copyright (C) 2018 Microchip Technology Inc. and its subsidiaries.
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
 * Subject to your compliance with these terms, you may use Microchip software
 * and any derivatives exclusively with Microchip products. It is your
@@ -77,8 +77,12 @@ ${LIST_SYSTEM_INTERRUPT_C_INCLUDES}
     <#lt><#include "interrupts_xc32_cortex_m.c.ftl">
 <#elseif CoreArchitecture?matches("ARM926.*")>
     <#lt><#include "interrupts_arm_9.c.ftl">
+<#elseif CoreArchitecture?matches("dsPIC33A")>  
+    <#lt><#include "interrupts_33a.c.ftl">
+<#elseif CoreArchitecture?matches("PIC32A")>  
+    <#lt><#include "interrupts_33a.c.ftl">	
 <#else>
-    <#lt><#include "interrupts_xc32_mips.c.ftl">
+    <#lt><#include "interrupts_xc32_mips.c.ftl">  
 </#if>
 
 /*******************************************************************************

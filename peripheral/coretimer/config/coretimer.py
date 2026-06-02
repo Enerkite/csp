@@ -37,11 +37,33 @@ global tmrPeriodicInterrupt
 global setTimerInterruptData
 
 def handleMessage(messageID, args):
+    global coretimerPeriodMS
+    
     dummy_dict = {}
+    dvrtPLIBConfig = dict()
 
     if (messageID == "SYS_TIME_PUBLISH_CAPABILITIES"):
         modeDict = {"plib_mode": "COMPARE_MODE"}
         dummy_dict = Database.sendMessage(args["ID"], "SYS_TIME_PLIB_CAPABILITY", modeDict)
+
+        
+    elif (messageID == "DVRT_PUBLISH_CAPABILITIES"):
+        modeDict = {"plib_mode": "PERIOD_MODE"}
+        dvrtPLIBConfig = Database.sendMessage(args["ID"], "DVRT_PLIB_CAPABILITY", modeDict)
+        if dvrtPLIBConfig["TIMER_MODE"] == "DVRT_PLIB_MODE_PERIOD":
+            coretimerPeriodMS.setValue(dvrtPLIBConfig["dvrt_tick_millisec"])
+
+    elif (messageID == "CORE_TIMER_CONFIG"):
+        if "isCoreTmrIntRdOnly" in args:
+            Database.getComponentByID("core_timer").getSymbolByID("CORE_TIMER_INTERRUPT_MODE").setReadOnly(args["isCoreTmrIntRdOnly"])
+        if "isCoreTmrIntEn" in args:
+            Database.setSymbolValue("core_timer", "CORE_TIMER_INTERRUPT_MODE", args["isCoreTmrIntEn"])
+        if "isCoreTmrPeriodicIntRdOnly" in args:
+            Database.getComponentByID("core_timer").getSymbolByID("CORE_TIMER_PERIODIC_INTERRUPT").setReadOnly(args["isCoreTmrPeriodicIntRdOnly"])
+        if "isCoreTmrPeriodicIntEn" in args:
+            Database.setSymbolValue("core_timer", "CORE_TIMER_PERIODIC_INTERRUPT", args["isCoreTmrPeriodicIntEn"])
+        if "isCoreTmrAutoStart" in args:
+            Database.setSymbolValue("core_timer", "CORE_TIMER_AUTOSTART", args["isCoreTmrAutoStart"])
 
     return dummy_dict
 
@@ -126,14 +148,19 @@ def onAttachmentConnected(source, target):
     remoteComponent = target["component"]
     remoteID = remoteComponent.getID()
 
-    if (remoteID == "sys_time"):
+    if remoteID == "sys_time":
         tmrInterruptEnable.setValue(True,1)
         tmrPeriodicInterrupt.setValue(False,1)
+        
+    if remoteID == "dvrt":
+        tmrInterruptEnable.setValue(True,1)
+        tmrPeriodicInterrupt.setValue(True,1)
 
 def onAttachmentDisconnected(source, target):
     remoteComponent = target["component"]
     remoteID = remoteComponent.getID()
-    if (remoteID == "sys_time"):
+    
+    if ((remoteID == "sys_time") or (remoteID == "dvrt")):
         tmrInterruptEnable.setValue(False,1)
         tmrPeriodicInterrupt.setValue(False,1)
 
@@ -161,16 +188,19 @@ def instantiateComponent(tmrComponent):
     global tmrPeriodicInterrupt
 
     tmrInterruptEnable = tmrComponent.createBooleanSymbol("CORE_TIMER_INTERRUPT_MODE", None)
+    tmrInterruptEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:coretimer;register:%NOREGISTER%")
     tmrInterruptEnable.setLabel("Enable Interrupt mode")
     tmrInterruptEnable.setDefaultValue(False)
 
     tmrPeriodicInterrupt = tmrComponent.createBooleanSymbol("CORE_TIMER_PERIODIC_INTERRUPT", tmrInterruptEnable)
+    tmrPeriodicInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:coretimer;register:%NOREGISTER%")
     tmrPeriodicInterrupt.setLabel("Generate Periodic interrupt")
     tmrPeriodicInterrupt.setDefaultValue(False)
     tmrPeriodicInterrupt.setVisible(False)
     tmrPeriodicInterrupt.setDependencies(setVisibility, ["CORE_TIMER_INTERRUPT_MODE"])
 
     coretimerStopInDebug = tmrComponent.createBooleanSymbol("CORE_TIMER_STOP_IN_DEBUG", None)
+    coretimerStopInDebug.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:coretimer;register:%NOREGISTER%")
     coretimerStopInDebug.setLabel("Stop Timer in Debug mode")
 
     SysClkFreq=Database.getSymbolValue("core", "SYS_CLK_FREQ")
@@ -179,6 +209,7 @@ def instantiateComponent(tmrComponent):
     max = ((float(1) / timerFrequency) * (2**32) * 1000)
 
     coretimerCompareMS = tmrComponent.createFloatSymbol("CORE_TIMER_COMPARE_MS", None)
+    coretimerCompareMS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:coretimer;register:%NOREGISTER%")
     coretimerCompareMS.setLabel("Compare period (milliseconds)")
     coretimerCompareMS.setDefaultValue(float(1.0))
     coretimerCompareMS.setMin(0)
@@ -187,6 +218,7 @@ def instantiateComponent(tmrComponent):
     coretimerCompareMS.setDependencies(setCompareVisibility, ["CORE_TIMER_INTERRUPT_MODE"])
 
     coretimerPeriodMS = tmrComponent.createFloatSymbol("CORE_TIMER_PERIOD_MS", tmrPeriodicInterrupt)
+    coretimerPeriodMS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:coretimer;register:%NOREGISTER%")
     coretimerPeriodMS.setLabel("Timer interrupt period (milliseconds)")
     coretimerPeriodMS.setDefaultValue(float(1.0))
     coretimerPeriodMS.setMin(0)
@@ -202,6 +234,7 @@ def instantiateComponent(tmrComponent):
     defaultPeriod = int(timerFrequency / 1000)
     coretimerPeriodValue = tmrComponent.createStringSymbol("CORE_TIMER_PERIOD_VALUE", None)
     coretimerPeriodValue.setLabel("Timer Interrupt Period")
+    coretimerPeriodValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:coretimer;register:%NOREGISTER%")
     coretimerPeriodValue.setVisible(False)
     coretimerPeriodValue.setDefaultValue(str(hex(defaultPeriod)))
 
@@ -212,6 +245,11 @@ def instantiateComponent(tmrComponent):
 
     coretimerFreqComment = tmrComponent.createCommentSymbol("CORE_TIMER_FREQUENCY_COMMENT", None)
     coretimerFreqComment.setLabel("*** Core Timer Clock Frequency " + str(timerFrequency) + " Hz ***")
+
+    coretimerAutoStart = tmrComponent.createBooleanSymbol("CORE_TIMER_AUTOSTART", None)
+    coretimerAutoStart.setLabel("Auto start timer after initialization")
+    coretimerAutoStart.setDefaultValue(False)
+    coretimerAutoStart.setVisible(False)
 
     ################# Interrupt Settings ###########################
 
@@ -272,6 +310,10 @@ def instantiateComponent(tmrComponent):
     timeStopApiName_Sym = tmrComponent.createStringSymbol("TIMER_STOP_API_NAME", None)
     timeStopApiName_Sym.setVisible(False)
 
+    periodSetApiName_Sym = tmrComponent.createStringSymbol("PERIOD_SET_API_NAME", None)
+    periodSetApiName_Sym.setVisible(False)
+    
+    
     compareSetApiName_Sym = tmrComponent.createStringSymbol("COMPARE_SET_API_NAME", None)
     compareSetApiName_Sym.setVisible(False)
 
@@ -289,6 +331,7 @@ def instantiateComponent(tmrComponent):
 
     timerStartApiName = "CORETIMER_Start"
     timeStopApiName = "CORETIMER_Stop "
+    
     compareSetApiName = "CORETIMER_CompareSet"
     counterGetApiName = "CORETIMER_CounterGet"
     frequencyGetApiName = "CORETIMER_FrequencyGet"
@@ -296,6 +339,7 @@ def instantiateComponent(tmrComponent):
 
     timerStartApiName_Sym.setDefaultValue(timerStartApiName)
     timeStopApiName_Sym.setDefaultValue(timeStopApiName)
+    
     compareSetApiName_Sym.setDefaultValue(compareSetApiName)
     counterApiName_Sym.setDefaultValue(counterGetApiName)
     frequencyGetApiName_Sym.setDefaultValue(frequencyGetApiName)

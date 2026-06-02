@@ -58,10 +58,11 @@ PrescalerDict = {
                 }
 global tmrTimerUnit
 tmrTimerUnit = { "millisecond" : 1000.0,
-                "microsecond" : 1000000.0, 
+                "microsecond" : 1000000.0,
                 "nanosecond"  : 1000000000.0,
-                } 
+                }
 global sysTimeComponentId
+global dvrtComponentId
 global tmr1Sym_PERIOD_MS
 
 global interruptsChildren
@@ -84,16 +85,34 @@ def calcAchievableFreq():
         tickRateDict["tick_rate_hz"] = long(achievableTickRateHz)
         dummy_dict = Database.sendMessage(sysTimeComponentId.getValue(), "SYS_TIME_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
 
+    elif (dvrtComponentId.getValue() != ""):
+        timer_Frequency = tmr1Sym_CLOCK_FREQ.getValue()
+        #Read the calculated timer count to achieve the set Time Period and Calculate the actual tick rate
+        if timer_Frequency != 0:
+            achievableTickRateHz = float(1.0/timer_Frequency) * (tmr1Sym_PR1.getValue())
+            if achievableTickRateHz != 0:
+                achievableTickRateHz = ((1.0/achievableTickRateHz) * 100000.0)
+                tickRateDict["tick_rate_hz"] = long(achievableTickRateHz)
+                dummy_dict = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
+            else:
+                dummy_dict = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
+        else:
+            dummy_dict = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
+
 def handleMessage(messageID, args):
     global sysTimeComponentId
+    global dvrtComponentId
+    global tmrSym_TimerUnit
+
     dummy_dict = dict()
     sysTimePLIBConfig = dict()
+    dvrtPLIBConfig = dict()
+    dvrt_tick_ms = {"dvrt_tick_ms" : 0.0}
 
     if (messageID == "SYS_TIME_PUBLISH_CAPABILITIES"):
         sysTimeComponentId.setValue(args["ID"])
         modeDict = {"plib_mode": "PERIOD_MODE"}
         sysTimePLIBConfig = Database.sendMessage(sysTimeComponentId.getValue(), "SYS_TIME_PLIB_CAPABILITY", modeDict)
-        print sysTimePLIBConfig
         if sysTimePLIBConfig["plib_mode"] == "SYS_TIME_PLIB_MODE_PERIOD":
             tmr1Sym_PERIOD_MS.setValue(sysTimePLIBConfig["sys_time_tick_ms"])
 
@@ -101,6 +120,18 @@ def handleMessage(messageID, args):
         if sysTimeComponentId.getValue() != "":
             #Set the Time Period (millisecond)
             tmr1Sym_PERIOD_MS.setValue(args["sys_time_tick_ms"])
+
+    if (messageID == "DVRT_PUBLISH_CAPABILITIES"):
+        dvrtComponentId.setValue(args["ID"])
+        opemode_Dict = {"plib_mode": "PERIOD_MODE"}
+        dvrtPLIBConfig = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_PLIB_CAPABILITY", opemode_Dict)
+        if dvrtPLIBConfig["TIMER_MODE"] == "DVRT_PLIB_MODE_PERIOD":
+            tmr1Sym_PERIOD_MS.setValue(dvrtPLIBConfig["dvrt_tick_millisec"])
+
+    if (messageID == "DVRT_TICK_RATE_CHANGED"):
+        if dvrtComponentId.getValue() != "":
+            #Set the Time Period (Milli Sec)
+            tmr1Sym_PERIOD_MS.setValue(args["dvrt_tick_ms"])
 
     return dummy_dict
 
@@ -200,7 +231,7 @@ def find_key_value(value, keypairs):
             return index  # return occurrence of <bitfield > entry which has matching value
         index += 1
 
-    print("find_key: could not find value in dictionary") # should never get here
+    Log.writeDebugMessage("find_key: could not find value in dictionary") # should never get here
     return ""
 
 ###################################################################################################
@@ -293,7 +324,7 @@ def calcTimerFreq(symbol, event):
 def timerMaxValue(symbol, event):
     component = symbol.getComponent()
     clock = component.getSymbolValue("TIMER1_CLOCK_FREQ")
-    unit = tmrTimerUnit[component.getSymbolValue("TIMER_UNIT")]    
+    unit = tmrTimerUnit[component.getSymbolValue("TIMER_UNIT")]
     if(clock != 0):
         resolution = unit/float(clock)
     else:
@@ -303,7 +334,7 @@ def timerMaxValue(symbol, event):
 def timerPeriodCalc(symbol, event):
     component = symbol.getComponent()
     clock = component.getSymbolValue("TIMER1_CLOCK_FREQ")
-    unit = tmrTimerUnit[component.getSymbolValue("TIMER_UNIT")]    
+    unit = tmrTimerUnit[component.getSymbolValue("TIMER_UNIT")]
     if(clock != 0):
         resolution = unit/clock
         period = (component.getSymbolValue("TIMER1_TIME_PERIOD_MS") / resolution) - 1
@@ -322,6 +353,8 @@ def onAttachmentConnected(source, target):
 
 def onAttachmentDisconnected(source, target):
     global sysTimeComponentId
+    global dvrtComponentId
+
     remoteComponent = target["component"]
     remoteID = remoteComponent.getID()
 
@@ -329,6 +362,11 @@ def onAttachmentDisconnected(source, target):
         #Reset the remote component ID to NULL
         sysTimeComponentId.setValue("")
         tmr1Sym_PERIOD_MS.setValue(0.3)
+
+    if remoteID == "dvrt":
+        dvrtComponentId.setValue("")
+        #Show Time Period and clear it
+        tmr1Sym_PERIOD_MS.clearValue()
 
 ###################################################################################################
 ########################################## Component  #############################################
@@ -346,6 +384,7 @@ def instantiateComponent(tmr1Component):
     global tmr1Sym_PERIOD_MS
     global tmr1Sym_CLOCK_FREQ
     global tmr1Sym_PR1
+    global dvrtComponentId
 
     tmr1InstanceName = tmr1Component.createStringSymbol("TMR1_INSTANCE_NAME", None)
     tmr1InstanceName.setVisible(False)
@@ -361,6 +400,7 @@ def instantiateComponent(tmr1Component):
     Database.setSymbolValue("core", tmr1InstanceName.getValue() + "_CLOCK_ENABLE", True, 1)
 
     tmr1SymInterruptMode = tmr1Component.createBooleanSymbol("TMR1_INTERRUPT_MODE", None)
+    tmr1SymInterruptMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1SymInterruptMode.setLabel("Enable Interrrupts ?")
     tmr1SymInterruptMode.setDefaultValue(True)
 
@@ -392,6 +432,7 @@ def instantiateComponent(tmr1Component):
     prescale_names = []
     _get_bitfield_names(tmr1ValGrp_T1CON_PRESCALER, prescale_names)
     tmr1Sym_T1CON_PRESCALER = tmr1Component.createKeyValueSetSymbol("TIMER1_PRE_SCALER", None)
+    tmr1Sym_T1CON_PRESCALER.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1Sym_T1CON_PRESCALER.setLabel("Select Prescaler")
     tmr1Sym_T1CON_PRESCALER.setOutputMode("Value")
     tmr1Sym_T1CON_PRESCALER.setDisplayMode("Description")
@@ -403,6 +444,7 @@ def instantiateComponent(tmr1Component):
     #Prescaler Value
     tmr1PrescalerValue = tmr1Component.createIntegerSymbol("TMR1_PRESCALER_VALUE", None)
     tmr1PrescalerValue.setVisible(False)
+    tmr1PrescalerValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1PrescalerValue.setLabel("Prescaler Value")
     tmr1PrescalerValue.setDescription("Timer1 Prescaler value")
     tmr1PrescalerValue.setDefaultValue(1)
@@ -414,6 +456,7 @@ def instantiateComponent(tmr1Component):
     tcs_names = []
     _get_bitfield_names(tmr1ValGrp_T1CON_TCS, tcs_names)
     tmr1Sym_T1CON_SOURCE_SEL = tmr1Component.createKeyValueSetSymbol("TIMER1_SRC_SEL", None)
+    tmr1Sym_T1CON_SOURCE_SEL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1Sym_T1CON_SOURCE_SEL.setLabel("Select Timer Clock Source")
     tmr1Sym_T1CON_SOURCE_SEL.setOutputMode("Value")
     tmr1Sym_T1CON_SOURCE_SEL.setDisplayMode("Description")
@@ -422,6 +465,7 @@ def instantiateComponent(tmr1Component):
     tmr1Sym_T1CON_SOURCE_SEL.setDefaultValue(find_key_value(0,tcs_names))   # internal peripheral clock
 
     tmr1Sym_EXT_CLOCK_FREQ = tmr1Component.createIntegerSymbol("TIMER1_EXT_CLOCK_FREQ", tmr1Sym_T1CON_SOURCE_SEL)
+    tmr1Sym_EXT_CLOCK_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1Sym_EXT_CLOCK_FREQ.setLabel("External Clock Frequency")
     tmr1Sym_EXT_CLOCK_FREQ.setVisible(False)
     tmr1Sym_EXT_CLOCK_FREQ.setDefaultValue(50000000)
@@ -431,6 +475,7 @@ def instantiateComponent(tmr1Component):
     tsync_names = []
     _get_bitfield_names(tmr1ValGrp_T1CON_TSYNC, tsync_names)
     tmr1Sym_T1CON_TSYNC = tmr1Component.createKeyValueSetSymbol("TIMER1_TSYNC", tmr1Sym_T1CON_SOURCE_SEL)
+    tmr1Sym_T1CON_TSYNC.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1Sym_T1CON_TSYNC.setLabel(tmr1BitField_T1CON_TSYNC.getAttribute("caption"))
     tmr1Sym_T1CON_TSYNC.setVisible(False)
     tmr1Sym_T1CON_TSYNC.setOutputMode("Value")
@@ -441,6 +486,7 @@ def instantiateComponent(tmr1Component):
     tmr1Sym_T1CON_TSYNC.setDependencies(tmr1TsyncVisible, ["TIMER1_SRC_SEL"])
 
     tmr1Sym_CLOCK_FREQ = tmr1Component.createIntegerSymbol("TIMER1_CLOCK_FREQ", None)
+    tmr1Sym_CLOCK_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1Sym_CLOCK_FREQ.setLabel("Timer1 Clock Frequency")
     tmr1Sym_CLOCK_FREQ.setVisible(True)
     tmr1Sym_CLOCK_FREQ.setReadOnly(True)
@@ -451,8 +497,9 @@ def instantiateComponent(tmr1Component):
     global tmrSym_TimerUnit
     timerUnit = ["millisecond", "microsecond", "nanosecond"]
     tmrSym_TimerUnit = tmr1Component.createComboSymbol("TIMER_UNIT", None, timerUnit)
+    tmrSym_TimerUnit.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmrSym_TimerUnit.setLabel("Timer Period Unit")
-    tmrSym_TimerUnit.setDefaultValue("millisecond")          
+    tmrSym_TimerUnit.setDefaultValue("millisecond")
 
     clock = Database.getSymbolValue("core", tmr1InstanceName.getValue() + "_CLOCK_FREQUENCY")
     if(clock != 0):
@@ -462,11 +509,12 @@ def instantiateComponent(tmr1Component):
         max = 0
 
     tmr1Sym_PERIOD_MS = tmr1Component.createFloatSymbol("TIMER1_TIME_PERIOD_MS", None)
+    tmr1Sym_PERIOD_MS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1Sym_PERIOD_MS.setLabel("Time")
     tmr1Sym_PERIOD_MS.setDefaultValue(0.3)
     tmr1Sym_PERIOD_MS.setMin(0.0)
     tmr1Sym_PERIOD_MS.setMax(max)
-    tmr1Sym_PERIOD_MS.setDependencies(timerMaxValue, ["core." + tmr1InstanceName.getValue() + "_CLOCK_FREQUENCY", 
+    tmr1Sym_PERIOD_MS.setDependencies(timerMaxValue, ["core." + tmr1InstanceName.getValue() + "_CLOCK_FREQUENCY",
         "TIMER1_CLOCK_FREQ", "TIMER_UNIT"])
 
     if clock != 0:
@@ -476,18 +524,20 @@ def instantiateComponent(tmr1Component):
 
     #Timer1 Period Register
     tmr1Sym_PR1 = tmr1Component.createLongSymbol("TIMER1_PERIOD", tmr1Sym_PERIOD_MS)
+    tmr1Sym_PR1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1Sym_PR1.setLabel("Period Register")
     tmr1Sym_PR1.setDefaultValue(long(period))
     tmr1Sym_PR1.setReadOnly(True)
     tmr1Sym_PR1.setMin(0)
     tmr1Sym_PR1.setMax(65535)
-    tmr1Sym_PR1.setDependencies(timerPeriodCalc, ["core." + tmr1InstanceName.getValue() + "_CLOCK_FREQUENCY", 
+    tmr1Sym_PR1.setDependencies(timerPeriodCalc, ["core." + tmr1InstanceName.getValue() + "_CLOCK_FREQUENCY",
         "TIMER1_TIME_PERIOD_MS", "TIMER1_CLOCK_FREQ", "TIMER_UNIT"])
 
     #timer SIDL configuration
     sidl_names = []
     _get_bitfield_names(tmr1ValGrp_T1CON_SIDL, sidl_names)
     tmr1SymField_T1CON_SIDL = tmr1Component.createKeyValueSetSymbol("TIMER1_SIDL", None)
+    tmr1SymField_T1CON_SIDL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1SymField_T1CON_SIDL.setLabel(tmr1BitField_T1CON_SIDL.getAttribute("caption"))
     tmr1SymField_T1CON_SIDL.setOutputMode( "Value" )
     tmr1SymField_T1CON_SIDL.setDisplayMode( "Description" )
@@ -499,6 +549,7 @@ def instantiateComponent(tmr1Component):
     twdis_names = []
     _get_bitfield_names(tmr1ValGrp_T1CON_TWDIS, twdis_names)
     tmr1SymField_T1CON_TWDIS = tmr1Component.createKeyValueSetSymbol("TIMER1_TWDIS", None)
+    tmr1SymField_T1CON_TWDIS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1SymField_T1CON_TWDIS.setLabel(tmr1BitField_T1CON_TWDIS.getAttribute("caption"))
     tmr1SymField_T1CON_TWDIS.setOutputMode( "Value" )
     tmr1SymField_T1CON_TWDIS.setDisplayMode( "Description" )
@@ -511,6 +562,7 @@ def instantiateComponent(tmr1Component):
     tgate_names = []
     _get_bitfield_names(tmr1ValGrp_T1CON_TGATE, tgate_names)
     tmr1SymField_T1CON_TGATE = tmr1Component.createKeyValueSetSymbol("TIMER1_TGATE", tmr1Sym_T1CON_SOURCE_SEL)
+    tmr1SymField_T1CON_TGATE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     tmr1SymField_T1CON_TGATE.setLabel(tmr1BitField_T1CON_TGATE.getAttribute("caption"))
     tmr1SymField_T1CON_TGATE.setOutputMode( "Value" )
     tmr1SymField_T1CON_TGATE.setDisplayMode( "Description" )
@@ -552,8 +604,14 @@ def instantiateComponent(tmr1Component):
 
     sysTimeComponentId = tmr1Component.createStringSymbol("SYS_TIME_COMPONENT_ID", None)
     sysTimeComponentId.setLabel("Component id")
+    sysTimeComponentId.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tmr1_00687;register:T1CON")
     sysTimeComponentId.setVisible(False)
     sysTimeComponentId.setDefaultValue("")
+
+    dvrtComponentId = tmr1Component.createStringSymbol("DVRT_COMPONENT_ID", None)
+    dvrtComponentId.setLabel("dvrt Component id")
+    dvrtComponentId.setVisible(False)
+    dvrtComponentId.setDefaultValue("")
 
     timerStartApiName = tmr1InstanceName.getValue() +  "_Start"
     timerStopApiName = tmr1InstanceName.getValue() + "_Stop "

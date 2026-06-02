@@ -21,7 +21,7 @@
 * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
 *****************************************************************************"""
 
-print("Loading Pin Manager for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading Pin Manager for " + Variables.get("__PROCESSOR"))
 import re
 import string
 
@@ -134,6 +134,9 @@ global debounceFilterEnabledByDefault
 debounceFilterEnabledByDefault = False
 global availablePinDictionary
 availablePinDictionary = {}
+## SHD: Dictionary to store symbols created for each pin
+global pinSymbolsDictionary
+pinSymbolsDictionary = dict()
 
 ##########################################################################################################################
 pin = []
@@ -176,6 +179,54 @@ global getAvailablePins
 def getAvailablePins():
     return availablePinDictionary
 
+global setPinConfigurationValue
+global getPinConfigurationValue
+global clearPinConfigurationValue
+
+def setPinConfigurationValue(pinNumber, setting, value):
+    symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+    if symbol:
+        symbol.clearValue()
+        symbol.setValue(value)
+
+    if setting == 'function':
+        symbol = pinSymbolsDictionary.get(pinNumber).get('peripheralfunction')
+        periphFnValue = value
+        if symbol:
+            if periphFnValue != "GPIO":
+                instance = value.split("_")[0]
+                module = "".join(filter(lambda x: x.isalpha(), instance))
+                pad = availablePinDictionary[str(pinNumber)]
+                query = '/avr-tools-device-file/devices/device/peripherals/module@[name=\"{}\"]/instance@[name=\"{}\"]/signals/signal@[pad=\"{}\"]'.format(module, instance, pad)
+                node = ATDF.getNode(query)
+                if node is not None:
+                    periphFnValue = node.getAttribute("function")
+
+                if periphFnValue not in pioSymChannel:
+                    periphFnValue = "Alternate"
+
+            symbol.clearValue()
+            symbol.setValue(periphFnValue)
+
+
+def getPinConfigurationValue(pinNumber, setting):
+    symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+    if symbol:
+        return symbol.getValue()
+
+def clearPinConfigurationValue(pinNumber, setting):
+    symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+    if symbol:
+        symbol.setReadOnly(True)
+        symbol.setReadOnly(False)
+        symbol.clearValue()
+
+    if setting == 'function':
+        symbol = pinSymbolsDictionary.get(pinNumber).get('peripheralfunction')
+        if symbol:
+            symbol.setReadOnly(True)
+            symbol.setReadOnly(False)
+            symbol.clearValue()
 
 def packageChange(symbol, pinout):
     global uniquePinout
@@ -258,6 +309,7 @@ def updateInputFilter(symbol, event):
 def portFunc(pin, func):
     global port_mskr
     global per_func
+
     pin_num = int(str(pin.getID()).split("PIN_")[1].split("_PIO_PIN")[0])
     port = Database.getSymbolValue("core", "PIN_" + str(pin_num) + "_PIO_CHANNEL")
     bit_pos = Database.getSymbolValue("core", "PIN_" + str(pin_num) + "_PIO_PIN")
@@ -313,7 +365,7 @@ def pinCFGR (pin, cfgr_reg):
             cfgr |= 1 << 10
         if opendrain:
             cfgr |= 1 << 14
-        if direction:
+        if direction == "Out":
             cfgr |= 1 << 8
         if interrupt:
             cfgr |= interruptValues.get(interrupt) << 24
@@ -339,7 +391,7 @@ def portLatch(pin, latch):
     port = Database.getSymbolValue("core", "PIN_" + str(pin_num) + "_PIO_CHANNEL")
     bit_pos = Database.getSymbolValue("core", "PIN_" + str(pin_num) + "_PIO_PIN")
     if port in latchValues:
-        if latch["value"]:
+        if latch["value"].lower() == 'high':
             latchValues[port] |= 1 << bit_pos
         else:
             latchValues[port] &= ~(1 << bit_pos)
@@ -420,16 +472,19 @@ else:
     Database.setSymbolValue("core",  "PIO_CLOCK_ENABLE", True)
 
 pioEnable = coreComponent.createBooleanSymbol("PIO_ENABLE", pioMenu)
+pioEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
 pioEnable.setLabel("Use PIO PLIB?")
 pioEnable.setDefaultValue(True)
 pioEnable.setReadOnly(True)
 
 pioExport = coreComponent.createBooleanSymbol("PIO_EXPORT", pioEnable)
+pioExport.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
 pioExport.setLabel("Export PIO configuration")
 pioExport.setDefaultValue(True)
 pioExport.setVisible(False)
 
 pioExportAs = coreComponent.createComboSymbol("PIO_EXPORT_AS", pioExport, ["CSV File"])
+pioExportAs.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
 pioExportAs.setLabel("Export PIO configuration as ")
 pioExportAs.setVisible(False)
 
@@ -445,6 +500,7 @@ uniquePinout = len(set(package.values()))
 packagePinCount = int(re.findall(r'\d+', package.keys()[0])[0])
 
 pioPackage = coreComponent.createComboSymbol("COMPONENT_PACKAGE", pioEnable, package.values())
+pioPackage.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
 pioPackage.setLabel("Pin Package")
 pioPackage.setReadOnly(True)
 
@@ -490,6 +546,7 @@ pinTotalPins.setDefaultValue(internalpackagePinCount)
 # that is why "pinNumber-1" is used to index the lists wherever applicable.
 for pinNumber in range(1, internalpackagePinCount + 1):
     pinIndex = pinNumber - 1
+    symbolsDict = dict()
 
     if pinNumber < packagePinCount + 1:
         currPinPosition = pin_position[pinNumber - 1]
@@ -509,23 +566,31 @@ for pinNumber in range(1, internalpackagePinCount + 1):
     pinExportName.append(pinExportSym)
 
     pinNameSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_FUNCTION_NAME", pinSym)
+    pinNameSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinNameSym.setLabel("Name")
     pinNameSym.setDefaultValue("")
     pinNameSym.setReadOnly(True)
+    symbolsDict.setdefault('name', pinNameSym)
 
     pinTypeSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_FUNCTION_TYPE", pinSym)
+    pinTypeSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinTypeSym.setLabel("Type")
+    symbolsDict.setdefault('function', pinTypeSym)
 
     pinPeriphFuncSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PERIPHERAL_FUNCTION", pinSym)
+    pinPeriphFuncSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinPeriphFuncSym.setLabel("Peripheral Selection")
     pinPeriphFuncSym.setReadOnly(True)
+    symbolsDict.setdefault('peripheralfunction', pinPeriphFuncSym)
 
     pinBitPosSym = coreComponent.createIntegerSymbol("PIN_" + str(pinNumber) + "_PIO_PIN", pinSym)
+    pinBitPosSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinBitPosSym.setLabel("Bit Position")
     pinBitPosSym.setReadOnly(True)
     pinBitPosSym.setDependencies(portFunc, ["PIN_" + str(pinNumber) + "_PERIPHERAL_FUNCTION"])
 
     pinChannelSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PIO_CHANNEL", pinSym)
+    pinChannelSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinChannelSym.setLabel("Channel")
     pinChannelSym.setReadOnly(True)
     pinChannel.append(pinChannelSym)
@@ -536,16 +601,21 @@ for pinNumber in range(1, internalpackagePinCount + 1):
         availablePinDictionary[str(pinNumber)] = currPinPad
 
     pinModeSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_MODE", pinSym)
+    pinModeSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinModeSym.setLabel("Mode")
     pinModeSym.setReadOnly(True)
 
     pinDirectionSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_DIR", pinSym)
+    pinDirectionSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinDirectionSym.setLabel("Direction")
     pinDirectionSym.setReadOnly(True)
+    symbolsDict.setdefault('direction', pinDirectionSym)
 
     pinLatchSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_LAT", pinSym)
+    pinLatchSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinLatchSym.setLabel("Initial Latch Value")
     pinLatchSym.setReadOnly(True)
+    symbolsDict.setdefault('latch', pinLatchSym)
 
     pinLatchValueSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_LAT_Value", pinSym)
     pinLatchValueSym.setReadOnly(True)
@@ -553,35 +623,48 @@ for pinNumber in range(1, internalpackagePinCount + 1):
     pinLatchValueSym.setDependencies(portLatch, ["PIN_" + str(pinNumber) + "_LAT"])
 
     pinOpenDrainSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_OD", pinSym)
+    pinOpenDrainSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinOpenDrainSym.setLabel("Open Drain")
     pinOpenDrainSym.setReadOnly(True)
+    symbolsDict.setdefault('open drain', pinOpenDrainSym)
 
     pinPullUpSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PU", pinSym)
+    pinPullUpSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinPullUpSym.setLabel("Pull Up")
     pinPullUpSym.setReadOnly(True)
+    symbolsDict.setdefault('pull up', pinPullUpSym)
 
     pinPullDownSym = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PD", pinSym)
+    pinPullDownSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinPullDownSym.setLabel("Pull Down")
     pinPullDownSym.setReadOnly(True)
+    symbolsDict.setdefault('pull down', pinPullDownSym)
 
     pinSchmitt = coreComponent.createBooleanSymbol("PIN_" + str(pinNumber) + "_ST", pinSym)
+    pinSchmitt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinSchmitt.setLabel("Schmitt Trigger")
     pinSchmitt.setReadOnly(True)
+    symbolsDict.setdefault('st', pinSchmitt)
 
     pinTrigger = coreComponent.createBooleanSymbol("PIN_" + str(pinNumber) + "_TAMPER", pinSym)
+    pinTrigger.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinTrigger.setLabel("Tamper Enable")
     pinTrigger.setReadOnly(True)
+    symbolsDict.setdefault('tamper', pinTrigger)
 
     if driveStrBit:
         pinDRV = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_DRV", pinSym)
+        pinDRV.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
         pinDRV.setLabel("Driver Strength")
         pinDRV.setOutputMode("Value")
         pinDRV.setDisplayMode("Description")
         for id in range(0,len(drvSTRVal.getChildren())):
             pinDRV.addKey(drvSTRVal.getChildren()[id].getAttribute("name"), str(drvSTRVal.getChildren()[id].getAttribute("value")) , drvSTRVal.getChildren()[id].getAttribute("caption") )
+        symbolsDict.setdefault('drv', pinDRV)
 
     if slewRateBits:
         pinSlew = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_SLEW", pinSym)
+        pinSlew.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
         pinSlew.setLabel("Slew Rate")
         pinSlew.setOutputMode("Value")
         pinSlew.setDisplayMode("Description")
@@ -589,7 +672,7 @@ for pinNumber in range(1, internalpackagePinCount + 1):
             pinSlew.addKey(slewRateVal.getChildren()[id].getAttribute("name"),
                         slewRateVal.getChildren()[id].getAttribute("value") ,
                         slewRateVal.getChildren()[id].getAttribute("caption") )
-
+        symbolsDict.setdefault('slewrate', pinSlew)
 
     # This symbol is used to map the UI manager selection to the corresponding symbol in the tree view. Will not be
     # displayed in the tree view
@@ -598,23 +681,29 @@ for pinNumber in range(1, internalpackagePinCount + 1):
     pinFilterTypeString.setReadOnly(True)
 
     pinFilter = coreComponent.createBooleanSymbol("PIN_" + str(pinNumber) + "_IFEN", pinSym)
+    pinFilter.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinFilter.setLabel("Glitch Filter Enable")
     pinFilter.setDependencies(updateInputFilter, ["PIN_" + str(pinNumber) + "_PIO_FILTER"])
     if debounceFilterEnabledByDefault:
         pinFilter.setVisible(False)
+    symbolsDict.setdefault('ifen', pinFilter)
 
     pinFilterClock = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_IFSCEN", pinSym)
+    pinFilterClock.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_CFGR")
     pinFilterClock.setLabel("Glitch filter Clock Source ")
     pinFilterClock.addKey("MCK", str(0) , "The glitch filter is able to filter glitches with a duration < tmck/2" )
     pinFilterClock.addKey("SLCK", str(1) , "The debouncing filter is able to filter pulses with a duration < tdiv_slck/2" )
     if debounceFilterEnabledByDefault:
         pinFilterClock.setVisible(False)
+    symbolsDict.setdefault('ifscen', pinFilterClock)
 
     # This symbol ID name is split and pin number is extracted and used inside "setupInterrupt" function. so be careful while changing the name of this ID.
     pinInterrupt.append(pinNumber)
     pinInterrupt[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PIO_INTERRUPT", pinSym)
+    pinInterrupt[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_IER")
     pinInterrupt[pinNumber-1].setLabel("PIO Interrupt")
     pinInterrupt[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('interrupt', pinInterrupt[pinNumber-1])
 
     # This symbol ID name is split and pin number is extracted and used inside "setupInterrupt" function. so be careful while changing the name of this ID.
     pinInterruptValue = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PIO_INTERRUPT_VAL", pinSym)
@@ -627,6 +716,9 @@ for pinNumber in range(1, internalpackagePinCount + 1):
     pincfgrValue[pinNumber-1].setReadOnly(True)
     pincfgrValue[pinNumber-1].setVisible(False)
     pincfgrValue[pinNumber-1].setDependencies(pinCFGR, ["PIN_" + str(pinNumber) + "_PD", "PIN_" + str(pinNumber) + "_PU", "PIN_" + str(pinNumber) + "_OD", "PIN_" + str(pinNumber) + "_DIR", "PIN_" + str(pinNumber) + "_PIO_INTERRUPT", "PIN_" + str(pinNumber) + "_IFSCEN", "PIN_" + str(pinNumber) + "_IFEN", "PIN_" + str(pinNumber) + "_DRV", "PIN_" + str(pinNumber) + "_SLEW", "PIN_" + str(pinNumber) + "_TAMPER", "PIN_" + str(pinNumber) + "_ST" ])
+
+    ## Add symbol to global dictionary
+    pinSymbolsDictionary.setdefault(pinNumber, symbolsDict)
 
 packageUpdate = coreComponent.createBooleanSymbol("PACKAGE_UPDATE_DUMMY", None)
 packageUpdate.setVisible(False)
@@ -685,6 +777,7 @@ portConfiguration.setLabel("PIO Registers Configuration")
 scdrNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"PIO\"]/register-group@[name=\"PIO\"]/register@[name=\"PIO_SCDR\"]")
 if scdrNode:
     pioSCLKDIV = coreComponent.createIntegerSymbol("PORT_SCLK_DIV", portConfiguration)
+    pioSCLKDIV.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pio_11264;register:PIO_SCDR")
     pioSCLKDIV.setLabel("Slow Clock Divider Selection for Debouncing")
     pioSCLKDIV.setMax(16383)
     pioSCLKDIV.setMin(0)

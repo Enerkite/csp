@@ -146,7 +146,7 @@
 </#compress>
 
 <#if TCC_CAPTURE_INTERRUPT_MODE = true>
-volatile static TCC_CALLBACK_OBJECT ${TCC_INSTANCE_NAME}_CallbackObject;
+static volatile TCC_CALLBACK_OBJECT ${TCC_INSTANCE_NAME}_CallbackObject;
 </#if>
 // *****************************************************************************
 // *****************************************************************************
@@ -218,7 +218,7 @@ void ${TCC_INSTANCE_NAME}_CaptureStop( void )
 void ${TCC_INSTANCE_NAME}_CaptureCommandSet(TCC_COMMAND command)
 {
     ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLBSET = (uint8_t)((uint32_t)command << TCC_CTRLBSET_CMD_Pos);
-    while((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY) != 0U)
+    while((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_CTRLB_Msk) == TCC_SYNCBUSY_CTRLB_Msk)
     {
         /* Wait for Write Synchronization */
     }
@@ -347,7 +347,7 @@ void __attribute__((used)) ${TCC_INSTANCE_NAME}_InterruptHandler( void )
     uint32_t status;
     /* Additional local variable to prevent MISRA C violations (Rule 13.x) */
     uintptr_t context;
-    context = ${TCC_INSTANCE_NAME}_CallbackObject.context;    
+    context = ${TCC_INSTANCE_NAME}_CallbackObject.context;
     status = ${TCC_INSTANCE_NAME}_REGS->TCC_INTFLAG;
     /* clear period interrupt */
     ${TCC_INSTANCE_NAME}_REGS->TCC_INTFLAG = TCC_INTFLAG_Msk;
@@ -362,7 +362,7 @@ void __attribute__((used)) ${TCC_INSTANCE_NAME}_InterruptHandler( void )
 <#else>
         <#if TCC_CAPTURE_OVF_INTERRUPT_MODE == true || TCC_CAPTURE_ERR_INTERRUPT_MODE == true>
             <#lt>/* Interrupt Handler */
-            <#lt>void __attribute__((used)) ${TCC_INSTANCE_NAME}_OTHER_InterruptHandler(void)
+            <#lt>void __attribute__((used)) ${TCC_INSTANCE_NAME}_${TCC_OTHER_INT_HANDLER_NAME}_InterruptHandler(void)
             <#lt>{
             <#lt>    uint32_t status;
             <#lt>    /* Additional local variable to prevent MISRA C violations (Rule 13.x) */

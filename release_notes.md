@@ -3,6 +3,549 @@
 
 # Microchip MPLAB® Harmony 3 Release Notes
 
+## CSP Release v3.25.2
+
+### New Features
+
+- None
+
+### Bug fixes and Improvements
+
+- Fix pin manager issues for MPU devices
+- Resolved compatibility issues to support both old and new DFP Packages. 
+- Added PIC32CZ-CA70 (256/384 KB) SRAM part support in harmony
+- Updated PIC32CX-SG41 DFP version to 1.6.172 in package.yml
+- Updated package.yml file to support newer dfp version of SAM9X6 and SAM9X7 projects
+- Removed OSC48M CAL value settings for PIC32CM JH00/JH01 devices
+- Added functions for PLL Ramp-up and Ramp-Down for pic32cz-ca family
+- Added trustZone pin index in port plib
+
+### Development Tools
+
+- [MPLAB® X IDE v6.30](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.10](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.4 or higher
+	
+## CSP Release v3.25.1
+
+### New Features
+
+- None
+
+### Bug fixes and Improvements
+
+- Added PIC32CZ-CA70 (256/384 KB) SRAM part support in harmony
+- Updated PIC32CZ-CA70_DFP version in package.yml
+
+### Development Tools
+
+- [MPLAB® X IDE v6.30](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.00](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.3 or higher
+	
+## CSP Release v3.25.0
+
+### New Features
+
+- **New part support**
+  - Added support for PIC32CM-PL10 family of devices
+  - Added support for PIC32WM_BZ6602 and PIC32CX_BZ66048 devices
+
+- **New Features and Enhancements**
+  - None
+
+- **Bug Fixes and Improvements**
+  - Fixed frequency calculation formula for FREQM PLIB
+  - Fixed DSWDT, CRC and CMP initialization issues
+  - Added separate EOS_InterruptHandler function in ADCHS PLIB
+  - Updated write protection mode condition in IPC PLIB
+  - Updated USART configuration error for SERCOM PLIB
+  - Updated DFLL initialization order in PIC32CM_GC_SG Clock PLIB 
+  - MISRA-C fixes
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+- [MPLAB® X IDE v6.25](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.00](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.3 or higher
+
+## CSP Release v3.24.0
+
+### New Features
+
+- **New Features and Enhancements**
+  - I3CC Support
+  - SECUMOD plib support
+
+- **Bug Fixes**
+  - MISRA-C fixes
+  - FLEXCOM bug fixes
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+- [MPLAB® X IDE v6.25](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v5.00](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.3 or higher
+
+## CSP Release v3.23.0
+
+### New Features
+
+- **New part support**
+  - Added support for PIC32WM-BW1 family of devices
+  - Added support for PIC32CK-SG 128KB RAM parts
+
+- **New Features and Enhancements**
+  - None
+
+- **Bug Fixes**
+  - Updated clock init routine of PIC32MZ_W1 device family to ensure consistent PLL locking
+  - Fixed relative path issue for RAM PLIB
+  - Updated PIC32CM-JH DFP version to 1.5.236 to fix build issues in PIC32CM-JH00 family of devices
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+For PIC32WM-BW1 family of devices:
+- [MPLAB® X IDE v6.25](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v4.60](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.6.2 or higher
+
+For all other parts:
+ - Same as v3.22.0
+
+## CSP Release v3.22.7
+
+### New Features
+
+- None
+
+### Bug fixes and Improvements
+
+- Added SAMA7D65D4G device support in harmony
+- Fixed CMSIS path issue in harmony
+- Renamed license file
+- Version dependencies for the following DFPs are updated
+  - SAMA7D65_DFP to version 1.8.85
+  - SAMA5D2_DFP to version 1.14.264
+  - PIC32CX-BZ6_DFP to version 1.3.38
+
+### Development Tools
+
+- Same as v3.22.0
+
+## CSP Release v3.22.6
+
+### New Features
+
+- None
+
+### Bug fixes and Improvements
+
+- Added SAMA7D65D5M device support in harmony
+- Updated SAMA7D65_DFP 1.7.83 version in package.yml
+
+### Development Tools
+
+- Same as v3.22.0
+
+## CSP Release v3.22.5
+
+### New Features
+
+- None
+
+### Bug fixes and Improvements
+
+- Clock UI improvements
+- Add ISO7816 and LIN support to Flexcom
+- Update SEFC, NVM and FCW flash controllers for bootloader support
+- Bug fixes in ARCH and Clock files
+
+### Development Tools
+
+- Same as v3.22.0
+
+## CSP Release v3.22.4
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Updated PIC32CZ-CA70_DFP 1.2.32 version in package.yml
+
+### Development Tools
+- Same as v3.22.0
+
+## CSP Release v3.22.3
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Added arch support for PIC32CX_BZ36 and PIC32WM_BZ36 devices
+- Updated CLOCK and GPIO PLIB for PIC32CX_BZ36 and PIC32WM_BZ36 devices
+- Fixed dummy handler build issue
+- Updated PIC32CX-BZ3_DFP 1.3.216 version in package.yml
+
+### Development Tools
+- Same as v3.22.0
+
+## CSP Release v3.22.2
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Added ETQFP064 and ETQFP100 pin diagram for PIC32CZ-CA70 and PIC32CZ-MC70 devices
+- Fixed package pinout name issue in SUPC PLIB
+- Version dependencies for the following DFPs are updated
+  - PIC32CZ-CA70_DFP to version 1.1.27
+  - PIC32CZ-MC70_DFP to version 1.1.26
+  - PIC32CM-GC00_DFP to version 1.0.27
+  - PIC32CM-SG00_DFP to version 1.0.31
+
+### Development Tools
+- Same as v3.22.0
+
+## CSP Release v3.22.1
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed MISRA-C required rule violations in NVIC and EVIC PLIBs
+
+### Development Tools
+- Same as v3.22.0
+
+## CSP Release v3.22.0
+
+### New Features
+
+- **New part support**
+  - Added support for PIC32AK GC family of devices
+  - Added support for SAMA7D65, SAMA7G54 and SAM9X7 SOM devices
+
+- **New Features and Enhancements**
+  - None
+
+- **Bug Fixes**
+  - Fix UI issues in SAM9X75 and SAM9X60 clock configurators
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  same as v3.21.0
+
+### Development Tools
+
+For PIC32AK-GC family of devices:
+- [MPLAB® X IDE v6.25](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v4.60](https://www.microchip.com/mplab/compilers) or higher
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.5.2 or higher
+
+For all other parts:
+ - Same as v3.21.0
+
+### Notes
+
+-  None
+
+## CSP Release v3.21.0
+
+### New Features
+
+- **New part support**
+  - Added support for new parts in PIC32CM JH family of microcontrollers
+  - Added support for PIC32CM-GV family of microcontrollers
+  - Added support for PIC32WM_BZ6204 part in PIC32CX-BZ6 family of microcontrollers
+
+- **New Features and Enhancements**
+  - None
+
+- **Bug Fixes**
+  - Fixed MISRA-C violation in FLEXCOM peripheral
+  - Fixed clock related issue in PIC32CZCA-80/90, PIC32CXMTSH and PIC32CM-GC/SG family of microcontrollers
+  - Updates to the Pin Manager
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+### Known Issues
+
+-  Applications created for PIC32CM-GC/SG family of microcontrollers when built with -Os optimization results in hard fault.
+
+### Development Tools
+
+- Same as CSP Release v3.20.0
+
+### Notes
+
+-  None
+
+## CSP Release v3.20.0
+
+### New Features
+
+- **New part support** - This release introduces support for
+  - PIC32CM-GC/SG family of devices
+  - PIC32CX-BZ6 and WBZ653 family of devices
+  - PIC32CZ-CA70 family of devices
+
+- **Applications**
+  - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
+
+- **New Features and Enhancements**
+  - Added MCC help for all the CSP modules. Right click on MCC configuration option of CSP component will open the relevant online datasheet page.
+  - SMBUS mode support in I2C Plib for PIC32M devices
+  - TSENS Plib support for SAMC21 and PIC32CM-MC devices
+  - Added LIN mode support in UART Plib for SAM SAM E7X/S7X/V7X devices
+  - ISO7816 Smart Card mode support in SERCOM Plib
+  - Updated SMC PLIB and NAND FLASH driver to support the SAMA5D2, SAMA7G54 and SAMA7D65 devices
+  - Bug fixes and enhancements
+
+### Known Issues
+
+-  Applications created for PIC32CZ-CA80/CA90 using csp v3.19.2 or older will require reconfiguration of pins due to change in device package type.
+-  Applications created for SAM9X75 device (used in SAM9X75 Evaluation Board) using csp v3.19.7 or older will require reconfiguration of pins due to addition of a new device package type (BGA256).
+
+### Development Tools
+
+- [MPLAB® X IDE v6.20](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v4.45](https://www.microchip.com/mplab/compilers)
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.5.1 or higher
+
+### Notes
+
+-  None
+
+## CSP Release v3.19.7
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed issues with message handling in ADC PLIBs
+
+### Development Tools
+- Same as v3.20.0-E1
+
+## CSP Release v3.20.0-E1
+
+### New Features
+
+- **New part support** - This **engineering release** adds support for
+  - PIC32CX-BZ6 and WBZ653 family of devices
+
+### Bug fixes
+
+- None
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+For PIC32CX-BZ6 and WBZ653 family of devices:
+- [MPLAB® X IDE v6.20](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v4.45](https://www.microchip.com/mplab/compilers)
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.5.1 or higher
+
+For all other parts:
+
+- Same as v3.18.0
+
+### Notes
+
+-  None
+
+## CSP Release v3.19.6
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Added PIC32CX1025SG41080 part support
+- Fixed EOC interrupt enable issue in ADCHS PLIB
+- Updated PIC32CX-SG41 DFP version in package.yml
+
+## CSP Release v3.19.5
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Updated PIC32CX-SG41 DFP version in package.yml
+
+## CSP Release v3.19.4
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed unavailable GLCK IO signals issue for PIC32CZ-CA devices
+- Updated default value of BOR Trip points FUSEs for PIC32CZ-CA devices
+- Fixed MISRA-C violations in TC PLIB and SAMG55 clock
+- Fixed PORT PIN enum code generation issue
+- Updated PIC32CZ-CA80, PIC32CZ-CA90 and PIC32CZ-CA91 version in package.yml
+
+## CSP Release v3.19.3
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed EVSYS register name in secure project for PIC32CM-LS devices
+- Fixed issue in SAMV7x pin manager UI
+- Updated PIC32CZ-CA80, PIC32CZ-CA90 and SAMR21 DFP version in package.yml
+
+## CSP Release v3.19.2
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed CLOCK, PORT PLIBs and pin configuration UI issues for PIC32CZ-CA devices
+- Added 64 pin part support for PIC32CX-SG41 device
+- Updated PIC32CX-SG41 and PIC32CZ-CA91 DFP version in package.yml
+
+## CSP Release v3.19.1
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed Clock PLIB issue for SAM9X75, PIC32CK-GC/SG and PIC32CZ-CA devices
+- Fixed ADC, PIO and TC PLIB build issue for SAM9X75 devices
+- Fixed SUPC PLIB issue for PIC32CX-MT devices
+- Updated TC, TMR, TMR1, CORETIMER, NVIC, EVIC, AIC and GIC PLIB for DVRT support
+- Updated SAM9X7, PIC32CZ-CA70 and PIC32CZ-MC70 DFP version in package.yml
+
+## CSP Release v3.19.0
+
+### New Features
+
+- **New part support** - This release introduces support for
+  - SAMA7D65
+  - WBZ451H (For example applications, Refer to PIC32CX-BZ2/WBZ451 family [csp](https://github.com/Microchip-MPLAB-Harmony/csp_apps_pic32cxbz2_wbz45) and [core](https://github.com/Microchip-MPLAB-Harmony/core_apps_pic32cxbz2_wbz45) application repositories)
+- Enhancements to ADC and PWM PLIBs for Harmony QSpin support
+
+### Bug fixes
+
+- Updated TCC PLIB to connect with Time System Service
+- Fixed baudrate issue in DBGU PLIB
+
+### Known Issues
+
+-  None
+
+### Development Tools
+
+For SAMA7D65 and WBZ451H family of devices:
+- [MPLAB® X IDE v6.20](https://www.microchip.com/mplab/mplab-x-ide) or higher
+- [MPLAB® XC32 C/C++ Compiler v4.40](https://www.microchip.com/mplab/compilers)
+- MPLAB® X IDE plug-ins:
+    - MPLAB® Code Configurator 5.5.1 or higher
+
+For all other parts:
+
+- Same as v3.18.0
+
+### Notes
+
+-  None
+
+## CSP Release v3.18.5
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed peripheral security attributes and FUSEs for PIC32CK-SG devices
+- Fixed AC, EVSYS and DMAC PLIB build issues for PIC32CK-SG devices
+- Fixed FCW and FCR read routine by adding cache invalidate operation
+
+## CSP Release v3.18.4
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Fixed general exception handler and NVM erase/write APIs for PIC32MZ-W devices.
+
+## CSP Release v3.18.3
+
+### New Features
+
+- None
+
+### Bug fixes
+
+- Forcing all MPU applications to build with ARM mode.
+
+### Notes
+
+- Version dependencies for the following DFPs are updated
+  - SAMA5D2_DFP to version 1.10.213
+
 ## CSP Release v3.18.2
 
 ### New Features
@@ -36,7 +579,7 @@
   - MPLAB Harmony provides large number of application examples to accelerate learning and reduce the development cycles for your embedded systems with reusable software components. The applications examples are moved to the [product family specific repository](apps/readme.md).
 
 - **New Features and Enhancements**
-  - For the CEC173X device 
+  - For the CEC173X device
     - Added SPI master mode support in QMSPI PLib.
     - Added SPI peripheral target (SPT) PLib support.
     - Updated SMBUS PLib to return the PEC byte to the application.

@@ -127,6 +127,7 @@ int ${SERCOM_INSTANCE_NAME}_USART_ReadByte( void );
 USART_ERROR ${SERCOM_INSTANCE_NAME}_USART_ErrorGet( void );
 
 uint32_t ${SERCOM_INSTANCE_NAME}_USART_FrequencyGet( void );
+${LIST_SERCOM_7816_H}
 
 // DOM-IGNORE-BEGIN
 #ifdef __cplusplus  // Provide C++ Compatibility

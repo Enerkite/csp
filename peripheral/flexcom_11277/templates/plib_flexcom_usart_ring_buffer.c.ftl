@@ -73,8 +73,8 @@
 #define ${FLEXCOM_INSTANCE_NAME}_USART_TX_INT_DISABLE()      USART${FLEXCOM_INSTANCE_NUMBER}_REGS->US_IDR = US_IDR_TXRDY_Msk
 #define ${FLEXCOM_INSTANCE_NAME}_USART_TX_INT_ENABLE()       USART${FLEXCOM_INSTANCE_NUMBER}_REGS->US_IER = US_IER_TXRDY_Msk
 
-volatile static uint8_t ${FLEXCOM_INSTANCE_NAME}_USART_ReadBuffer[${FLEXCOM_INSTANCE_NAME}_USART_READ_BUFFER_SIZE];
-volatile static uint8_t ${FLEXCOM_INSTANCE_NAME}_USART_WriteBuffer[${FLEXCOM_INSTANCE_NAME}_USART_WRITE_BUFFER_SIZE];
+static volatile uint8_t ${FLEXCOM_INSTANCE_NAME}_USART_ReadBuffer[${FLEXCOM_INSTANCE_NAME}_USART_READ_BUFFER_SIZE];
+static volatile uint8_t ${FLEXCOM_INSTANCE_NAME}_USART_WriteBuffer[${FLEXCOM_INSTANCE_NAME}_USART_WRITE_BUFFER_SIZE];
 
 // *****************************************************************************
 // *****************************************************************************
@@ -82,7 +82,7 @@ volatile static uint8_t ${FLEXCOM_INSTANCE_NAME}_USART_WriteBuffer[${FLEXCOM_INS
 // *****************************************************************************
 // *****************************************************************************
 
-volatile static FLEXCOM_USART_RING_BUFFER_OBJECT ${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj;
+static volatile FLEXCOM_USART_RING_BUFFER_OBJECT ${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj;
 
 void ${FLEXCOM_INSTANCE_NAME}_USART_Initialize( void )
 {
@@ -129,7 +129,7 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_Initialize( void )
     ${FLEXCOM_INSTANCE_NAME}_USART_RX_INT_ENABLE();
 }
 
-void static ${FLEXCOM_INSTANCE_NAME}_USART_ErrorClear( void )
+static void ${FLEXCOM_INSTANCE_NAME}_USART_ErrorClear( void )
 {
     USART${FLEXCOM_INSTANCE_NUMBER}_REGS->US_CR = US_CR_RSTSTA_Msk;
 
@@ -649,7 +649,7 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_ReadCallbackRegister( FLEXCOM_USART_RING_BUF
     ${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj.rdContext = context;
 }
 
-void static __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_RX_Handler( void )
+static void __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_RX_Handler( void )
 {
     uint16_t rdData = 0U;
 
@@ -676,7 +676,7 @@ void static __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_RX_Handler(
     }
 }
 
-void static __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_TX_Handler( void )
+static void __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_TX_Handler( void )
 {
     uint16_t wrByte;
 

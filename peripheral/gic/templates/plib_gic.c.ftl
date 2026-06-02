@@ -74,8 +74,8 @@ void GIC_IRQHandler(uint32_t  iarRegVal);
 void GIC_FIQHandler(uint32_t  iarRegVal);
 
 
-volatile static PPI_SPI_HANDLER gicPIVectorTable[${GIC_INTERRUPT_MAX_INDEX - 15}U];
-volatile static SGI_HANDLER gicSGIHandler;
+static volatile PPI_SPI_HANDLER gicPIVectorTable[${GIC_INTERRUPT_MAX_INDEX - 15}U];
+static volatile SGI_HANDLER gicSGIHandler;
 <#if ACTIVE_INTERRUPTS>
 
 static const struct {
@@ -225,4 +225,29 @@ void GIC_INT_IrqRestore(bool state)
         __disable_irq();
         __DMB();
     }
+}
+
+bool GIC_INT_SourceDisable( IRQn_Type source )
+{
+    bool processorStatus;
+    bool intSrcStatus;
+
+    processorStatus = GIC_INT_IrqDisable();
+
+    intSrcStatus = (GIC_GetEnableIRQ(source) != 0U);
+
+    GIC_DisableIRQ( source );
+
+    GIC_INT_IrqRestore( processorStatus );
+
+    /* return the source status */
+    return intSrcStatus;
+}
+
+void GIC_INT_SourceRestore( IRQn_Type source, bool status )
+{
+    if( status ) {
+        GIC_EnableIRQ( source );
+    }
+    return;
 }

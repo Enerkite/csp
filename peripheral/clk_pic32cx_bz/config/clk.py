@@ -38,6 +38,9 @@ global clkValGrp_OSCCON__FRCDIV
 global clkRegGrp_SPLLCON
 global CRUmoduleStart
 global clkRegGrp_OSCCON
+global clkRegGrp_UPLLCON
+global clkRegGrp_EPLLCON
+
 clkValGrp_OSCCON__SOSCEN = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/value-group@[name="OSCCON__SOSCEN"]')
 clkValGrp_OSCCON__FRCDIV = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/value-group@[name="OSCCON__FRCDIV"]')
 clkValGrp_REFO1CON__ROSEL = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/value-group@[name="REFO1CON__ROSEL"]')
@@ -45,6 +48,8 @@ clkValGrp_REFO1CON__RODIV = ATDF.getNode('/avr-tools-device-file/modules/module@
 clkValGrp_REFO1TRIM__ROTRIM = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/value-group@[name="REFO1TRIM__ROTRIM"]')
 clkRegGrp_SPLLCON = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/register-group@[name="CRU"]/register@[name="SPLLCON"]')
 clkRegGrp_OSCCON = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/register-group@[name="CRU"]/register@[name="OSCCON"]')
+clkRegGrp_UPLLCON = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/register-group@[name="CRU"]/register@[name="UPLLCON"]')
+clkRegGrp_EPLLCON = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CRU"]/register-group@[name="CRU"]/register@[name="EPLLCON"]')
 CRUmoduleStart = '/avr-tools-device-file/modules/module@[name="CRU"]'
 
 # for PLL BW selection setting for the different PLLs present
@@ -124,6 +129,7 @@ global pmdDict
 pmdDict = {}
 pmdDict_bz2 = {}
 pmdDict_bz3 = {}
+pmdDict_bz6 = {}
 
 pmdDict_bz2 =  {
 
@@ -199,6 +205,57 @@ pmdDict_bz3 =  {
         "TCC2":["3","14"],
 }
 
+pmdDict_bz6 =  {
+
+        #Peripheral : ["PMD register no", "PMD register bit no"]
+        "ZIGBEE":[], # empty list because there is no PMD bit for this peripheral. however, CLOCK_ENABLE symbol for it is still needed, hence it is made part of this dictionary
+        "BLE":[], # empty list because there is no PMD bit for this peripheral. however, CLOCK_ENABLE symbol for it is still needed, hence it is made part of this dictionary
+        "DAC":["1","5"],
+        "AC":["1","6"],
+        "ADCHS":["1","7","8", "9", "10"], # ADC has multiple PMD bits
+        #"CVD":["1","9"], #CVD is part of ADCHS itself
+        "RTC":["1", "16"],
+        "QSPI":["1","29"],
+
+        "REFO1":["2","28"],
+        "REFO2":["2","29"],
+        "REFO3":["2","30"],
+        "REFO4":["2","31"],
+        "REFO5":["2","24"],
+        "REFO6":["2","25"],
+
+        "SERCOM0_CORE":["3","0"],
+        "SERCOM1_CORE":["3","1"],
+        "SERCOM2_CORE":["3","2"],
+        "SERCOM3_CORE":["3","3"],
+        "SERCOM4_CORE":["3","4"],
+        "SERCOM5_CORE":["3","5"],
+        "SERCOM6_CORE":["3","6"],
+
+        "QEI":["3","7"],
+
+        "TC0":["3","8"],
+        "TC1":["3","9"],
+        "TC2":["3","10"],
+        "TC3":["3","11"],
+        "TC4":["3","12"],
+        "TC5":["3","13"],
+        "TC6":["3","14"],
+        "TC7":["3","15"],
+        "TC8":["3","16"],
+        "TC9":["3","17"],
+
+        "TCC0":["3","20"],
+        "TCC1":["3","21"],
+        "TCC2":["3","22"],
+
+        "USB":["3","24"],
+        "ETH":["3","25"],
+
+        "CAN0":["3","26"],
+        "CAN1":["3","27"],
+}
+
 global defaultEnablePeripheralsList
 defaultEnablePeripheralsList = ["PLVD","REFO1", "REFO2", "REFO3", "REFO4", "REFO5", "REFO6"]
 
@@ -218,6 +275,17 @@ def updateMaxFreq(symbol, event):
         symbol.setValue(250000000, 2)
 
 global _get_bitfield_names
+
+def find_set_bit_position(n):
+    """
+    Returns the zero-based position of the single set bit in a number that is a power of 2.
+
+    :param n: An integer that is a power of 2.
+    :return: Zero-based position of the set bit.
+    """
+    if n <= 0 or (n & (n - 1)) != 0:
+        print ("The number must be a positive power of 2.")
+    return n.bit_length()
 
 def _get_bitfield_names(node, outputList):
     '''
@@ -300,7 +368,7 @@ def _find_key(value, keypairs):
     for keyname, val in keypairs.items():
         if(val == str(value)):
             return keyname
-    print("_find_key: could not find value in dictionary") # should never get here
+    Log.writeDebugMessage("_find_key: could not find value in dictionary") # should never get here
     return ""
 
 global _get_default_value
@@ -732,11 +800,367 @@ def CHECK_HIGH_PLL(Fvco):
 
 global CHECK_800_1600_FVCO
 
+"""
+Finds the best configuration of FREF, REFDIV, FBDIV, and POSTDIV for a given target Fout.
+
+Parameters:
+    fout_target (float): Target output frequency (MHz).
+    fref (int): Fixed reference frequency (default 16 MHz).
+    refdiv_range (tuple): Range of REFDIV values (default (1, 4)).
+    fbdiv_ranges (dict): Dictionary defining FBDIV ranges for each REFDIV.
+    postdiv_range (tuple): Range of POSTDIV values (default (1, 63)).
+
+Returns:
+    dict: Dictionary with the best configuration and error.
+"""
+global calculate_freq
+def calculate_freq(fout_target, fref=16e6, refdiv_range=(1, 4), fbdiv_ranges={
+    1: (50, 100),
+    2: (100, 200),
+    3: (150, 300),
+    4: (200, 400)
+}, postdiv_range=(1, 63)):
+
+    best_match = None
+    best_error = float('inf')
+    best_params = None
+    error_perc = 100
+
+    # Iterate over all valid combinations of REFDIV, POSTDIV, and FBDIV
+    for refdiv in range(refdiv_range[0], refdiv_range[1] + 1):
+        fbdiv_min, fbdiv_max = fbdiv_ranges[refdiv]
+        for postdiv in range(postdiv_range[0], postdiv_range[1] + 1):
+            # Calculate the required FBDIV for the target Fout
+            fbdiv = (fout_target * refdiv * postdiv) / fref
+            fbdiv = int(round(fbdiv)) # Ensure FBDIV is an integer
+
+            # Check if FBDIV is within the valid range for this REFDIV
+            if fbdiv_min <= fbdiv <= fbdiv_max:
+                #fout_actual = (fref / refdiv) * (fbdiv / postdiv)
+                fout_actual = (((float(fref) / refdiv) * fbdiv) / postdiv)
+                error = abs(fout_target - fout_actual)
+
+                # Update best match if this configuration is closer to target Fout
+                if error < best_error:
+                    best_error = error
+                    best_match = fout_actual
+                    error_perc = (float(error) / fout_target) * 100.0
+                    best_params = (fref, refdiv, fbdiv, postdiv)
+
+                # Exit early if exact match is found
+                if error == 0:
+                    return {
+                        "target_fout": fout_target,
+                        "best_fout": best_match,
+                        "error": best_error,
+                        "error_perc": error_perc,
+                        "parameters": best_params
+                    }
+
+    return {
+        "target_fout": fout_target,
+        "best_fout": best_match,
+        "error": best_error,
+        "error_perc": error_perc,
+        "parameters": best_params
+    }
+
+"""
+Finds the best configuration of FREF, REFDIV, FBDIV, and POSTDIV for a given target Fout.
+
+Parameters:
+    fout_target (float): Target output frequency (MHz).
+    fref (int): Fixed reference frequency (default 16 MHz).
+    refdiv_range (tuple): Range of REFDIV values (default (1, 4)).
+    fbdiv_ranges (dict): Dictionary defining FBDIV ranges for each REFDIV.
+    postdiv_range (tuple): Range of POSTDIV values (default (1, 63)).
+
+Returns:
+    dict: Dictionary with the best configuration and error.
+"""
+global calculate_freq2
+def calculate_freq2(fout1_target, fout2_target, fref=16e6, refdiv_range=(1, 4), fbdiv_ranges={
+    1: (50, 100),
+    2: (100, 200),
+    3: (150, 300),
+    4: (200, 400)
+}, postdiv_range=(1, 63)):
+
+    best_match = None
+    best_error = float('inf')
+    best_params = None
+    error1_perc = 100
+    error2_perc = 100
+
+    # Iterate over all valid combinations of REFDIV and FBDIV
+    for refdiv in range(refdiv_range[0], refdiv_range[1] + 1):
+        fbdiv_min, fbdiv_max = fbdiv_ranges[refdiv]
+        for fbdiv in range(fbdiv_min, fbdiv_max + 1):
+            for postdiv1 in range(postdiv_range[0], postdiv_range[1] + 1):
+                for postdiv2 in range(postdiv_range[0], postdiv_range[1] + 1):
+                    # Calculate actual Fouts
+                    fout1_actual = (((float(fref) / refdiv) * fbdiv) / postdiv1)
+                    fout2_actual = (((float(fref) / refdiv) * fbdiv) / postdiv2)
+
+                    # Calculate total error for both targets
+                    error = abs(fout1_target - fout1_actual) + abs(fout2_target - fout2_actual)
+
+                    # Update best match if this configuration is closer to target Fouts
+                    if error < best_error:
+                        best_error = error
+                        best_match = (fout1_actual, fout2_actual)
+                        error1_perc = (abs(fout1_actual - fout1_target)/fout1_target) * 100.0
+                        error2_perc = (abs(fout2_actual - fout2_target)/fout2_target) * 100.0
+                        best_params = (fref, refdiv, fbdiv, postdiv1, postdiv2)
+
+                    # Exit early if exact match is found
+                    if error == 0:
+                        return {
+                            "fout1_target": fout1_target,
+                            "fout2_target": fout2_target,
+                            "best_fout1": fout1_actual,
+                            "best_fout2": fout2_actual,
+                            "error": best_error,
+                            "error1_perc": error1_perc,
+                            "error2_perc": error2_perc,
+                            "parameters": best_params
+                        }
+
+    return {
+        "fout1_target": fout1_target,
+        "fout2_target": fout2_target,
+        "best_fout1": best_match[0] if best_match else None,
+        "best_fout2": best_match[1] if best_match else None,
+        "error": best_error,
+        "error1_perc": error1_perc,
+        "error2_perc": error2_perc,
+        "parameters": best_params
+    }
+
+global calculate_freq_epll_upll
+global calculate_eth_pll
+global calculate_usb_pll
+
+def calculate_freq_epll_upll(symbol, event):
+    localComponent = symbol.getComponent()
+
+    if('EPLL' in event['id']):
+        fout1 = Database.getSymbolValue("core", "EPLL1_REQUESTED_FOUT")
+        fout2 = Database.getSymbolValue("core", "EPLL2_REQUESTED_FOUT")
+        epllAutoCalcErrMsgSym = localComponent.getSymbolByID("EPLL_AUTO_CALC_ERROR_MSG")
+        calculate_eth_pll(fout1, fout2, epllAutoCalcErrMsgSym)
+    else:
+        fout = event["value"]
+        upllAutoCalcErrMsgSym = localComponent.getSymbolByID("UPLL_AUTO_CALC_ERROR_MSG")
+        calculate_usb_pll(fout, upllAutoCalcErrMsgSym)
+
+def calculate_eth_pll(fout1, fout2, epllAutoCalcErrMsgSym):
+
+    pll_values_dict = calculate_freq2(fout1, fout2)
+    pllSource = 16e6
+    bwsel = ""
+
+    pll_values = pll_values_dict["parameters"]
+
+    if pll_values != None:
+
+        Database.setSymbolValue("core","EPLLCON_EPLLREFDIV_VALUE", pll_values[1])
+        Database.setSymbolValue("core","EPLLCON_EPLLFBDIV_VALUE", pll_values[2])
+        Database.setSymbolValue("core","EPLLCON_EPLLPOSTDIV1_VALUE", pll_values[3])
+        Database.setSymbolValue("core","EPLLPOSTDIV2", pll_values[4])
+
+        if pll_values[1] == 1:
+            bwsel = "1MHz"
+        else:
+            bwsel = "400KHz"
+        Database.setSymbolValue("core", "EPLLCON_EPLLBSWSEL_VALUE", bwsel, 1)
+
+        # Update the calculated frequency
+        eth_clk_freq = round(((pllSource/pll_values[1]) * pll_values[2])/pll_values[3], 0)
+        Database.setSymbolValue("core", "ETHCLK1", str(eth_clk_freq), 1)
+        Database.setSymbolValue("core","EPLL1_ERROR_PERC", str(round(pll_values_dict["error1_perc"], 3)))
+
+        eth_clk_freq = round(((pllSource/pll_values[1]) * pll_values[2])/pll_values[4], 0)
+        Database.setSymbolValue("core", "ETHCLK2", str(eth_clk_freq), 1)
+        Database.setSymbolValue("core","EPLL2_ERROR_PERC", str(round(pll_values_dict["error2_perc"], 3)))
+
+    epllAutoCalcErrMsgSym.setVisible(pll_values == None)
+
+def calculate_usb_pll(fout, upllAutoCalcErrMsgSym):
+    pll_values_dict = calculate_freq(fout)
+    pllSource = 16e6
+    bwsel = ""
+
+    pll_values = pll_values_dict["parameters"]
+
+    if pll_values != None:
+
+        Database.setSymbolValue("core","UPLLCON_UPLLREFDIV_VALUE", pll_values[1])
+        Database.setSymbolValue("core","UPLLCON_UPLLFBDIV_VALUE", pll_values[2])
+        Database.setSymbolValue("core","UPLLCON_UPLLPOSTDIV1_VALUE", pll_values[3])
+
+        if pll_values[1] == 1:
+            bwsel = "1MHz"
+        else:
+            bwsel = "400KHz"
+        Database.setSymbolValue("core", "UPLLCON_UPLLBSWSEL_VALUE", bwsel, 1)
+
+        # Update the calculated frequency
+        usb_clk_freq = round(((pllSource/pll_values[1]) * pll_values[2])/pll_values[3], 0)
+        Database.setSymbolValue("core", "USBCLK", str(usb_clk_freq), 1)
+
+        Database.setSymbolValue("core","UPLL_ERROR_PERC", str(round(pll_values_dict["error_perc"], 3)))
+
+    upllAutoCalcErrMsgSym.setVisible(pll_values == None)
+
 def CHECK_800_1600_FVCO(Fvco):
     if( (Fvco >= _800_Mhz) and (Fvco <= _1600_Mhz)):
         return True
     else:
         return False
+
+global updatePLLBwselValue
+
+def updatePLLBwselValue(refDivider, fbDivider, postDiv, sourceUsed):
+
+    value = None
+    Fref = 0
+    # The reference source clock for USB is POSC
+    Fref = 16000000
+
+    Fvco = Fref * fbDivider / refDivider
+
+    if((refDivider == 1) and (fbDivider >= 21 and fbDivider <=400)):
+        if(Fref >= _4Mhz  and Fref <  _10Mhz):
+            value = 1
+        if(Fref >= _10Mhz and Fref <  _20Mhz):
+            value = 2
+        if(Fref >= _20Mhz and Fref <  _30Mhz):
+            value = 3
+        if(Fref >= _30Mhz and Fref <  _60Mhz):
+            value = 4
+
+    elif((refDivider == 2) and (fbDivider >= 27 and fbDivider <=800)):
+        if(Fref >= _8Mhz  and Fref <  _20Mhz):
+            value = 1
+        if(Fref >= _20Mhz and Fref <  _40Mhz):
+            value = 2
+        if(Fref >= _40Mhz and Fref < _60Mhz):
+            value = 3
+        if(Fref == _60Mhz):
+            value = 4
+
+    elif((refDivider == 3) and (fbDivider >= 40 and fbDivider <=1023)):
+        if(Fref >= _12Mhz and Fref <  _30Mhz):
+            value = 1
+        if(Fref >= _30Mhz and Fref <  _60Mhz):
+            value = 2
+        if(Fref == _60Mhz):
+            value = 3
+
+    elif((refDivider == 4) and (fbDivider >= 54 and fbDivider <=1023)):
+        if(Fref >= _16Mhz and Fref <  _40Mhz):
+            value = 1
+        if(Fref >= _40Mhz and Fref <= _60Mhz):
+            value = 2
+
+    elif((refDivider == 5) and (fbDivider >= 67 and fbDivider <=1023)):
+        if(Fref >= _20Mhz and Fref <  _50Mhz):
+            value = 1
+        if(Fref >= _50Mhz and Fref <= _60Mhz):
+            value = 2
+
+    elif((refDivider == 6) and (fbDivider >= 80 and fbDivider <=1023)):
+        if(Fref >= _24Mhz and Fref <  _60Mhz):
+            value = 1
+        if(Fref == _60Mhz):
+            value = 2
+
+    elif((refDivider == 7) and (fbDivider >= 94 and fbDivider <=1023)):
+        if(Fref >= _28Mhz and Fref <=  _60Mhz):
+            value = 1
+
+    elif((refDivider == 8) and (fbDivider >= 107 and fbDivider <=1023)):
+        if(Fref >= _32Mhz and Fref <= _60Mhz):
+            value = 1
+
+    elif((refDivider == 9) and (fbDivider >= 120 and fbDivider <=1023)):
+        if(Fref >= _36Mhz and Fref <= _60Mhz):
+            value = 1
+
+    elif((refDivider == 10) and (fbDivider >= 134 and fbDivider <=1023)):
+        if(Fref >= _40Mhz and Fref <= _60Mhz):
+            value = 1
+
+    elif((refDivider == 11) and (fbDivider >= 147 and fbDivider <=1023)):
+        if(Fref >= _44Mhz and Fref <= _60Mhz):
+            value = 1
+
+    elif((refDivider == 12) and (fbDivider >= 160 and fbDivider <=1023)):
+        if(Fref >= _48Mhz and Fref <= _60Mhz):
+            value = 1
+
+    elif((refDivider == 13) and (fbDivider >= 174 and fbDivider <=1023)):
+        if(Fref >= _52Mhz and Fref <= _60Mhz):
+            value = 1
+
+    elif((refDivider == 14) and (fbDivider >= 187 and fbDivider <=1023)):
+        if(Fref >= _56Mhz and Fref <= _60Mhz):
+            value = 1
+
+    elif((refDivider == 15) and (fbDivider >= 200 and fbDivider <=1023)):
+        if(Fref == _60Mhz):
+            value = 1
+
+    if CHECK_800_1600_FVCO(Fvco) == True and value != None:
+        return value
+    else:
+        return None
+
+global bwselCB
+
+def bwselCB(symbol, event):
+    if('EPLL' in event['id']):
+        refDiv = Database.getSymbolValue("core","EPLLCON_EPLLREFDIV_VALUE")
+        fbDiv = Database.getSymbolValue("core","EPLLCON_EPLLFBDIV_VALUE")
+        postDiv = Database.getSymbolValue("core","EPLLCON_EPLLPOSTDIV1_VALUE")
+        postDiv2 = Database.getSymbolValue("core","EPLLPOSTDIV2")
+        pllSource = 16000000
+        pllBwSelSymbolID = "EPLLCON_EPLLBSWSEL_VALUE"
+        pllBypass = Database.getSymbolValue("core", "EPLLCON_EPLL_BYP_VALUE")
+        symId = epllWarningItem
+    elif(('UPLL' in event['id']) or ('OSCCON' in event['id']) or('USBPLL' in event['id'])):  # one field is part of OSCCON instead of UPLLCON
+        refDiv = Database.getSymbolValue("core","UPLLCON_UPLLREFDIV_VALUE")
+        fbDiv = Database.getSymbolValue("core","UPLLCON_UPLLFBDIV_VALUE")
+        postDiv = Database.getSymbolValue("core","UPLLCON_UPLLPOSTDIV1_VALUE")
+        pllSource = 16000000
+        pllBwSelSymbolID = "UPLLCON_UPLLBSWSEL_VALUE"
+        pllBypass = Database.getSymbolValue("core", "UPLLCON_UPLL_BYP_VALUE")
+        symId = upllWarningItem
+    bwselValue = updatePLLBwselValue(refDiv, fbDiv, postDiv, pllSource)
+    if pllBypass == "BYPASS":
+        if 'EPLL' in event['id']:
+            Database.setSymbolValue("core", "ETHCLK1", str(pllSource), 1)
+            Database.setSymbolValue("core", "ETHCLK2", str(pllSource), 1)
+        else:
+            Database.setSymbolValue("core", "USBCLK", str(pllSource), 1)
+    else:
+        if(bwselValue != None):
+            bwsel_dict = {1:"400KHz", 2:"1MHz", 3:"2MHz", 4:"3MHz"}
+            Database.setSymbolValue("core", pllBwSelSymbolID, bwsel_dict[bwselValue], 1)
+            if 'EPLL' in event['id']:
+                eth_clk_freq = ((pllSource/refDiv) * fbDiv)/postDiv
+                Database.setSymbolValue("core", "ETHCLK1", str(eth_clk_freq), 1)
+
+                eth_clk_freq = ((pllSource/refDiv) * fbDiv)/postDiv2
+                Database.setSymbolValue("core", "ETHCLK2", str(eth_clk_freq), 1)
+            else:
+                usb_clk_freq = ((pllSource/refDiv) * fbDiv)/postDiv
+                Database.setSymbolValue("core", "USBCLK", str(usb_clk_freq), 1)
+
+            symId.setVisible(False)
+        else:   # something was out of range - notify user
+            symId.setVisible(True)
 
 def updatePMDxRegValue(symbol, event):
 
@@ -793,8 +1217,10 @@ global spll3DefaultFreq
 def spll3DefaultFreq():
     if Database.getSymbolValue("core", "PRODUCT_FAMILY") == "PIC32CX_BZ2":
         return (Database.getSymbolValue("core","POSC_OUT_FREQ") * 6)
-    else: #BZ3
+    elif Database.getSymbolValue("core", "PRODUCT_FAMILY") == "PIC32CX_BZ3":#BZ3
         return (Database.getSymbolValue("core","POSC_OUT_FREQ") * 4)
+    else:#BZ6
+        return (Database.getSymbolValue("core","POSC_OUT_FREQ") * 8)
 
 global spll3OutFreqCalc
 def spll3OutFreqCalc(symbol, event):
@@ -962,6 +1388,7 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
     sym_calc_freq_menu.setLabel("Calculated Clock Frequencies")
 
     sys_clk_freq = clk_comp.createStringSymbol("SYS_CLK_FREQ", sym_calc_freq_menu)
+    sys_clk_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     sys_clk_freq.setLabel("System (CPU) Clock Frequency (Hz)")
     node = ATDF.getNode('/avr-tools-device-file/devices/device/parameters/param@[name="__SYS_DEF_FREQ"]')
     sys_clk_freq.setDefaultValue(node.getAttribute("value"))
@@ -969,19 +1396,47 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
 
     # CPU_CLOCK_FREQUENCY symbol is needed for SYS_TIME
     cpu_clk_freq = clk_comp.createStringSymbol("CPU_CLOCK_FREQUENCY", sym_calc_freq_menu)
+    cpu_clk_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     cpu_clk_freq.setLabel("CPU Clock Frequency (Hz)")
     cpu_clk_freq.setReadOnly(True)
     cpu_clk_freq.setDefaultValue(node.getAttribute("value"))
     cpu_clk_freq.setDependencies(cpuClockFreqCalc,["SYS_CLK_FREQ"])
     cpu_clk_freq.setVisible(False)
 
+    if Database.getSymbolValue("core", "EPLL_ENABLE") != None:
+
+        # output clock frequencies for this PLL - there are 2 signals generated
+        ethclkFreq1 = clk_comp.createStringSymbol('ETHCLK1', sym_calc_freq_menu)
+        ethclkFreq1.setDefaultValue('0')   # by default disabled
+        ethclkFreq1.setLabel("Ethernet Clock Frequency Output 1 (Hz)")
+        ethclkFreq1.setVisible(True)
+        ethclkFreq1.setReadOnly(True)
+
+        # output clock frequencies for this PLL - there are 2 signals generated
+        ethclkFreq2 = clk_comp.createStringSymbol('ETHCLK2', sym_calc_freq_menu)
+        ethclkFreq2.setDefaultValue('0')   # by default disabled
+        ethclkFreq2.setLabel("Ethernet Clock Frequency Output 2 (Hz)")
+        ethclkFreq2.setVisible(True)
+        ethclkFreq2.setReadOnly(True)
+
+    if Database.getSymbolValue("core", "USBPLL_ENABLE") != None:
+
+        # output clock frequency for this PLL
+        upllclkFreq = clk_comp.createStringSymbol('USBCLK', sym_calc_freq_menu)
+        upllclkFreq.setDefaultValue('0')   # by default disabled
+        upllclkFreq.setLabel("USB Clock Frequency (Hz)")
+        upllclkFreq.setVisible(True)
+        upllclkFreq.setReadOnly(True)
+
     POSC_OUT_FREQ = clk_comp.createIntegerSymbol("POSC_OUT_FREQ", sym_calc_freq_menu)
+    POSC_OUT_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     POSC_OUT_FREQ.setLabel("Primary Oscillator Output Frequency (Hz)")
     POSC_OUT_FREQ.setDefaultValue(poscOutDefaultFreq())
     POSC_OUT_FREQ.setReadOnly(True)
     POSC_OUT_FREQ.setDependencies(poscOutFreqCalc, ["CONFIG_POSCMOD", "CONFIG_SYS_CLK_CONFIG_PRIMARY_XTAL"])
 
     SOSC_OUT_FREQ = clk_comp.createIntegerSymbol("SOSC_OUT_FREQ", sym_calc_freq_menu)
+    SOSC_OUT_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     SOSC_OUT_FREQ.setLabel("Secondary Oscillator Output Frequency (Hz)")
     SOSC_OUT_FREQ.setDefaultValue(soscOutDefaultFreq())
     SOSC_OUT_FREQ.setReadOnly(True)
@@ -989,18 +1444,21 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
 
     # RFPLL frequency
     spll3_rfpll_freq = clk_comp.createIntegerSymbol("SPLL3_RFPLL_FREQ", sym_calc_freq_menu)
+    spll3_rfpll_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:SPLLCON")
     spll3_rfpll_freq.setLabel("SPLL3 Clock (RFPLL) Frequency (Hz)")
     spll3_rfpll_freq.setDefaultValue(spll3DefaultFreq())
     spll3_rfpll_freq.setReadOnly(True)
     spll3_rfpll_freq.setDependencies(spll3OutFreqCalc, ["POSC_OUT_FREQ"])
 
     spll1_clk_freq = clk_comp.createIntegerSymbol("SPLL1_FREQ", sym_calc_freq_menu)
+    spll1_clk_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:SPLLCON")
     spll1_clk_freq.setLabel("SPLL1 Clock Frequency (Hz)")
     spll1_clk_freq.setDefaultValue(spll1DefaultFreq())
     spll1_clk_freq.setReadOnly(True)
     spll1_clk_freq.setDependencies(spll1ClockFreqCalc,["SPLL3_RFPLL_FREQ","SPLLCON_SPLLPOSTDIV1_VALUE"])
 
     spll2_clk_freq = clk_comp.createIntegerSymbol("SPLL2_FREQ", sym_calc_freq_menu)
+    spll2_clk_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:SPLLCON")
     spll2_clk_freq.setLabel("SPLL2 Clock (for ADC Charge Pump) Frequency (Hz)")
     spll2_clk_freq.setDefaultValue(spll2DefaultFreq())
     spll2_clk_freq.setReadOnly(True)
@@ -1008,6 +1466,7 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
 
     # internal symbol for java to show error
     spll2_clk_max_freq = clk_comp.createIntegerSymbol("SPLL2_FREQ_MAX", sym_calc_freq_menu)
+    spll2_clk_max_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:SPLLCON")
     spll2_clk_max_freq.setLabel("SPLL2 Clock (for ADC Charge Pump) Max Frequency (Hz)")
     spll2_clk_max_freq.setDefaultValue(24000000)
     spll2_clk_max_freq.setReadOnly(True)
@@ -1015,12 +1474,14 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
 
      # internal symbol for java to show error
     spll2_clk_min_freq = clk_comp.createIntegerSymbol("SPLL2_FREQ_MIN", sym_calc_freq_menu)
+    spll2_clk_min_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:SPLLCON")
     spll2_clk_min_freq.setLabel("SPLL2 Clock (for ADC Charge Pump) Min Frequency (Hz)")
     spll2_clk_min_freq.setDefaultValue(8000000)
     spll2_clk_min_freq.setReadOnly(True)
     spll2_clk_min_freq.setVisible(False)
 
     lpclk_clk_freq = clk_comp.createIntegerSymbol("LPCLK_FREQ", sym_calc_freq_menu)
+    lpclk_clk_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     lpclk_clk_freq.setLabel("Low Power Clock (LPCLK) Frequency (Hz)")
     lpclk_clk_freq.setDefaultValue(32000)
     lpclk_clk_freq.setReadOnly(True)
@@ -1035,6 +1496,7 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
         symbolPbFreqList.append([])
         targetName = "CONFIG_SYS_CLK_PBCLK" + clkInstance + "_FREQ"
         symbolPbFreqList[index] = clk_comp.createStringSymbol(targetName, sym_calc_freq_menu)
+        symbolPbFreqList[index].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
         symbolPbFreqList[index].setLabel("Peripheral Bus Clock #"+clkInstance+" Frequency (Hz)")
         targetName = "__PB" + clkInstance + "_DEF_FREQ"
         params = ATDF.getNode('/avr-tools-device-file/devices/device/parameters')
@@ -1047,6 +1509,7 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
 
      # internal symbol for java to show error
     pbclk3_clk_max_freq = clk_comp.createIntegerSymbol("PBCLK3_FREQ_MAX", sym_calc_freq_menu)
+    pbclk3_clk_max_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     pbclk3_clk_max_freq.setLabel("PBCLK3 Max Frequency (Hz)")
     pbclk3_clk_max_freq.setDefaultValue(6400000)
     pbclk3_clk_max_freq.setReadOnly(True)
@@ -1058,6 +1521,7 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
         symbolRefoscFreqList.append([])
         targetName = "CONFIG_SYS_CLK_REFCLK"+ii+"_FREQ"
         symbolRefoscFreqList[index] = clk_comp.createStringSymbol(targetName, sym_calc_freq_menu)
+        symbolRefoscFreqList[index].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
         symbolRefoscFreqList[index].setLabel("Reference Clock #"+ii+" Frequency (Hz)")
         symbolRefoscFreqList[index].setVisible(True)
         if ii == "1":   # REFCLK1 is ON by default, so its default freq is also taken from ATDF
@@ -1070,18 +1534,21 @@ def calculated_clock_frequencies(clk_comp, clk_menu):
         index += 1
 
     wdt_clk_freq = clk_comp.createIntegerSymbol("WDT_CLOCK_FREQUENCY", sym_calc_freq_menu)
+    wdt_clk_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     wdt_clk_freq.setLabel("WDT Clock Frequency (Hz)")
     wdt_clk_freq.setDefaultValue(lprcDefaultFreq)
     wdt_clk_freq.setReadOnly(True)
     wdt_clk_freq.setDependencies(wdtClockFreqCalc,["CONFIG_WDTRMCS","SYS_CLK_FREQ"])
 
     dswdt_clk_freq = clk_comp.createIntegerSymbol("DSWDT_CLOCK_FREQUENCY", sym_calc_freq_menu)
+    dswdt_clk_freq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:DSWDTCON")
     dswdt_clk_freq.setLabel("Deep Sleep WDT Clock Frequency (Hz)")
     dswdt_clk_freq.setDefaultValue(dswdtClockDefaultFreq())
     dswdt_clk_freq.setReadOnly(True)
     dswdt_clk_freq.setDependencies(dswdtClockFreqCalc,["CONFIG_DSWDTOSC","LPCLK_FREQ", "CONFIG_VBKP_32KCSEL"])
 
     sercomSlowClockFrequency= clk_comp.createIntegerSymbol("SERCOM_SLOW_CLOCK_FREQUENCY", sym_calc_freq_menu)
+    sercomSlowClockFrequency.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     sercomSlowClockFrequency.setLabel("SERCOM Slow Clock Frequency")
     sercomSlowClockFrequency.setDefaultValue(Database.getSymbolValue("core", "LPCLK_FREQ"))
     sercomSlowClockFrequency.setReadOnly(True)
@@ -1182,6 +1649,49 @@ def updateOSCCon(symbol, event):
                 frcdivBfValSym.setValue(int(ii['keyvalbuf'][event['value']]))
     symbol.setValue(startVal,2)
 
+global updateUPLLCon
+
+def updateUPLLCon(symbol, event):
+    # updates UPLLCON register value based on any of its bitfield values changing
+    startVal = symbol.getValue()  # value for the register SPLLCON
+    for ii in upllcon_symbols:
+        if(ii['name'] == event['id'].split('UPLLCON_')[1].split('_VALUE')[0]):
+            maskval = ii['symmaskname'].getValue()
+            if(maskval.find('0x')!= -1):
+                mask = int(maskval,16)
+            else:
+                mask = int(maskval)
+            startVal &= ~mask
+            bitPosn = 0
+            while((mask & (1<<bitPosn)) == 0):
+                bitPosn += 1
+            if(len(ii['keyvalbuf']) > 0):  # bitfield which has <value-group ..> section associated with it
+                startVal |= int(ii['keyvalbuf'][event['value']]) << bitPosn
+            else:   # integer bitfield (no <value-group ..> section associated with it)
+                startVal |= int(event['value']) << bitPosn
+    symbol.setValue(startVal,2)
+
+global updateEPLLCon
+
+def updateEPLLCon(symbol, event):
+    # updates EPLLCON register value based on any of its bitfield values changing
+    startVal = symbol.getValue()  # value for the register EPLLCON
+    for ii in epllcon_symbols:
+        if(ii['name'] == event['id'].split('EPLLCON_')[1].split('_VALUE')[0]):
+            maskval = ii['symmaskname'].getValue()
+            if(maskval.find('0x')!= -1):
+                mask = int(maskval,16)
+            else:
+                mask = int(maskval)
+            startVal &= ~mask
+            bitPosn = 0
+            while((mask & (1<<bitPosn)) == 0):
+                bitPosn += 1
+            if(len(ii['keyvalbuf']) > 0):  # bitfield which has <value-group ..> section associated with it
+                startVal |= int(ii['keyvalbuf'][event['value']]) << bitPosn
+            else:   # integer bitfield (no <value-group ..> section associated with it)
+                startVal |= int(event['value']) << bitPosn
+    symbol.setValue(startVal,2)
 
 def scan_atdf_for_spllcon_fields(component, parentMenu, regNode):
     '''
@@ -1235,6 +1745,7 @@ def scan_atdf_for_spllcon_fields(component, parentMenu, regNode):
                     ii['symvaluename'].setDefaultValue(_get_default_index(clkRegGrp_SPLLCON, ii['name'], where))
                 else:   # numeric bitfield (no <value-group ..> section associated with it)
                     ii['symvaluename'] = component.createIntegerSymbol('SPLLCON_'+ii['name']+'_VALUE', parentMenu)
+                    ii['symvaluename'].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:SPLLCON")
                     ii['symvaluename'].setDefaultValue(_get_default_value(clkRegGrp_SPLLCON, ii['name'], 'None'))
                     if('min' in ii.keys()):
                         ii['symvaluename'].setMin(int(ii['min']))
@@ -1254,7 +1765,7 @@ def scan_atdf_for_spllcon_fields(component, parentMenu, regNode):
     symbolSpllconValue = component.createHexSymbol("SPLLCON_VALUE", parentMenu)
     symbolSpllconValue.setVisible(False)
     initialSpllconVal = int((clkRegGrp_SPLLCON.getAttribute('initval')),16)
-    symbolSpllconValue.setDefaultValue(initialSpllconVal)
+    symbolSpllconValue.setDefaultValue(initialSpllconVal | (1<<8))  # Setting the default value for SPLLPOSTDIV1 to 1 as the initial in ATDF is incorrect (set to 0).
     symbolSpllconValue.setDependencies(updateSPLLCon, dependencyList)
 
 def scan_atdf_for_osccon_fields(component, parentMenu, regNode):
@@ -1302,6 +1813,7 @@ def scan_atdf_for_osccon_fields(component, parentMenu, regNode):
                         ii['symvaluename'].setDependencies(item_update, [targetSym])  # update SOSCEN whenever user updates DEVCFG4:SOSCEN
                 else:   # numeric bitfield (no <value-group ..> section associated with it)
                     ii['symvaluename'] = component.createIntegerSymbol('OSCCON_'+ii['name']+'_VALUE', parentMenu)
+                    ii['symvaluename'].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
                     ii['symvaluename'].setDefaultValue(_get_default_value(clkRegGrp_OSCCON, ii['name'], 'None'))
                     if('min' in ii.keys()):
                         ii['symvaluename'].setMin(int(ii['min']))
@@ -1326,6 +1838,208 @@ def scan_atdf_for_osccon_fields(component, parentMenu, regNode):
     symbolOscconValue.setDefaultValue(initialOscconVal)
     symbolOscconValue.setDependencies(updateOSCCon, dependencyList)
     Database.setSymbolValue("core", 'OSCCON_NOSC_VALUE', "SPLL") # make the device run from SPLL after clock initialization
+
+def scan_atdf_for_epllcon_fields(component, parentMenu, regNode, enableSymbolId):
+    '''
+    This creates all the symbols for EPLLCON register, obtaining all key/value pairs from atdf file
+    and default values for them.  Also creates symbols for integer-type fields.
+    '''
+    epllconRegName = component.createStringSymbol("EPLLCON_REG", parentMenu)
+    epllconRegName.setVisible(False)
+    epllconRegName.setDefaultValue(regNode.attrib["name"])
+    global epllWarningItem
+    global epllcon_symbols
+    epllcon_symbols = [
+                        {'name':'EPLLBSWSEL', 'symmaskname':'epllcon_epllbswsel_mask', 'symvaluename':'epllcon_epllbswsel_val', 'keyvalbuf':'epllbswsel', 'visible':'True', 'min':'0', 'max':'7', 'readonly':True},
+                        {'name':'EPLLPWDN', 'symmaskname':'epllcon_epllpwdn_mask', 'symvaluename':'epllcon_epllpwdn_val', 'keyvalbuf':'epllpwdn', 'visible':'True'},
+                        {'name':'EPLLPOSTDIV1', 'symmaskname':'epllcon_epllpostdiv1_mask', 'symvaluename':'epllcon_epllpostdiv1_val', 'keyvalbuf':'epllpostdiv1', 'visible':'True', 'min':'1','max':'63'},
+                        {'name':'EPLLFLOCK', 'symmaskname':'epllcon_epllflock_mask', 'symvaluename':'epllcon_epllflock_val', 'keyvalbuf':'epllflock', 'visible':'True'},
+                        {'name':'EPLLRST', 'symmaskname':'epllcon_epllrst_mask', 'symvaluename':'epllcon_epllrst_val', 'keyvalbuf':'epllrst', 'visible':'True'},
+                        {'name':'EPLLFBDIV', 'symmaskname':'epllcon_epllfbdiv_mask', 'symvaluename':'epllcon_epllfbdiv_val', 'keyvalbuf':'epllfbdiv', 'visible':'True', 'min':'16', 'max':'1023'},
+                        {'name':'EPLLREFDIV', 'symmaskname':'epllcon_epllrefdiv_mask', 'symvaluename':'epllcon_epllrefdiv_val', 'keyvalbuf':'epllrefdiv', 'visible':'True', 'min':'1', 'max':'63'}, # no fuse for it - option made available to user here
+                        {'name':'EWPLLICLK', 'symmaskname':'ewpllcon_ewplliclk_mask', 'symvaluename':'ewpllcon_ewplliclk_val', 'keyvalbuf':'ewplliclk', 'visible':'True'},
+                        {'name':'ECLKOUTEN', 'symmaskname':'epllcon_epllclkouten_mask', 'symvaluename':'epllcon_epllclkouten_val', 'keyvalbuf':'epllclkouten', 'visible':'True'},
+                        {'name':'EPLL_BYP', 'symmaskname':'epllcon_epll_byp_mask', 'symvaluename':'epllcon_epll_byp_val', 'keyvalbuf':'epll_byp', 'visible':'True'},
+                      ]
+    dependencyList = []
+    bwselDependencyList = []
+    for bitfield_tag in regNode.iter("bitfield"):
+        for ii in epllcon_symbols: # find match to know what symbol names to use
+            if(ii['name'] == bitfield_tag.attrib["name"]):
+                ii['symmaskname'] = component.createStringSymbol('EPLLCON_'+ii['name'].upper()+'_MASK', parentMenu)
+                ii['symmaskname'].setVisible(False)
+                ii['symmaskname'].setDefaultValue(bitfield_tag.attrib["mask"])
+                ii['keyvalbuf'] = {}
+                if(bitfield_tag.get("values",None) != None):  # bitfield with <value-group ..> section associated with it
+                    where = _get_bitfield_info(CRUmoduleStart, ii['keyvalbuf'], bitfield_tag.attrib["values"])
+                    ii['symvaluename'] = component.createComboSymbol('EPLLCON_'+ii['name']+'_VALUE', parentMenu, ii['keyvalbuf'].keys())
+                    ii['symvaluename'].setDescription(where.getAttribute('caption'))
+                    ii['symvaluename'].setDefaultValue(_get_default_value(clkRegGrp_EPLLCON, ii['name'], where))
+                else:   # numeric bitfield (no <value-group ..> section associated with it)
+                    ii['symvaluename'] = component.createIntegerSymbol('EPLLCON_'+ii['name']+'_VALUE', parentMenu)
+                    ii['symvaluename'].setDefaultValue(_get_default_value(clkRegGrp_EPLLCON, ii['name'], 'None'))
+                    if('min' in ii.keys()):
+                        ii['symvaluename'].setMin(int(ii['min']))
+                    if('max' in ii.keys()):
+                        ii['symvaluename'].setMax(int(ii['max']))
+                ii['symvaluename'].setLabel(bitfield_tag.attrib['caption'])
+                if(ii['visible']=='True'):
+                    ii['symvaluename'].setDependencies(enableMenu, [enableSymbolId])  # allow "enable" dialog box of parent menu decide whether this is visible
+                else:
+                    ii['symvaluename'].setVisible(False)
+                dependencyList.append('EPLLCON_'+ii['name'].upper()+'_VALUE')
+                if((ii['name'] == 'EPLLREFDIV') or (ii['name'] == 'EPLLFBDIV') or (ii['name'] == 'EPLLPOSTDIV1') or (ii['name'] == 'EPLL_BYP')):
+                    bwselDependencyList.append('EPLLCON_'+ii['name']+'_VALUE')
+                if('readonly' in ii.keys()):
+                    ii['symvaluename'].setReadOnly(ii['readonly'])
+    # add warning display if parameter combination is outside of usable range so user can make adjustments
+    epllWarningItem = component.createMenuSymbol('EPLL_OUT_OF_RANGE', parentMenu)
+    epllWarningItem.setLabel("****REFDIV, FBDIV, source frequency combination not in usable range.  Please adjust values.****")
+    epllWarningItem.setVisible(False)
+
+    # get initial value of EPLLCON register from 'initval' field in atdf file
+    symbolEpllconValue = component.createHexSymbol("EPLLCON_VALUE", parentMenu)
+    symbolEpllconValue.setVisible(False)
+    initialEpllconVal = int((clkRegGrp_EPLLCON.getAttribute('initval')),16)
+    symbolEpllconValue.setDefaultValue(initialEpllconVal | (1<<22))     #The default value is incorrect for the EPLLREFDIV bitfield. Value of 0 is incorrect. Setting it to 1 explicitly.
+    symbolEpllconValue.setDependencies(updateEPLLCon, dependencyList)
+    node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CRU\"]/register-group@[name=\"CRU\"]/register@[name=\"APLLCON\"]")
+    if node != None:
+        ethpllpostdiv2 = component.createIntegerSymbol("EPLLPOSTDIV2", parentMenu)
+        ethpllpostdiv2.setMin(1)
+        ethpllpostdiv2.setMax(63)
+        ethpllpostdiv2.setLabel("Second Post Divide Value in between 1 and 63, value of 0 is unused")
+        ethpllpostdiv2.setVisible(True)
+        ethpllpostdiv2.setDefaultValue(int(node.getAttribute('initval'), 0))
+        ethpllpostdiv2.setDependencies(enableMenu, [enableSymbolId])
+        bwselDependencyList.append("EPLLPOSTDIV2")
+
+    # after have gone through all bitfields, add callback dependency for update of one of them:  BWSEL
+    for ii in epllcon_symbols:
+        if(ii['name'] == 'EPLLBSWSEL'):
+            ii['symvaluename'].setDependencies(bwselCB, bwselDependencyList)
+
+    Database.setSymbolValue("core", "EPLLCON_EPLLPWDN_VALUE", "PLL_ON")
+    Database.setSymbolValue("core", "EPLLCON_EPLLPOSTDIV1_VALUE", 24)
+    Database.setSymbolValue("core", "EPLLCON_EPLLFBDIV_VALUE", 75)
+    Database.setSymbolValue("core", "EPLLCON_EPLLRST_VALUE", "NO_ASSERT")
+    Database.setSymbolValue("core", "EPLLCON_EPLL_BYP_VALUE", "NOT_BYPASS")
+
+    epll1ReqFout = component.createIntegerSymbol("EPLL1_REQUESTED_FOUT", parentMenu)
+    epll1ReqFout.setLabel("Desired EPLL1 Frequency")
+    epll1ReqFout.setDefaultValue(50000000)
+    epll1ReqFout.setDependencies(calculate_freq_epll_upll, ["EPLL1_REQUESTED_FOUT"])
+
+    epll1ErrorPerc = component.createStringSymbol("EPLL1_ERROR_PERC", parentMenu)
+    epll1ErrorPerc.setLabel("EPLL1 absolute error (%)")
+    epll1ErrorPerc.setDefaultValue("0")
+
+    epll2ReqFout = component.createIntegerSymbol("EPLL2_REQUESTED_FOUT", parentMenu)
+    epll2ReqFout.setLabel("Desired EPLL2 Frequency")
+    epll2ReqFout.setDefaultValue(50000000)
+    epll2ReqFout.setDependencies(calculate_freq_epll_upll, ["EPLL2_REQUESTED_FOUT"])
+
+    epll2ErrorPerc = component.createStringSymbol("EPLL2_ERROR_PERC", parentMenu)
+    epll2ErrorPerc.setLabel("EPLL2 absolute error (%)")
+    epll2ErrorPerc.setDefaultValue("0")
+
+    epllAutoCalcErrMsg = component.createCommentSymbol("EPLL_AUTO_CALC_ERROR_MSG", parentMenu)
+    epllAutoCalcErrMsg.setLabel("EPLL1 or EPLL2 desired frequency is out of the configurable range")
+    epllAutoCalcErrMsg.setVisible(False)
+
+    calculate_eth_pll(epll1ReqFout.getValue(), epll2ReqFout.getValue(), epllAutoCalcErrMsg)
+
+
+def scan_atdf_for_upllcon_fields(component, parentMenu, regNode, enableSymbolId):
+    '''
+    This creates all the symbols for UPLLCON register, obtaining all key/value pairs from atdf file
+    and default values for them.  Also creates symbols for integer-type fields.
+    '''
+    upllconRegName = component.createStringSymbol("UPLLCON_REG", parentMenu)
+    upllconRegName.setVisible(False)
+    upllconRegName.setDefaultValue(regNode.attrib["name"])
+    global upllWarningItem
+    global upllcon_symbols
+    upllcon_symbols = [
+                        {'name':'UPLLBSWSEL', 'symmaskname':'upllcon_upllbswsel_mask', 'symvaluename':'upllcon_upllbswsel_val', 'keyvalbuf':'upllbswsel', 'visible':'True', 'min':'0', 'max':'7', 'readonly':True},
+                        {'name':'UPLLPWDN', 'symmaskname':'upllcon_upllpwdn_mask', 'symvaluename':'upllcon_upllpwdn_val', 'keyvalbuf':'upllpwdn', 'visible':'True'},
+                        {'name':'UPLLPOSTDIV1', 'symmaskname':'upllcon_upllpostdiv1_mask', 'symvaluename':'upllcon_upllpostdiv1_val', 'keyvalbuf':'upllpostdiv1', 'visible':'True', 'min':'1','max':'63'},
+                        {'name':'UPLLFLOCK', 'symmaskname':'upllcon_cf_mask', 'symvaluename':'upllcon_cf_val', 'keyvalbuf':'cf', 'visible':'True'},
+                        {'name':'UPLLRST', 'symmaskname':'upllcon_upllrst_mask', 'symvaluename':'upllcon_upllrst_val', 'keyvalbuf':'upllrst', 'visible':'True'},
+                        {'name':'UPLLFBDIV', 'symmaskname':'upllcon_upllfbdiv_mask', 'symvaluename':'upllcon_upllfbdiv_val', 'keyvalbuf':'upllfbdiv', 'visible':'True', 'min':'16', 'max':'1023'},
+                        {'name':'UPLLREFDIV', 'symmaskname':'upllcon_upllrefdiv_mask', 'symvaluename':'upllcon_upllrefdiv_val', 'keyvalbuf':'upllrefdiv', 'visible':'True', 'min':'1', 'max':'63'}, # no fuse for it - option made available to user here
+# read-only                        {'name':'ULOCK', 'symmaskname':'upllcon_wake2spd_mask', 'symvaluename':'upllcon_wake2spd_val', 'keyvalbuf':'wake2spd', 'visible':'True'},
+                        {'name':'UPLL_BYP', 'symmaskname':'upllcon_upll_byp_mask', 'symvaluename':'upllcon_upll_byp_val', 'keyvalbuf':'upll_byp', 'visible':'True'},
+                      ]
+    dependencyList = []
+    bwselDependencyList = []
+    for bitfield_tag in regNode.iter("bitfield"):
+        for ii in upllcon_symbols: # find match to know what symbol names to use
+            if(ii['name'] == bitfield_tag.attrib["name"]):
+                ii['symmaskname'] = component.createStringSymbol('UPLLCON_'+ii['name'].upper()+'_MASK', parentMenu)
+                ii['symmaskname'].setVisible(False)
+                ii['symmaskname'].setDefaultValue(bitfield_tag.attrib["mask"])
+                ii['keyvalbuf'] = {}
+                if(bitfield_tag.get("values",None) != None):  # bitfield with <value-group ..> section associated with it
+                    where = _get_bitfield_info(CRUmoduleStart, ii['keyvalbuf'], bitfield_tag.attrib["values"])
+                    ii['symvaluename'] = component.createComboSymbol('UPLLCON_'+ii['name']+'_VALUE', parentMenu, ii['keyvalbuf'].keys())
+                    ii['symvaluename'].setDescription(where.getAttribute('caption'))
+                    ii['symvaluename'].setDefaultValue(_get_default_value(clkRegGrp_UPLLCON, ii['name'], where))
+                else:   # numeric bitfield (no <value-group ..> section associated with it)
+                    ii['symvaluename'] = component.createIntegerSymbol('UPLLCON_'+ii['name']+'_VALUE', parentMenu)
+                    ii['symvaluename'].setDefaultValue(_get_default_value(clkRegGrp_UPLLCON, ii['name'], 'None'))
+                    if('min' in ii.keys()):
+                        ii['symvaluename'].setMin(int(ii['min']))
+                    if('max' in ii.keys()):
+                        ii['symvaluename'].setMax(int(ii['max']))
+                if('readonly' in ii.keys()):
+                    ii['symvaluename'].setReadOnly(ii['readonly'])
+                ii['symvaluename'].setLabel(bitfield_tag.attrib['caption'])
+                if(ii['visible']=='True'):
+                    ii['symvaluename'].setDependencies(enableMenu, [enableSymbolId])  # allow "enable" dialog box of parent menu decide whether this is visible
+                else:
+                    ii['symvaluename'].setVisible(False)
+                dependencyList.append('UPLLCON_'+ii['name'].upper()+'_VALUE')
+
+                if((ii['name'] == 'UPLLREFDIV') or (ii['name'] == 'UPLLFBDIV') or (ii['name'] == 'UPLLPOSTDIV1') or (ii['name'] == 'UPLL_BYP')):
+                    bwselDependencyList.append('UPLLCON_'+ii['name']+'_VALUE')
+    bwselDependencyList.append('OSCCON_UFRCEN_VALUE')
+    # add warning display if parameter combination is outside of usable range so user can make adjustments
+    upllWarningItem = component.createMenuSymbol('UPLL_OUT_OF_RANGE', parentMenu)
+    upllWarningItem.setLabel("****REFDIV, FBDIV, source frequency combination not in usable range.  Please adjust values.****")
+    upllWarningItem.setVisible(False)
+    # after have gone through all bitfields, add callback dependency for update of one of them:  BWSEL
+    for ii in upllcon_symbols:
+        if(ii['name'] == 'UPLLBSWSEL'):
+            ii['symvaluename'].setDependencies(bwselCB, bwselDependencyList)
+
+    # get initial value of UPLLCON register from 'initval' field in atdf file
+    symbolUpllconValue = component.createHexSymbol("UPLLCON_VALUE", parentMenu)
+    symbolUpllconValue.setVisible(False)
+    initialUpllconVal = int((clkRegGrp_UPLLCON.getAttribute('initval')),16)
+    symbolUpllconValue.setDefaultValue(initialUpllconVal)
+    symbolUpllconValue.setDependencies(updateUPLLCon, dependencyList)
+
+    Database.setSymbolValue("core", "UPLLCON_UPLLPWDN_VALUE", "PLL_ON")
+    Database.setSymbolValue("core", "UPLLCON_UPLLPOSTDIV1_VALUE", 16)
+    Database.setSymbolValue("core", "UPLLCON_UPLLFBDIV_VALUE", 96)
+    Database.setSymbolValue("core", "UPLLCON_UPLLRST_VALUE", "NO_ASSERT")
+    Database.setSymbolValue("core", "UPLLCON_UPLL_BYP_VALUE", "NOT_BYPASS")
+
+    upllReqFout = component.createIntegerSymbol("UPLL_REQUESTED_FOUT", parentMenu)
+    upllReqFout.setLabel("Desired UPLL Frequency")
+    upllReqFout.setDefaultValue(96000000)
+    upllReqFout.setDependencies(calculate_freq_epll_upll, ["UPLL_REQUESTED_FOUT"])
+
+    upllErrorPerc = component.createStringSymbol("UPLL_ERROR_PERC", parentMenu)
+    upllErrorPerc.setLabel("UPLL absolute error (%)")
+    upllErrorPerc.setDefaultValue("0")
+
+    upllAutoCalcErrMsg = component.createCommentSymbol("UPLL_AUTO_CALC_ERROR_MSG", parentMenu)
+    upllAutoCalcErrMsg.setLabel("UPLL desired frequency is out of the configurable range")
+    upllAutoCalcErrMsg.setVisible(False)
+
+    calculate_usb_pll(upllReqFout.getValue(), upllAutoCalcErrMsg)
 
 if __name__ == "__main__":
 
@@ -1368,14 +2082,12 @@ if __name__ == "__main__":
     CLK_MENU_COMMENT = coreComponent.createCommentSymbol("clkSettingsComment", SYM_CLK_MENU)
     CLK_MENU_COMMENT.setLabel("**** All settings listed here should be ideally configured using the Clock Configurator ****")
 
-    CLK_MANAGER_SELECT = coreComponent.createStringSymbol("CLK_MANAGER_PLUGIN", SYM_CLK_MENU)
-    CLK_MANAGER_SELECT.setVisible(False)
     if Database.getSymbolValue("core", "PRODUCT_FAMILY") == "PIC32CX_BZ2":
-        CLK_MANAGER_SELECT.setDefaultValue("clk_pic32cx_bz:MZClockModel")
         pmdDict = pmdDict_bz2
-    else:
-        CLK_MANAGER_SELECT.setDefaultValue("clk_pic32cx_bz:MZClockModel")
+    elif Database.getSymbolValue("core", "PRODUCT_FAMILY") == "PIC32CX_BZ3":
         pmdDict = pmdDict_bz3
+    else:
+        pmdDict = pmdDict_bz6
 
     # parse atdf file to get key parameters
     atdf_file_path = join(Variables.get("__DFP_PACK_DIR"), "atdf", Variables.get("__PROCESSOR") + ".atdf")
@@ -1415,6 +2127,22 @@ if __name__ == "__main__":
                     scan_atdf_for_spllcon_fields(coreComponent, SPLL_CFG_SETTINGS, register_tag)
                 if("OSCCON" == register_tag.attrib["name"]):
                     scan_atdf_for_osccon_fields(coreComponent, CLK_CFG_SETTINGS, register_tag)
+                if("UPLLCON" == register_tag.attrib["name"]):
+                    usbPllEnSymId = "USBPLL_ENABLE"
+                    UPLL_CFG_SETTINGS = coreComponent.createBooleanSymbol(usbPllEnSymId, CLK_CFG_SETTINGS)
+                    UPLL_CFG_SETTINGS.setLabel("Enable USB PLL")
+                    UPLL_CFG_SETTINGS.setDescription("Sets whether to have USBPLL enabled")
+                    UPLL_CFG_SETTINGS.setDefaultValue(False)
+                    UPLL_CFG_SETTINGS.setVisible(True)
+                    scan_atdf_for_upllcon_fields(coreComponent, UPLL_CFG_SETTINGS, register_tag, usbPllEnSymId)
+                if("EPLLCON" == register_tag.attrib["name"]):
+                    epllEnSymId = "EPLL_ENABLE"
+                    EPLL_CFG_SETTINGS = coreComponent.createBooleanSymbol(epllEnSymId, CLK_CFG_SETTINGS)
+                    EPLL_CFG_SETTINGS.setLabel("Enable Ethernet PLL")
+                    EPLL_CFG_SETTINGS.setDescription("Sets whether to have EPLL enabled")
+                    EPLL_CFG_SETTINGS.setDefaultValue(False)
+                    EPLL_CFG_SETTINGS.setVisible(True)
+                    scan_atdf_for_epllcon_fields(coreComponent, EPLL_CFG_SETTINGS, register_tag, epllEnSymId)
 
 
                 #looking for PB1DIV, PB2DIV, ... (for making menu entries - further down, and ftl-related symbols)
@@ -1564,6 +2292,7 @@ if __name__ == "__main__":
 
     # Hiding temperature range selection feature for now - no such specification mentioned
     TEMP_RANGE = coreComponent.createKeyValueSetSymbol("CONFIG_TEMPERATURE_RANGE", CLK_CFG_SETTINGS)
+    TEMP_RANGE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     TEMP_RANGE.setLabel("Operating Temperature Range")
     TEMP_RANGE.setDescription("Maximum allowed System Clock Frequency will depend on selected Temperature Range")
     TEMP_RANGE.setVisible(False)
@@ -1571,6 +2300,7 @@ if __name__ == "__main__":
     TEMP_RANGE.setDisplayMode("Description")
 
     max_clk_freq_for_selected_temp = coreComponent.createIntegerSymbol("MAX_CLK_FREQ_FOR_SELECTED_TEMP_RANGE", CLK_CFG_SETTINGS)
+    max_clk_freq_for_selected_temp.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     max_clk_freq_for_selected_temp.setLabel("Max System Clock Frequency (HZ) For Selected Temperature")
     max_clk_freq_for_selected_temp.setReadOnly(True)
     max_clk_freq_for_selected_temp.setVisible(False)
@@ -1587,6 +2317,7 @@ if __name__ == "__main__":
     soscen = {}
     _get_bitfield_names(clkValGrp_OSCCON__SOSCEN, soscen)
     SOSC_EN_SETTING = coreComponent.createComboSymbol("CONFIG_SYS_CLK_CONFIG_SOSCEN", CLK_CFG_SETTINGS, sorted(soscen.keys()))
+    SOSC_EN_SETTING.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     SOSC_EN_SETTING.setLabel("Secondary oscillator enable")
     SOSC_EN_SETTING.setDescription(clkValGrp_OSCCON__SOSCEN.getAttribute('caption'))
     SOSC_EN_SETTING.setVisible(False)
@@ -1632,6 +2363,7 @@ if __name__ == "__main__":
         symbolDivId = "CONFIG_SYS_CLK_PBDIV"+pbus
         labelDivVal = "Peripheral Clock Bus #"+pbus+" Divisor (1-128)"
         symbolEnName = coreComponent.createBooleanSymbol(symbolEnId, CLK_CFG_SETTINGS)
+        symbolEnName.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:PB3DIV")
         pbclkEnNameList.append(symbolEnId)
         symbolEnName.setLabel(labelEnVal)
         if(pbus=='1'):
@@ -1640,6 +2372,7 @@ if __name__ == "__main__":
 
         # PBDIV field
         symbolDivName = coreComponent.createIntegerSymbol(symbolDivId, symbolEnName)
+        symbolDivName.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:PB3DIV")
         if(pbus!='1'):  # cannot disable peripheral bus 1
             symbolDivName.setDependencies(enableMenu, [symbolEnId])
         symbolDivName.setLabel(labelDivVal)
@@ -1681,6 +2414,7 @@ if __name__ == "__main__":
 
         enSymId = "CONFIG_SYS_CLK_REFCLK"+clk+"_ENABLE"
         enSymbolList[listIndex] = coreComponent.createBooleanSymbol(enSymId, CLK_CFG_SETTINGS)
+        enSymbolList[listIndex].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFO3CON")
         enSymbolList[listIndex].setLabel("Enable Reference Clock "+clk)
         enSymbolList[listIndex].setDescription("Sets whether to have reference clock enabled")
         if clk == "1": # enable refclk1 by default as this clock will be used by peripherals by default
@@ -1693,15 +2427,13 @@ if __name__ == "__main__":
         if clk in ["1", "2", "3", "4"]: #since REFO5 and REFO6 pins are not available, remove corresponding OE symbols also
             oeSymId = "CONFIG_SYS_CLK_REFCLK"+clk+"_OE"
             oeSymbolList[listIndex] = coreComponent.createBooleanSymbol(oeSymId, enSymbolList[listIndex])
-            oeSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
+            oeSymbolList[listIndex].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFO3CON")
+            #oeSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
             oeSymbolList[listIndex].setLabel("Reference Clock "+clk+" Output Enable")
             oeSymbolList[listIndex].setDescription("Sets whether to have reference clock 1 output enable")
             oeSymbolList[listIndex].setReadOnly(False)
             oeSymbolList[listIndex].setDefaultValue(False)
-            if clk == "1": # refo1 is enabled by default, so corresponding symbols should be visible by default
-                oeSymbolList[listIndex].setVisible(True)
-            else:
-                oeSymbolList[listIndex].setVisible(False)
+            oeSymbolList[listIndex].setVisible(True)
 
         # ROSEL
         srcSymId = "CONFIG_SYS_CLK_REFCLK_SOURCE" + clk
@@ -1710,14 +2442,12 @@ if __name__ == "__main__":
         roselsrc = {}
         _get_bitfield_names(clkValGrp_REFO1CON__ROSEL, roselsrc)
         sourceSymbolList[listIndex] = coreComponent.createComboSymbol(srcSymId, enSymbolList[listIndex], sorted(roselsrc.keys()))
+        sourceSymbolList[listIndex].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFO1CON")
         sourceSymbolList[listIndex].setLabel("Reference Clock Source Select ROSEL")
         sourceSymbolList[listIndex].setDescription(clkValGrp_REFO1CON__ROSEL.getAttribute('caption'))
-        sourceSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
+        #sourceSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
         sourceSymbolList[listIndex].setDefaultValue("SPLL1")
-        if clk == "1": # refo1 is enabled by default, so corresponding symbols should be visible by default
-            sourceSymbolList[listIndex].setVisible(True)
-        else:
-            sourceSymbolList[listIndex].setVisible(False)
+        sourceSymbolList[listIndex].setVisible(True)
         symbolRoselValueList.append({'symbol':sourceSymbolList[listIndex],'index':clk})
         for ii in roselsrc:
             roselMap[ii] = roselsrc[ii]
@@ -1727,36 +2457,33 @@ if __name__ == "__main__":
         maxValue, minValue = find_max_min(clkValGrp_REFO1CON__RODIV)
         rodivSymId = "CONFIG_SYS_CLK_RODIV"+clk
         rodivSymbolList[listIndex] = coreComponent.createIntegerSymbol(rodivSymId, enSymbolList[listIndex])
+        rodivSymbolList[listIndex].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFO3CON")
         rodivSymbolList[listIndex].setLabel("Select Reference Clock Output Divider RODIV")
-        rodivSymbolList[listIndex].setDependencies(updateRODIVmin, [enSymId, srcSymId])
+        rodivSymbolList[listIndex].setDependencies(updateRODIVmin, [srcSymId])
         rodivSymbolList[listIndex].setMin(minValue)
         rodivSymbolList[listIndex].setMax(maxValue)
         rodivSymbolList[listIndex].setDefaultValue(0)
-        if clk == "1": # refo1 is enabled by default, so corresponding symbols should be visible by default
-            rodivSymbolList[listIndex].setVisible(True)
-        else:
-            rodivSymbolList[listIndex].setVisible(False)
+        rodivSymbolList[listIndex].setVisible(True)
         symbolRodivValueList.append({'symbol':rodivSymbolList[listIndex],'index':clk})
 
         # ROTRIM
         maxValue, minValue = find_max_min(clkValGrp_REFO1TRIM__ROTRIM)
         rotrimSymId = "CONFIG_SYS_CLK_ROTRIM"+clk
         rotrimSymbolList[listIndex] = coreComponent.createIntegerSymbol(rotrimSymId, enSymbolList[listIndex])
+        rotrimSymbolList[listIndex].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFO1TRIM")
         rotrimSymbolList[listIndex].setLabel("Select Reference Clock Output Trim Value ROTRIM")
-        rotrimSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
+        #rotrimSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
         rotrimSymbolList[listIndex].setMin(minValue)
         rotrimSymbolList[listIndex].setMax(maxValue)
         rotrimSymbolList[listIndex].setDefaultValue(0)
-        if clk == "1": # refo1 is enabled by default, so corresponding symbols should be visible by default
-            rotrimSymbolList[listIndex].setVisible(True)
-        else:
-            rotrimSymbolList[listIndex].setVisible(False)
+        rotrimSymbolList[listIndex].setVisible(True)
         symbolRotrimUserVal.append({'symbol':rotrimSymbolList[listIndex],'index':clk})
 
         #RSLP
         rslpSymId = "CONFIG_SYS_CLK_REFCLK_RSLP" + clk
         rslpSymbolList[listIndex] = coreComponent.createBooleanSymbol(rslpSymId, enSymbolList[listIndex])
-        rslpSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
+        rslpSymbolList[listIndex].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFO1CON")
+        #rslpSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
         rslpSymbolList[listIndex].setLabel("Reference Clock "+clk+" Run in Sleep Mode")
         rslpSymbolList[listIndex].setDescription("Sets whether to run the reference clock 1 output in sleep mode or not")
         rslpSymbolList[listIndex].setReadOnly(False)
@@ -1769,15 +2496,13 @@ if __name__ == "__main__":
         #SIDL
         sidlSymId = "CONFIG_SYS_CLK_REFCLK_SIDL" + clk
         sidlSymbolList[listIndex] = coreComponent.createBooleanSymbol(sidlSymId, enSymbolList[listIndex])
-        sidlSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
+        sidlSymbolList[listIndex].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFO1CON")
+        #sidlSymbolList[listIndex].setDependencies(enableMenu, [enSymId])
         sidlSymbolList[listIndex].setLabel("Reference Clock "+clk+" Run in Idle Mode")
         sidlSymbolList[listIndex].setDescription("Sets whether to run the reference clock 1 output in idle mode or not")
         sidlSymbolList[listIndex].setReadOnly(False)
         sidlSymbolList[listIndex].setDefaultValue(False)
-        if clk == "1": # refo1 is enabled by default, so corresponding symbols should be visible by default
-            sidlSymbolList[listIndex].setVisible(True)
-        else:
-            sidlSymbolList[listIndex].setVisible(False)
+        sidlSymbolList[listIndex].setVisible(True)
 
         # python-computed REFOxCON register setting to use in ftl file
         refconval.append([])
@@ -1800,6 +2525,7 @@ if __name__ == "__main__":
 
     # primary oscillator frequency
     POSC_IN_FREQ = coreComponent.createIntegerSymbol("CONFIG_SYS_CLK_CONFIG_PRIMARY_XTAL", CLK_CFG_SETTINGS)
+    POSC_IN_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     POSC_IN_FREQ.setLabel("Primary Oscillator Input Frequency (Hz)")
     node = ATDF.getNode('/avr-tools-device-file/devices/device/parameters/param@[name="__POSC_DEF_FREQ"]')
     POSC_IN_FREQ.setDefaultValue(int(node.getAttribute("value")))
@@ -1807,12 +2533,14 @@ if __name__ == "__main__":
 
     # secondary oscillator frequency
     SOSC_IN_FREQ = coreComponent.createIntegerSymbol("CONFIG_SYS_CLK_CONFIG_SECONDARY_XTAL", CLK_CFG_SETTINGS)
+    SOSC_IN_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:OSCCON")
     SOSC_IN_FREQ.setLabel("Secondary Oscillator Input Frequency (Hz)")
     node = ATDF.getNode('/avr-tools-device-file/devices/device/parameters/param@[name="__SOSC_DEF_FREQ"]')
     SOSC_IN_FREQ.setDefaultValue(int(node.getAttribute("value")))
 
     # REFCLKI pin frequency
     REFCLKI_IN_FREQ = coreComponent.createIntegerSymbol("CONFIG_SYS_CLK_CONFIG_REFCLKI_PIN", CLK_CFG_SETTINGS)
+    REFCLKI_IN_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:REFxCON")
     REFCLKI_IN_FREQ.setLabel("REFCLKI Input Pin Frequency (Hz)")
     node = ATDF.getNode('/avr-tools-device-file/devices/device/parameters/param@[name="__REFCLKI_DEF_FREQ"]')
     newRefclkiFreq = node.getAttribute("value")
@@ -1850,20 +2578,58 @@ if __name__ == "__main__":
     atdfContent = ElementTree.fromstring(atdfFile.read())
 
     maxGCLKId = 0
-    # parse atdf xml file to get instance name
-    # for the peripheral which has gclk id
-    for peripheral in atdfContent.iter("module"):
-        for instance in peripheral.iter("instance"):
-            for param in instance.iter("param"):
-                if "GCLK_ID" in param.attrib["name"]:
 
-                    indexID = param.attrib["value"]
-                    symbolValue = instance.attrib["name"] + param.attrib["name"].split("GCLK_ID")[1]
-                    symbolId = "GCLK_ID_" + str(indexID)
-                    indexSymbolMap[symbolId].append(symbolValue)
 
-                    if maxGCLKId < int(indexID):
-                        maxGCLKId = int(indexID)
+    if Database.getSymbolValue("core", "PRODUCT_FAMILY") == "PIC32CX_BZ6":
+        # Now update the indexSymbolMap dictionary values with CFGPCLKGENx bit masks. Must needed for PIC32CX-BZ6 devices.
+        for reg_idx in range (1,8):
+            node_str = "/avr-tools-device-file/modules/module@[name=\"CFG\"]/register-group@[name=\"CFG\"]/register@[name=\"CFGPCLKGEN{0}\"]".format(reg_idx)
+            CFGPCLKGENx_node = ATDF.getNode(node_str)
+            if CFGPCLKGENx_node != None:
+                CFGPCLKGENx_node_values = CFGPCLKGENx_node.getChildren()
+                for id in range(len(CFGPCLKGENx_node_values)):
+                    bitfield_name = CFGPCLKGENx_node_values[id].getAttribute("name")
+                    bitfield_mask = CFGPCLKGENx_node_values[id].getAttribute("mask")
+                    if bitfield_name.endswith("CD"):
+                        bitfield_name = bitfield_name[:-len("CD")]
+                        if bitfield_name.endswith("_"):
+                            bitfield_name = bitfield_name[:-1]
+                        for periph_x in bitfield_name.split("__"):
+                            bitfield_name_lst = periph_x.split("_")
+                            val = find_set_bit_position(int(bitfield_mask, 0))
+                            val = ((reg_idx - 1) * 8) + ((val/4) - 1)
+                            gclk_id = "GCLK_ID_" + str(val)
+                            if gclk_id not in indexSymbolMap:
+                                indexSymbolMap[gclk_id] = list()
+                            periph = bitfield_name_lst.pop(0)
+                            if bitfield_name_lst:
+                                for inst in bitfield_name_lst:
+                                    periph_name = periph + inst
+                                    if periph in ["EVSYS", "FREQM"]:
+                                        periph_name = periph + "_" + inst
+                                    elif periph in ["SERCOM"]:
+                                        periph_name = periph + inst + "_CORE"
+                                    indexSymbolMap[gclk_id].append(periph_name)
+                            else:
+                                indexSymbolMap[gclk_id].append(periph)
+
+                            if maxGCLKId < val:
+                                maxGCLKId = val
+    else:
+        # parse atdf xml file to get instance name
+        # for the peripheral which has gclk id
+        for peripheral in atdfContent.iter("module"):
+            for instance in peripheral.iter("instance"):
+                for param in instance.iter("param"):
+                    if "GCLK_ID" in param.attrib["name"]:
+
+                        indexID = param.attrib["value"]
+                        symbolValue = instance.attrib["name"] + param.attrib["name"].split("GCLK_ID")[1]
+                        symbolId = "GCLK_ID_" + str(indexID)
+                        indexSymbolMap[symbolId].append(symbolValue)
+
+                        if maxGCLKId < int(indexID):
+                            maxGCLKId = int(indexID)
 
     PeriGenRegCount = maxGCLKId/8 + 1
     # for FTL
@@ -1872,6 +2638,7 @@ if __name__ == "__main__":
     gclkSym_PeriGenRegCount.setDefaultValue(int(PeriGenRegCount))
 
     channelMap = {}
+    gclkIOConfiguration_UI = []
     for key in indexSymbolMap.keys():
         index=key.split("GCLK_ID_")[1]
         channelMap[int(index)]=key
@@ -1882,20 +2649,25 @@ if __name__ == "__main__":
         name = indexSymbolMap.get(key)
         name = " ".join(name)
 
+        gclkIOConfiguration_UI.append(key)
+
         #GCLK Peripheral Channel Enable
         clkSymPeripheral = coreComponent.createBooleanSymbol(key + "_CHEN", gclkPeriChannel_menu)
+        clkSymPeripheral.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN1")
         clkSymPeripheral.setLabel("Peripheral Channel " + str(index) + " Clock Enable")
         clkSymPeripheral.setDefaultValue(False)
         Gclk_Channel_CFGPCLKGEN_list.append(key + "_CHEN")
 
         #GCLK Peripheral Channel Name
         gclkSym_PERCHANNEL_NAME = coreComponent.createStringSymbol(key + "_NAME", clkSymPeripheral)
+        gclkSym_PERCHANNEL_NAME.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN1")
         gclkSym_PERCHANNEL_NAME.setLabel("Peripheral")
         gclkSym_PERCHANNEL_NAME.setReadOnly(True)
         gclkSym_PERCHANNEL_NAME.setDefaultValue(name)
 
         #Peripheral Channel Generator Selection
         gclkSym_PCHCTRL_GEN = coreComponent.createKeyValueSetSymbol(key + "_GENSEL", clkSymPeripheral)
+        gclkSym_PCHCTRL_GEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN1")
         gclkSym_PCHCTRL_GEN.setLabel("Generator Selection")
         gclkSym_PCHCTRL_GEN.setDependencies(updateGENSEL, [key + "_CHEN"])
         Gclk_Channel_CFGPCLKGEN_list.append(key + "_GENSEL")
@@ -1917,6 +2689,7 @@ if __name__ == "__main__":
         gclkSym_PCHCTRL_GEN.setDisplayMode("Key")
 
         gclkSym_PCHCTRL_FREQ = coreComponent.createIntegerSymbol(key + "_FREQ", clkSymPeripheral)
+        gclkSym_PCHCTRL_FREQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN1")
         gclkSym_PCHCTRL_FREQ.setLabel("Peripheral Channel " + str(index) + " Frequency ")
         gclkSym_PCHCTRL_FREQ.setReadOnly(True)
         gclkSym_PCHCTRL_FREQ.setDefaultValue(0)
@@ -1926,13 +2699,13 @@ if __name__ == "__main__":
 
     for i in range(1, (PeriGenRegCount + 1)):
         gclkSym_CFGPCLKGENx_REG = coreComponent.createHexSymbol("CFGPCLKGEN" + str(i) + "_REG", gclkPeriChannel_menu)
+        gclkSym_CFGPCLKGENx_REG.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN1")
         gclkSym_CFGPCLKGENx_REG.setLabel("Peripheral Clock Generetor Register" + str(i))
         gclkSym_CFGPCLKGENx_REG.setReadOnly(True)
         gclkSym_CFGPCLKGENx_REG.setVisible(False)
         gclkSym_CFGPCLKGENx_REG.setDefaultValue(0x00000000)
 
     gclkSym_CFGPCLKGENx_REG.setDependencies(setCFGPCLKGENx_Reg, Gclk_Channel_CFGPCLKGEN_list)
-
 
     peripheralList = []
     for value in indexSymbolMap.values():
@@ -1947,12 +2720,14 @@ if __name__ == "__main__":
     for name in peripheralList:
         #GCLK Peripheral Channel Enable
         clkSymExtPeripheral = coreComponent.createBooleanSymbol(name + "_CLOCK_ENABLE", peripheralClockMenu)
+        clkSymExtPeripheral.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN3")
         clkSymExtPeripheral.setLabel(name + " Clock Enable")
         clkSymExtPeripheral.setDefaultValue(False)
         triggerdepList.append(name + "_CLOCK_ENABLE") # needed to update frequency for different peripherals
         sym_peripheral_clock_enable.append(name + "_CLOCK_ENABLE") # needed for PMD manipulation
 
         clkSymExtPeripheralFreq = coreComponent.createIntegerSymbol(name + "_CLOCK_FREQUENCY", clkSymExtPeripheral)
+        clkSymExtPeripheralFreq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN3")
         clkSymExtPeripheralFreq.setLabel(name + " Clock Frequency")
         clkSymExtPeripheralFreq.setReadOnly(True)
 
@@ -1961,9 +2736,16 @@ if __name__ == "__main__":
     clockTrigger.setVisible(False)
     clockTrigger.setDependencies(clkSetup, triggerdepList)
 
+    #Combo symbol for UI to identify gclk IO configuration */
+    gclk_io_clk_ui_list_sym = coreComponent.createComboSymbol(
+                     "GCLK_IO_CLOCK_CONFIG_UI", None, gclkIOConfiguration_UI)
+    gclk_io_clk_ui_list_sym.setVisible(False)
+    #####################################################################
+
     for peripheralName, PmdReg in sorted(pmdDict.items()):
         if (peripheralName not in peripheralList) and ("REF" not in peripheralName):
             clksym_CLK_ENABLE = coreComponent.createBooleanSymbol(peripheralName + "_CLOCK_ENABLE", peripheralClockMenu)
+            clksym_CLK_ENABLE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:CFGPCLKGEN3")
             clksym_CLK_ENABLE.setLabel(peripheralName + " Clock Enable")
             if peripheralName in defaultEnablePeripheralsList:
                 clksym_CLK_ENABLE.setDefaultValue(True)
@@ -1973,12 +2755,14 @@ if __name__ == "__main__":
 
     component = clksym_CLK_ENABLE.getComponent()
     rtcClockFrequency = coreComponent.createIntegerSymbol("RTC_CLOCK_FREQUENCY", component.getSymbolByID("RTC_CLOCK_ENABLE"))
+    rtcClockFrequency.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:PMD1")
     rtcClockFrequency.setLabel("RTC Clock Frequency")
     rtcClockFrequency.setReadOnly(True)
     rtcClockFrequency.setDefaultValue(32000)
     rtcClockFrequency.setDependencies(rtcClockFreqCalc,["LPCLK_FREQ","CONFIG_VBKP_32KCSEL", "SOSC_OUT_FREQ","CONFIG_VBKP_DIVSEL","CONFIG_VBKP_1KCSEL","CONFIG_RTCNTM_CSEL"])
 
     qspiClockFrequency= coreComponent.createIntegerSymbol("QSPI_CLOCK_FREQUENCY", component.getSymbolByID("QSPI_CLOCK_ENABLE"))
+    qspiClockFrequency.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:PMD1")
     qspiClockFrequency.setLabel("QSPI Clock Frequency")
     qspiClockFrequency.setDefaultValue(0)
     qspiClockFrequency.setReadOnly(True)
@@ -1994,6 +2778,7 @@ if __name__ == "__main__":
     adchs_clock_map[3] = "SYS_CLK_FREQ"
 
     adchsClockFrequency = coreComponent.createIntegerSymbol("ADCHS_CLOCK_FREQUENCY", component.getSymbolByID("ADCHS_CLOCK_ENABLE"))
+    adchsClockFrequency.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:PMD1")
     adchsClockFrequency.setLabel("ADCHS Clock Frequency")
     adchsClockFrequency.setDefaultValue(0)
     adchsClockFrequency.setReadOnly(True)
@@ -2028,6 +2813,7 @@ if __name__ == "__main__":
 
     for i in range(1, pmdCount + 1):
         pmdxRegMaskValue = coreComponent.createHexSymbol("PMD" + str(i) + "_REG_VALUE", peripheralModuleDisableMenu)
+        pmdxRegMaskValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_bz;register:PMD1")
         pmdxRegMaskValue.setLabel("PMD" + str(i) + " Register Value")
         pmdxRegMaskValue.setDefaultValue(pmdRegDict[i])
         pmdxRegMaskValue.setReadOnly(True)
@@ -2053,7 +2839,7 @@ if __name__ == "__main__":
     CLK_SRC_FILE = coreComponent.createFileSymbol("CLK_C", None)
     if Database.getSymbolValue("core", "PRODUCT_FAMILY") == "PIC32CX_BZ2":
         CLK_SRC_FILE.setSourcePath("../peripheral/clk_pic32cx_bz/templates/plib_clk.c.ftl")
-    else: #BZ3
+    else: #BZ3, #BZ6
         CLK_SRC_FILE.setSourcePath("../peripheral/clk_pic32cx_bz/templates/plib_clk_bz3.c.ftl")
     CLK_SRC_FILE.setOutputName("plib_clk.c")
     CLK_SRC_FILE.setDestPath("/peripheral/clk/")

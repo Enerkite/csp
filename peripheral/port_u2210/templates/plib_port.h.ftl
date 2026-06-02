@@ -160,7 +160,7 @@
 </#list>
 
 /* Helper macros to get port information from the pin */
-#define GET_PORT_GROUP(pin)  ((PORT_GROUP)(PORT_BASE_ADDRESS + (0x80U * (((uint32_t)pin) >> 5U))))
+#define GET_PORT_GROUP(pin)  ((PORT_GROUP)(${PORT_REG_NAME}_BASE_ADDRESS + (0x80U * (((uint32_t)pin) >> 5U))))
 #define GET_PIN_MASK(pin)   (((uint32_t)(0x1U)) << (((uint32_t)pin) & 0x1FU))
 
 /* Named type for port group */

@@ -33,10 +33,10 @@ def updateClockFrequency(symbol, event):
 
 # Show warning when a symbol value is false
 def showCommentOnDisable(symbol, event):
-    symbol.setVisible(event["value"])
+    symbol.setVisible(not event["value"])
 
 
-# Show warning when a symbol value is zero 
+# Show warning when a symbol value is zero
 def showCommentOnZero(symbol, event):
     symbol.setVisible(event["value"] == 0)
 
@@ -66,9 +66,17 @@ def instantiateComponent(sdmmcComponent):
     Database.setSymbolValue("core", interruptHandlerLock, True)
 
     sdmmcInterrupt = sdmmcComponent.createBooleanSymbol("INTERRUPT_MODE", None)
+    sdmmcInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_NISTR")
     sdmmcInterrupt.setLabel("Interrupt Mode")
     sdmmcInterrupt.setDefaultValue(True)
     sdmmcInterrupt.setReadOnly(True)
+
+    extdw_node = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SDMMC"]/register-group@[name="SDMMC"]/'
+                 'register@[name="SDMMC_HC1R"]/bitfield@[name="EXTDW"]')
+    if extdw_node is not None:
+        emmc_prefix = sdmmcComponent.createStringSymbol("SDMMC_EMMC_PREFIX", None)
+        emmc_prefix.setVisible(False)
+        emmc_prefix.setDefaultValue(extdw_node.getAttribute("modes"))
 
     sdmmcHClk = sdmmcComponent.createIntegerSymbol("SDMMC_HCLOCK_FREQ", None)
     sdmmcHClk.setVisible(False)
@@ -76,6 +84,7 @@ def instantiateComponent(sdmmcComponent):
     sdmmcHClk.setDependencies(updateClockFrequency, ["core." + sdmmcInstanceName.getValue() + "_CLOCK_FREQUENCY"])
 
     sdmmcBaseClk = sdmmcComponent.createIntegerSymbol("SDMMC_BASECLK_FREQ", None)
+    sdmmcBaseClk.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_CCR")
     sdmmcBaseClk.setLabel("Base Clock Frequency (Hz)")
     sdmmcBaseClk.setDefaultValue(int(round(Database.getSymbolValue("core", sdmmcInstanceName.getValue() + "_BASECLK_FREQUENCY"), 3)))
     sdmmcBaseClk.setDependencies(updateClockFrequency, ["core." + sdmmcInstanceName.getValue() + "_BASECLK_FREQUENCY"])
@@ -85,8 +94,9 @@ def instantiateComponent(sdmmcComponent):
     sdmmcBaseClkSrcComment.setVisible(sdmmcBaseClk.getValue() == 0)
     sdmmcBaseClkSrcComment.setLabel("Source clock for divided clock mode is not enabled !!!")
     sdmmcBaseClkSrcComment.setDependencies(showCommentOnZero, ["SDMMC_BASECLK_FREQ"])
-    
+
     sdmmcMultClk = sdmmcComponent.createIntegerSymbol("SDMMC_MULTCLK_FREQ", None)
+    sdmmcMultClk.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_CCR")
     sdmmcMultClk.setLabel("Programmable Clock Frequency (Hz)")
     sdmmcMultClk.setReadOnly(True)
     sdmmcMultClk.setDefaultValue(int(round(Database.getSymbolValue("core", sdmmcInstanceName.getValue() + "_MULTCLK_FREQUENCY"), -3)))
@@ -116,42 +126,49 @@ def instantiateComponent(sdmmcComponent):
 
     sdmmcEMMCSupport = sdmmcComponent.createBooleanSymbol("SDCARD_EMMC_SUPPORT", None)
     sdmmcEMMCSupport.setLabel("EMMC capability")
+    sdmmcEMMCSupport.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_MC1R")
     sdmmcEMMCSupport.setReadOnly(True)
     sdmmcEMMCSupport.setVisible(False)
     sdmmcEMMCSupport.setDefaultValue(True)
 
     sdmmcCDSupport = sdmmcComponent.createBooleanSymbol("SDCARD_SDCD_SUPPORT", None)
     sdmmcCDSupport.setLabel("Card detect support available")
+    sdmmcCDSupport.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_NISTER")
     sdmmcCDSupport.setReadOnly(True)
     sdmmcCDSupport.setVisible(False)
     sdmmcCDSupport.setDefaultValue(supportCDPin)
 
     sdmmcWPSupport = sdmmcComponent.createBooleanSymbol("SDCARD_SDWP_SUPPORT", None)
     sdmmcWPSupport.setLabel("Write protect support available")
+    sdmmcWPSupport.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_PCR")
     sdmmcWPSupport.setReadOnly(True)
     sdmmcWPSupport.setVisible(False)
     sdmmcWPSupport.setDefaultValue(supportWPPin)
 
     sdmmc8BitSupport = sdmmcComponent.createBooleanSymbol("SDCARD_8BIT_SUPPORT", None)
     sdmmc8BitSupport.setLabel("8 bit bus width capability")
+    sdmmc8BitSupport.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:%NOREGISTER%")
     sdmmc8BitSupport.setReadOnly(True)
     sdmmc8BitSupport.setVisible(False)
     sdmmc8BitSupport.setDefaultValue(busWidth == 8)
 
     sdmmcRstnSupport = sdmmcComponent.createBooleanSymbol("SDCARD_RSTN_SUPPORT", None)
     sdmmcRstnSupport.setLabel("Hardware reset capability")
+    sdmmcRstnSupport.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:%NOREGISTER%")
     sdmmcRstnSupport.setReadOnly(True)
     sdmmcRstnSupport.setVisible(False)
     sdmmcRstnSupport.setDefaultValue(supportRSTNPin)
 
     sdmmcUseCD = sdmmcComponent.createBooleanSymbol("SDCARD_SDCDEN", None)
     sdmmcUseCD.setLabel("Use SD Card Detect (SDCD#) Pin")
+    sdmmcUseCD.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_NISTER")
     sdmmcUseCD.setReadOnly(True)
     sdmmcUseCD.setVisible(False)
     sdmmcUseCD.setDefaultValue(sdmmcCDSupport.getValue())
 
     sdmmcUseWP = sdmmcComponent.createBooleanSymbol("SDCARD_SDWPEN", None)
     sdmmcUseWP.setLabel("Use SD Write Protect (SDWP#) Pin")
+    sdmmcUseWP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:%NOREGISTER%")
     sdmmcUseWP.setReadOnly(True)
     sdmmcUseWP.setVisible(False)
     sdmmcUseWP.setDefaultValue(sdmmcWPSupport.getValue())
@@ -162,6 +179,7 @@ def instantiateComponent(sdmmcComponent):
     sdmmcUseEMMC.setDefaultValue(False)
 
     sdmmcDescLines = sdmmcComponent.createIntegerSymbol("SDMMC_NUM_DESCRIPTOR_LINES", None)
+    sdmmcDescLines.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sdmmc_44002;register:SDMMC_PSR")
     sdmmcDescLines.setLabel("Number of ADMA2 Descriptor Lines")
     sdmmcDescLines.setMin(1)
     sdmmcDescLines.setMax(10)
@@ -185,12 +203,13 @@ def instantiateComponent(sdmmcComponent):
     configName = Variables.get("__CONFIGURATION_NAME")
 
     sdmmcHeaderFile = sdmmcComponent.createFileSymbol("SDMMC_HEADER", None)
-    sdmmcHeaderFile.setSourcePath("../peripheral/sdmmc_44002/templates/plib_sdmmc_common.h")
+    sdmmcHeaderFile.setSourcePath("../peripheral/sdmmc_44002/templates/plib_sdmmc_common.h.ftl")
     sdmmcHeaderFile.setOutputName("plib_sdmmc_common.h")
     sdmmcHeaderFile.setDestPath("peripheral/sdmmc/")
     sdmmcHeaderFile.setProjectPath("config/" + configName + "/peripheral/sdmmc/")
     sdmmcHeaderFile.setType("HEADER")
     sdmmcHeaderFile.setOverwrite(True)
+    sdmmcHeaderFile.setMarkup(True)
 
     sdmmcHeader1File = sdmmcComponent.createFileSymbol("SDMMC_HEADER1", None)
     sdmmcHeader1File.setSourcePath("../peripheral/sdmmc_44002/templates/plib_sdmmc.h.ftl")

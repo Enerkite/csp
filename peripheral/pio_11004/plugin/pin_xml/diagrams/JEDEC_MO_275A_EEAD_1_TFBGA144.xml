@@ -3,5 +3,6 @@
 	<shape type="complex_rect" width="850" height="850">
 		<corner loc="topleft" type="notch" length="20"/>
 	</shape>
+	<shape type="string" y="-520" line="000000" val="$DEVICE_NAME" orientation="right" size="16"/>
 	<layout type="grid" pin_margin="40" pin_name_margin="0" pin_rows="12" pin_cols="12" pin_radius="11" />
 </diagram>

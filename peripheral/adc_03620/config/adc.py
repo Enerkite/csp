@@ -22,6 +22,7 @@
 * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
 *****************************************************************************"""
 import math
+import re
 
 ###################################################################################################
 ########################### Component   #################################
@@ -34,6 +35,8 @@ global earlyInterruptPresent
 global numTriggers
 global InterruptVectorSecurity
 global ADCfilesArray
+global evsys_generatorsNamesList
+global evsys_usersNamesList
 
 global defaultCore
 defaultCore = 0
@@ -56,6 +59,8 @@ adcMaxChannelsDepList = []
 adcEvsysGenCHRDYCDepList = []
 adcEvsysGenCMPDepList = []
 adcEvsysUserDepList = []
+evsys_generatorsNamesList = []
+evsys_usersNamesList = []
 
 ADC_CORCTRL_REG_DepList = []
 ADC_CHNCFG1_REG_DepList = []
@@ -73,6 +78,63 @@ ADC_CTRLD_REG_DepList = []
 ADC_CTRLC_REG_DepList = []
 ADC_CTRLA_REG_DepList = []
 ADC_CTRLD__ANLEN_DepList = []
+
+ADC_Global_InterruptNames = ["GLOBAL", "REQ0"]
+ADC_Core_InterruptNames = ["CORE1","CORE2","CORE3","CORE4","REQ1","REQ2","REQ3","REQ4"]
+
+def adcEvsysGeneratorNamesPopulate(instanceName):
+    global evsys_generatorsNamesList
+
+    generatorNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/generators")
+    generatorValues = generatorNode.getChildren()
+    for id in range(0, len(generatorNode.getChildren())):
+        if generatorValues[id].getAttribute("module-instance") == instanceName:
+            evsys_generatorsNamesList.append(generatorValues[id].getAttribute("name"))
+
+def adcEvsysUserNamesPopulate(instanceName):
+    global evsys_usersNamesList
+
+    usersNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/users")
+    usersValues = usersNode.getChildren()
+    for id in range(0, len(usersNode.getChildren())):
+        if usersValues[id].getAttribute("module-instance") == instanceName:
+            evsys_usersNamesList.append(usersValues[id].getAttribute("name"))
+
+def adcEvsysGenNameGet(genNameMatchList):
+    global evsys_generatorsNamesList
+
+    for genName in evsys_generatorsNamesList:
+        if all ( x in genName for x in genNameMatchList):
+            return genName
+
+def adcEvsysUserNameGet(usrNameMatchList):
+    global evsys_usersNamesList
+
+    for userName in evsys_usersNamesList:
+        if all ( x in userName for x in usrNameMatchList):
+            return userName
+
+def getValueGroupNode__ADC(module_name, register_group, register_name, bitfield_name , mode = None):
+    bitfield_node_path = ""
+    value_group_node = None
+
+    if mode != None:
+        bitfield_node_path = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[modes=\"{2}\",name=\"{3}\"]/bitfield@[name=\"{4}\"]".format(module_name, register_group, mode, register_name, bitfield_name)
+    else:
+         bitfield_node_path = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[name=\"{2}\"]/bitfield@[name=\"{3}\"]".format(module_name, register_group, register_name, bitfield_name)
+    bitfield_node = ATDF.getNode(bitfield_node_path)
+
+    if bitfield_node != None:
+        if bitfield_node.getAttribute("values") == None:
+            Log.writeDebugMessage(register_name + "_" + bitfield_name + "does not have value-group attribute")
+        else:
+            value_group_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"{0}\"]/value-group@[name=\"{1}\"]".format(module_name, bitfield_node.getAttribute("values")))
+            if value_group_node == None:
+                Log.writeDebugMessage("value-group = " + bitfield_node.getAttribute("values") + " not defined")
+    else:
+        Log.writeDebugMessage("bitfield_name = " + bitfield_name + " not found" )
+
+    return value_group_node
 
 def getChannel(symbol_id):
     return int(symbol_id.split("_")[4])
@@ -125,8 +187,8 @@ def conversionTimeCalculate(localComponent, n):
 
     if TQ != 0:
         TAD = 2 * (ADCDIV * TQ)
-        sample_time = (SAMC + 1.5) * TAD
-        conversion_time = (sample_time + ((SELRES + 0.5) * TAD))
+        sample_time = (SAMC + 2.0) * TAD
+        conversion_time = (sample_time + ((SELRES + 1.0) * TAD))
         conversion_time_usec = "{:.4f}".format(conversion_time*1e6 )
         conversion_freq_mhz = "{:.4f}".format(1.0/(conversion_time*1e6))
         sample_time_usec = "{:.4f}".format(sample_time*1e6 )
@@ -271,23 +333,28 @@ def coreSymVisibilityUpdate (symbol, event):
     enableCoreNSymbols(localComponent, n, event["value"])
 
 def updateAdcNVICInterrutps(symbol, event):
+    localComponent = symbol.getComponent()
     intEnable = False if event["value"] == 0 else True
 
     if symbol.getID() == "ADC_GLOBAL_NVIC_INT":
-        Database.setSymbolValue("core", "ADC_GLOBAL" + "_INTERRUPT_ENABLE", intEnable, 2)
-        Database.setSymbolValue("core", "ADC_GLOBAL" + "_INTERRUPT_HANDLER_LOCK", intEnable, 2)
+        int_name = localComponent.getSymbolValue("ADC_CORE_GLOBAL_INT_HANDLER_NAME")
+
+        Database.setSymbolValue("core", int_name + "_INTERRUPT_ENABLE", intEnable, 2)
+        Database.setSymbolValue("core", int_name + "_INTERRUPT_HANDLER_LOCK", intEnable, 2)
         if intEnable == False:
-            Database.setSymbolValue("core", "ADC_GLOBAL" + "_INTERRUPT_HANDLER", "ADC_GLOBAL" + "_Handler", 2)
+            Database.setSymbolValue("core", int_name + "_INTERRUPT_HANDLER", int_name + "_Handler", 2)
         else:
-            Database.setSymbolValue("core", "ADC_GLOBAL" + "_INTERRUPT_HANDLER", "ADC_GLOBAL" + "_InterruptHandler", 2)
+            Database.setSymbolValue("core", int_name + "_INTERRUPT_HANDLER", int_name + "_InterruptHandler", 2)
     else:
         n = getCore(symbol.getID()) + 1
-        Database.setSymbolValue("core", "ADC_CORE" + str(n) + "_INTERRUPT_ENABLE", intEnable, 2)
-        Database.setSymbolValue("core", "ADC_CORE"  + str(n) + "_INTERRUPT_HANDLER_LOCK", intEnable, 2)
+        int_name = localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_INT_HANDLER_NAME")
+
+        Database.setSymbolValue("core", int_name + "_INTERRUPT_ENABLE", intEnable, 2)
+        Database.setSymbolValue("core", int_name + "_INTERRUPT_HANDLER_LOCK", intEnable, 2)
         if intEnable == False:
-            Database.setSymbolValue("core", "ADC_CORE" + str(n) + "_INTERRUPT_HANDLER", "ADC_CORE" + str(n) + "_Handler", 2)
+            Database.setSymbolValue("core", int_name + "_INTERRUPT_HANDLER", int_name + "_Handler", 2)
         else:
-            Database.setSymbolValue("core", "ADC_CORE" + str(n) + "_INTERRUPT_HANDLER", "ADC_CORE" + str(n) + "_InterruptHandler", 2)
+            Database.setSymbolValue("core", int_name + "_INTERRUPT_HANDLER", int_name + "_InterruptHandler", 2)
 
 def updateCoreIntEnabled (symbol, event):
     global nSARCore
@@ -328,14 +395,14 @@ def updateEvctrlSTARTEI (symbol, event):
     numChannels = getNumCoreChannels(n)
 
     # Enable (ReadOnly = False) STARTEI, if either the scan trigger source is >= 5 or any core channel trigger source is >=5
-    scan_trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_STRGSRC").getSelectedValue(), 16)
+    scan_trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_STRGSRC").getSelectedValue(), 0)
 
     if (scan_trigger_src >= 5):
         isTriggerSrcEventInput = True
     else:
         for k in range(0, numChannels):
             if isChannelEnabled(localComponent, n, k) == True:
-                ch_trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 16)
+                ch_trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 0)
                 if (ch_trigger_src >= 5):
                     isTriggerSrcEventInput = True
                     break
@@ -373,6 +440,7 @@ def updateEvctrlRESRDYEO (symbol, event):
 
 def updateEvsysChrdyGeneratorSymbols (symbol, event):
     global adcInstanceName
+    global nSARCore
     localComponent = symbol.getComponent()
     n = getCore(symbol.getID())
 
@@ -384,10 +452,17 @@ def updateEvsysChrdyGeneratorSymbols (symbol, event):
     if core_enabled == True and evctrl_resrdyeo == True:
         isADC_CHRDYC_x_Active = True
 
-    Database.setSymbolValue("evsys", "GENERATOR_" + str(adcInstanceName.getValue()) + "_CHRDYC_" + str(n) + "_ACTIVE", isADC_CHRDYC_x_Active, 2)
+    if (nSARCore == 1):
+        evsysGenName = adcEvsysGenNameGet(["CHRDY"])
+    else:
+        evsysGenName = adcEvsysGenNameGet(["CHRDY", str(n)])
+
+    Database.setSymbolValue("evsys", "GENERATOR_" + evsysGenName + "_ACTIVE", isADC_CHRDYC_x_Active, 2)
 
 def updateEvsysCmpGeneratorSymbols (symbol, event):
     global adcInstanceName
+    global nSARCore
+
     localComponent = symbol.getComponent()
     n = getCore(symbol.getID())
 
@@ -399,7 +474,12 @@ def updateEvsysCmpGeneratorSymbols (symbol, event):
     if core_enabled == True and evctrl_cmpeo == True:
         isADC_CMP_x_Active = True
 
-    Database.setSymbolValue("evsys", "GENERATOR_" + str(adcInstanceName.getValue()) + "_CMP_" + str(n) + "_ACTIVE", isADC_CMP_x_Active, 2)
+    if (nSARCore == 1):
+        evsysGenName = adcEvsysGenNameGet(["CMP"])
+    else:
+        evsysGenName = adcEvsysGenNameGet(["CMP", str(n)])
+
+    Database.setSymbolValue("evsys", "GENERATOR_" + evsysGenName + "_ACTIVE", isADC_CMP_x_Active, 2)
 
 def updateEvsysUserSymbols (symbol, event):
     global adcInstanceName
@@ -417,13 +497,13 @@ def updateEvsysUserSymbols (symbol, event):
 
         if (core_enabled == True) and (evctrl_startei == True):
             # Find the trigger source of SCAN Trigger and add to the list if trigger source is set to ADC Trigger Event User 0 – 10
-            trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_STRGSRC").getSelectedValue(), 16)
+            trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_STRGSRC").getSelectedValue(), 0)
             if (trigger_src >= 5):
                 trigger_src_list.append(trigger_src-5)      #Save x in ADC_TRIGGERS_x
             # Find channels that has the trigger source set to ADC Trigger Event User 0 – 10
             for k in range(0, numChannels):
                 if localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_ENABLE") == True:
-                    trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 16)
+                    trigger_src = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 0)
                     if (trigger_src >= 5):
                         trigger_src_list.append(trigger_src-5)      #Save x in ADC_TRIGGERS_x
 
@@ -435,7 +515,8 @@ def updateEvsysUserSymbols (symbol, event):
             isADC_TRIGGERS_x_Ready = True
         else:
             isADC_TRIGGERS_x_Ready = False
-        Database.setSymbolValue("evsys", "USER_" + str(adcInstanceName.getValue()) + "_TRIGGERS_" + str(n) + "_READY", isADC_TRIGGERS_x_Ready, 2)
+        evsysUserName = adcEvsysUserNameGet(["TRIG", str(n)])
+        Database.setSymbolValue("evsys", "USER_" + evsysUserName + "_READY", isADC_TRIGGERS_x_Ready, 2)
 #---------------------------------------------------------------------------------
 def ADC_CORCTRL_REG_Update(symbol, event):
     global earlyInterruptPresent
@@ -450,7 +531,7 @@ def ADC_CORCTRL_REG_Update(symbol, event):
     if core_enabled == True:
         adcdiv = localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_CORCTRL_ADCDIV")
         strglvl = 0 if localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_CORCTRL_STRGLVL") == "Edge" else 1
-        strgsrc = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_STRGSRC").getSelectedValue(), 16)
+        strgsrc = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_STRGSRC").getSelectedValue(), 0)
         scnrtds = int(localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_CORCTRL_SCNRTDS"))
 
         if earlyInterruptPresent == True:
@@ -459,7 +540,7 @@ def ADC_CORCTRL_REG_Update(symbol, event):
         else:
             eirqovr = 0
             eis = 0
-        selres = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_SELRES").getSelectedValue(), 16)
+        selres = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CORCTRL_SELRES").getSelectedValue(), 0)
         samc = localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_CORCTRL_SAMC")
 
         corctrl_val = (adcdiv << 24) | (scnrtds << 22) | (strglvl << 21) | (strgsrc << 16) | (eirqovr << 15) | (eis << 12) | (selres << 10) | (samc)
@@ -533,7 +614,7 @@ def ADC_CHNCFG4_REG_Update(symbol, event):
     if core_enabled == True:
         for k in range(0, numChannels):
             if localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_ENABLE") == True:
-                trgsrc = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 16)
+                trgsrc = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 0)
                 chncfg4_val |= (trgsrc << (k*4))
 
     symbol.setValue(chncfg4_val)
@@ -551,7 +632,7 @@ def ADC_CHNCFG5_REG_Update(symbol, event):
     if core_enabled == True:
         for k in range(0, numChannels):
             if localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_CH_" + str(k+8) + "_ENABLE") == True:
-                trgsrc = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k+8) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 16)
+                trgsrc = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_CH_" + str(k+8) + "_CHNCFG4_5_TRGSRC").getSelectedValue(), 0)
                 chncfg5_val |= (trgsrc << (k*4))
 
     symbol.setValue(chncfg5_val)
@@ -609,7 +690,7 @@ def ADC_FLTCTRL_REG_Update(symbol, event):
         fltchnid = localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_FLTCTRL_FLTCHNID")
         flten = int(localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_FLTCTRL_FLTEN"))
         fmode = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_FLTCTRL_FMODE").getSelectedValue())
-        ovrsam = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_FLTCTRL_OVRSAM").getSelectedValue(), 16)
+        ovrsam = int(localComponent.getSymbolByID("ADC_CORE_" + str(n) + "_FLTCTRL_OVRSAM").getSelectedValue(), 0)
 
         if flten == 1:
             fltctrl_val = (fltchnid << 10) | (flten << 8) | (fmode << 3) | (ovrsam)
@@ -646,7 +727,7 @@ def ADC_PFFCTRL_REG_Update (symbol, event):
     pffctrl_val = 0
     pffcr = 0
 
-    pffrdydma = int(localComponent.getSymbolByID("ADC_GLOBAL_PFFCTRL_PFFRDYDMA").getSelectedValue(), 16)
+    pffrdydma = int(localComponent.getSymbolByID("ADC_GLOBAL_PFFCTRL_PFFRDYDMA").getSelectedValue(), 0)
     for n in range(0, nSARCore):
         if localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_ENABLE") == True:
             pffcr |= int(localComponent.getSymbolValue("ADC_CORE_" + str(n) + "_PFFCTRL_PFFCR")) << n
@@ -684,7 +765,7 @@ def ADC_CTRLD_REG_Update (symbol, event):
 
     ctrld_val = 0
 
-    vrefsel = int(localComponent.getSymbolByID("ADC_GLOBAL_CTRLD_VREFSEL").getSelectedValue(), 16)
+    vrefsel = int(localComponent.getSymbolByID("ADC_GLOBAL_CTRLD_VREFSEL").getSelectedValue(), 0)
     wkupexp = localComponent.getSymbolValue("ADC_GLOBAL_CTRLD_WKUPEXP")
     clkdiv = localComponent.getSymbolValue("ADC_GLOBAL_CTRLD_CTLCKDIV")
 
@@ -699,7 +780,7 @@ def ADC_CTRLC_REG_Update (symbol, event):
     ctrlc_val = 0
 
     if (localComponent.getSymbolValue("ADC_GLOBAL_CTRLC_COREINTERLEAVED") != None):
-        coreinterleaved = int(localComponent.getSymbolByID("ADC_GLOBAL_CTRLC_COREINTERLEAVED").getSelectedValue(), 16)
+        coreinterleaved = int(localComponent.getSymbolByID("ADC_GLOBAL_CTRLC_COREINTERLEAVED").getSelectedValue(), 0)
         cnt = localComponent.getSymbolValue("ADC_GLOBAL_CTRLC_CNT")
 
         ctrlc_val = (coreinterleaved << 28) | cnt
@@ -741,8 +822,6 @@ def readATDF(adcInstanceName, adcComponent):
     global nSARChannel
     global earlyInterruptPresent
     global numTriggers
-
-    print "adcInstanceName = " + str(adcInstanceName)
 
     # Read Number of SAR Cores
     adc_param_node = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"ADC\"]/instance@[name=\""+adcInstanceName+"\"]/parameters")
@@ -788,7 +867,7 @@ def readATDF(adcInstanceName, adcComponent):
     # Read calibration base address
     calibBaseAddrNode = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"FUSES\"]/instance@[name=\"FUSES\"]/register-group@[name=\"FUSES_CALOTP\"]")
 
-    calibBaseAddr = int(calibBaseAddrNode.getAttribute("offset"), 16)
+    calibBaseAddr = int(calibBaseAddrNode.getAttribute("offset"), 0)
     # Add offset to the base address
     calibBaseAddr = calibBaseAddr + 0x184
 
@@ -806,12 +885,14 @@ def globalConfig(adcComponent):
 
     # CTRLA.ONDEMAND
     CTRLA_ONDEMAND_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTRLA_ONDEMAND", None)
+    CTRLA_ONDEMAND_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTRLA")
     CTRLA_ONDEMAND_Config.setLabel("Enable On-Demand mode")
     CTRLA_ONDEMAND_Config.setDefaultValue(False)
     ADC_CTRLA_REG_DepList.append("ADC_GLOBAL_CTRLA_ONDEMAND")
 
     # CTRLA.RUNSTDBY
     CTRLA_RUNSTDBY_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTRLA_RUNSTDBY", None)
+    CTRLA_RUNSTDBY_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTRLA")
     CTRLA_RUNSTDBY_Config.setLabel("Enable Standby mode")
     CTRLA_RUNSTDBY_Config.setDefaultValue(False)
     ADC_CTRLA_REG_DepList.append("ADC_GLOBAL_CTRLA_RUNSTDBY")
@@ -827,6 +908,7 @@ def globalConfig(adcComponent):
 
     # CTRLD.CTLCKDIV (TQ = (CTRLD.CTLCKDIV + 1)·TSRC_CLK)
     CTRLD_CTLCKDIV_Config = adcComponent.createIntegerSymbol("ADC_GLOBAL_CTRLD_CTLCKDIV", None)
+    CTRLD_CTLCKDIV_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTRLD")
     CTRLD_CTLCKDIV_Config.setLabel("ADC Clock Source to Control Clock Divider")
     CTRLD_CTLCKDIV_Config.setMin(0)
     CTRLD_CTLCKDIV_Config.setMax(65535)
@@ -847,6 +929,7 @@ def globalConfig(adcComponent):
 
     # CTRLD.WKUPEXP (2 Power (WKUPEXP) * TAD)
     CTRLD_WKUPEXP_Config = adcComponent.createIntegerSymbol("ADC_GLOBAL_CTRLD_WKUPEXP", None)
+    CTRLD_WKUPEXP_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTRLD")
     CTRLD_WKUPEXP_Config.setLabel("Wake Up Delay Exponent (2^WKUPEXP * TAD)")
     CTRLD_WKUPEXP_Config.setMin(4)
     CTRLD_WKUPEXP_Config.setMax(15)
@@ -855,9 +938,10 @@ def globalConfig(adcComponent):
 
 
     # CTRLD.VREFSEL
-    adc_vref_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"CTRLD__VREFSEL\"]").getChildren()
+    adc_vref_values = getValueGroupNode__ADC("ADC", "ADC", "CTRLD", "VREFSEL").getChildren()
 
     CTRLD_VREFSEL_Config = adcComponent.createKeyValueSetSymbol("ADC_GLOBAL_CTRLD_VREFSEL", None)
+    CTRLD_VREFSEL_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTRLD")
     CTRLD_VREFSEL_Config.setLabel("VREF Input Selection")
 
     for id in range(len(adc_vref_values)):
@@ -872,9 +956,10 @@ def globalConfig(adcComponent):
 
     # CTRLC.COREINTERLEAVED
 
-    if (ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"CTRLC__COREINTERLEAVED\"]") != None):
-        adc_core_interleaved_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"CTRLC__COREINTERLEAVED\"]").getChildren()
+    if (getValueGroupNode__ADC("ADC", "ADC", "CTRLC", "COREINTERLEAVED") != None):
+        adc_core_interleaved_values = getValueGroupNode__ADC("ADC", "ADC", "CTRLC", "COREINTERLEAVED").getChildren()
         CTRLC_COREINTERLEAVED_Config = adcComponent.createKeyValueSetSymbol("ADC_GLOBAL_CTRLC_COREINTERLEAVED", None)
+        CTRLC_COREINTERLEAVED_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTRLC")
         CTRLC_COREINTERLEAVED_Config.setLabel("ADC Core Interleaving")
 
         for id in range(len(adc_core_interleaved_values)):
@@ -882,7 +967,7 @@ def globalConfig(adcComponent):
             value = adc_core_interleaved_values[id].getAttribute("value")
             description = adc_core_interleaved_values[id].getAttribute("caption")
             CTRLC_COREINTERLEAVED_Config.addKey(key, value, description)
-            if value == "0x0":
+            if int (value, 0) == 0:
                 CTRLC_COREINTERLEAVED_Config.setDefaultValue(id)
         CTRLC_COREINTERLEAVED_Config.setOutputMode("Key")
         CTRLC_COREINTERLEAVED_Config.setDisplayMode("Description")
@@ -890,6 +975,7 @@ def globalConfig(adcComponent):
 
     # CTRLC.CNT
     CTRLC_CNT_Config = adcComponent.createIntegerSymbol("ADC_GLOBAL_CTRLC_CNT", None)
+    CTRLC_CNT_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTRLC")
     CTRLC_CNT_Config.setLabel("Delay Counter (TQ based) for STRIG Sync Trigger")
     CTRLC_CNT_Config.setMin(0)
     CTRLC_CNT_Config.setMax(65535)
@@ -903,9 +989,10 @@ def globalConfig(adcComponent):
     adc_delay_time.setDependencies(updateDelayTime, ["ADC_GLOBAL_CONTROL_CLOCK_FREQ", "ADC_GLOBAL_CTRLC_CNT"])
 
     # PFFCTRL.PFFRDYDMA
-    pffrdydma_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"PFFCTRL__PFFRDYDMA\"]").getChildren()
+    pffrdydma_values = getValueGroupNode__ADC("ADC", "ADC", "PFFCTRL", "PFFRDYDM").getChildren()
 
     PFFCTRL_PFFRDYDMA_Config = adcComponent.createKeyValueSetSymbol("ADC_GLOBAL_PFFCTRL_PFFRDYDMA", None)
+    PFFCTRL_PFFRDYDMA_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:PFFCTRL")
     PFFCTRL_PFFRDYDMA_Config.setLabel("DMA Trigger Selection")
 
     for id in range(len(pffrdydma_values)):
@@ -924,6 +1011,7 @@ def globalConfig(adcComponent):
 
     # CTLINTENSET.PFFHFUL
     CTLINTENSET_PFFHFUL_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTLINTENSET_PFFHFUL", global_interrupt_config_menu)
+    CTLINTENSET_PFFHFUL_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTLINTENSET")
     CTLINTENSET_PFFHFUL_Config.setLabel("Enable FIFO Half-Full (PFFHFUL) Interrupt")
     CTLINTENSET_PFFHFUL_Config.setDefaultValue(False)
     CTLINTENSET_PFFHFUL_Config.setReadOnly(True)
@@ -932,6 +1020,7 @@ def globalConfig(adcComponent):
 
     # CTLINTENSET.PFFRDY
     CTLINTENSET_PFFRDY_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTLINTENSET_PFFRDY", global_interrupt_config_menu)
+    CTLINTENSET_PFFRDY_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTLINTENSET")
     CTLINTENSET_PFFRDY_Config.setLabel("Enable FIFO Data Ready (PFFRDY) Interrupt")
     CTLINTENSET_PFFRDY_Config.setDefaultValue(False)
     CTLINTENSET_PFFRDY_Config.setReadOnly(True)
@@ -940,6 +1029,7 @@ def globalConfig(adcComponent):
 
     # CTLINTENSET.PFFOVF
     CTLINTENSET_PFFOVF_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTLINTENSET_PFFOVF", global_interrupt_config_menu)
+    CTLINTENSET_PFFOVF_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTLINTENSET")
     CTLINTENSET_PFFOVF_Config.setLabel("Enable FIFO Overflow (PFFOVF) Interrupt")
     CTLINTENSET_PFFOVF_Config.setDefaultValue(False)
     CTLINTENSET_PFFOVF_Config.setReadOnly(True)
@@ -948,6 +1038,7 @@ def globalConfig(adcComponent):
 
     # CTLINTENSET.PFFUNF
     CTLINTENSET_PFFUNF_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTLINTENSET_PFFUNF", global_interrupt_config_menu)
+    CTLINTENSET_PFFUNF_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTLINTENSET")
     CTLINTENSET_PFFUNF_Config.setLabel("Enable FIFO Underflow (PFFUNF) Interrupt")
     CTLINTENSET_PFFUNF_Config.setDefaultValue(False)
     CTLINTENSET_PFFUNF_Config.setReadOnly(True)
@@ -956,12 +1047,14 @@ def globalConfig(adcComponent):
 
     # CTLINTENSET.VREFRDY
     CTLINTENSET_VREFRDY_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTLINTENSET_VREFRDY", global_interrupt_config_menu)
+    CTLINTENSET_VREFRDY_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTLINTENSET")
     CTLINTENSET_VREFRDY_Config.setLabel("Enable Voltage Reference Ready (VREFRDY) Interrupt")
     CTLINTENSET_VREFRDY_Config.setDefaultValue(False)
     ADC_CTLINTENSET_REG_DepList.append("ADC_GLOBAL_CTLINTENSET_VREFRDY")
 
     # CTLINTENSET.VREFUPD
     CTLINTENSET_VREFUPD_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTLINTENSET_VREFUPD", global_interrupt_config_menu)
+    CTLINTENSET_VREFUPD_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTLINTENSET")
     CTLINTENSET_VREFUPD_Config.setLabel("Enable Voltage Reference Update (VREFUPD) Interrupt")
     CTLINTENSET_VREFUPD_Config.setDefaultValue(False)
     ADC_CTLINTENSET_REG_DepList.append("ADC_GLOBAL_CTLINTENSET_VREFUPD")
@@ -969,6 +1062,7 @@ def globalConfig(adcComponent):
     for n in range(0, nSARCore):
         # CTLINTENSET.CRRDYn
         CTLINTENSET_CRRDY_Config = adcComponent.createBooleanSymbol("ADC_GLOBAL_CTLINTENSET_CRRDY" + str(n), global_interrupt_config_menu)
+        CTLINTENSET_CRRDY_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CTLINTENSET")
         CTLINTENSET_CRRDY_Config.setLabel("Enable Core " + str(n) + " Ready" + "(CRRDY" + str(n) + ")" " Interrupt")
         CTLINTENSET_CRRDY_Config.setDefaultValue(False)
         CTLINTENSET_CRRDY_Config.setDependencies(updateCoreReadyIntStatus, ["ADC_CORE_" + str(n) + "_ENABLE"])
@@ -977,6 +1071,7 @@ def globalConfig(adcComponent):
 
 
 def channelConfig(n, channel, adcComponent, channel_config_menu):
+    global nSARCore
     ##Channel Configuration Menu:
     channel_k_enable = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_ENABLE", channel_config_menu)
     channel_k_enable.setLabel("Enable Channel " + str(channel))
@@ -996,6 +1091,7 @@ def channelConfig(n, channel, adcComponent, channel_config_menu):
 
     # CHNCFG2n.CSSk
     CHNCFG2_CSS_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG2_CSS", channel_k_enable)
+    CHNCFG2_CSS_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config[" + str(channel) + "].chncfg2")
     CHNCFG2_CSS_Config.setLabel("Include Channel in Scan")
     CHNCFG2_CSS_Config.setDefaultValue(False)
     CHNCFG2_CSS_Config.setVisible(False)
@@ -1004,6 +1100,7 @@ def channelConfig(n, channel, adcComponent, channel_config_menu):
 
     # CHNCFG1n.CHNCMPENk
     CHNCFG1_CHNCMPEN_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG1_CHNCMPEN", channel_k_enable)
+    CHNCFG1_CHNCMPEN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config[" + str(channel) + "].chncfg1")
     CHNCFG1_CHNCMPEN_Config.setLabel("Enable Compare")
     CHNCFG1_CHNCMPEN_Config.setDefaultValue(False)
     CHNCFG1_CHNCMPEN_Config.setVisible(False)
@@ -1013,25 +1110,30 @@ def channelConfig(n, channel, adcComponent, channel_config_menu):
 
     # CHNCFG3n.DIFF
     CHNCFG3_DIFF_Config = adcComponent.createComboSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG3_DIFF", channel_k_enable, ["Single Ended", "Differential"])
+    CHNCFG3_DIFF_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config[" + str(channel) + "].chncfg3")
     CHNCFG3_DIFF_Config.setLabel("Mode")
     CHNCFG3_DIFF_Config.setDefaultValue("Single Ended")
     # Differential mode is not supported on Core 0. On other ADC Cores 1,2,3, the only differential channels allowed are {0,1}, {2,3}, {4,5}
-    CHNCFG3_DIFF_Config.setReadOnly(n == 0 or not(channel == 0 or channel == 2 or channel == 4))
+    if (nSARCore == 1):
+        CHNCFG3_DIFF_Config.setReadOnly(not(channel == 0 or channel == 2 or channel == 4))
+    else:
+        CHNCFG3_DIFF_Config.setReadOnly(n == 0 or not(channel == 0 or channel == 2 or channel == 4))
     CHNCFG3_DIFF_Config.setVisible(False)
     CHNCFG3_DIFF_Config.setDependencies(channelVisibility, ["ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_ENABLE"])
     ADC_CHNCFG3_REG_DepList[n].append("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG3_DIFF")
 
     # CHNCFG4n.TRGSRCk / CHNCFG5n.TRGSRCk
-    trgsrc_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"CHNCFG4_CHNCFG5__TRGSRC\"]").getChildren()
+    trgsrc_values = getValueGroupNode__ADC("ADC", "CONFIG", "CHNCFG4", "TRGSRC0").getChildren()
 
     CHNCFG4_5_TRGSRC_Config = adcComponent.createKeyValueSetSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG4_5_TRGSRC", channel_k_enable)
+    CHNCFG4_5_TRGSRC_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config[" + str(channel) + "].chncfg4")
     CHNCFG4_5_TRGSRC_Config.setLabel("Trigger Source")
     for id in range(len(trgsrc_values)):
         key = trgsrc_values[id].getAttribute("name")
         value = trgsrc_values[id].getAttribute("value")
         description = trgsrc_values[id].getAttribute("caption")
         CHNCFG4_5_TRGSRC_Config.addKey(key, value, description)
-        if value == "0x0":
+        if int (value, 0) == 0:
             CHNCFG4_5_TRGSRC_Config.setDefaultValue(id)
     CHNCFG4_5_TRGSRC_Config.setOutputMode("Value")
     CHNCFG4_5_TRGSRC_Config.setDisplayMode("Description")
@@ -1046,6 +1148,7 @@ def channelConfig(n, channel, adcComponent, channel_config_menu):
 
     # CHNCFG1n.LVL
     CHNCFG3_DIFF_Config = adcComponent.createComboSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG1_LVL", channel_k_enable, ["Edge", "Level (Trigger as long as Trigger Level is High)"])
+    CHNCFG3_DIFF_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config[" + str(channel) + "].chncfg1")
     CHNCFG3_DIFF_Config.setLabel("Trigger Level")
     CHNCFG3_DIFF_Config.setDefaultValue("Edge")
     CHNCFG3_DIFF_Config.setVisible(False)
@@ -1054,6 +1157,7 @@ def channelConfig(n, channel, adcComponent, channel_config_menu):
 
     # CHNCFG2n.FRACTk
     CHNCFG2_FRACT_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG2_FRACT", channel_k_enable)
+    CHNCFG2_FRACT_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config[" + str(channel) + "].chncfg2")
     CHNCFG2_FRACT_Config.setLabel("Enable Fractional Data Output Format")
     CHNCFG2_FRACT_Config.setDefaultValue(False)
     CHNCFG2_FRACT_Config.setVisible(False)
@@ -1062,6 +1166,7 @@ def channelConfig(n, channel, adcComponent, channel_config_menu):
 
     # CHNCFG3n.SIGNk
     CHNCFG3_SIGN_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_CHNCFG3_SIGN", channel_k_enable)
+    CHNCFG3_SIGN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config[" + str(channel) + "].chncfg3")
     CHNCFG3_SIGN_Config.setLabel("Enable Signed Data Output Format")
     CHNCFG3_SIGN_Config.setDefaultValue(False)
     CHNCFG3_SIGN_Config.setVisible(False)
@@ -1070,6 +1175,7 @@ def channelConfig(n, channel, adcComponent, channel_config_menu):
 
     # INTENSETn.CHRDY
     INTENSET_CHRDY_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CH_" + str(channel) + "_INTENSET_CHRDY", channel_k_enable)
+    INTENSET_CHRDY_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:intenset[" + str(channel) + "]")
     INTENSET_CHRDY_Config.setLabel("Enable Channel Ready Interrupt")
     INTENSET_CHRDY_Config.setDefaultValue(False)
     INTENSET_CHRDY_Config.setVisible(False)
@@ -1128,9 +1234,10 @@ def coreConfig(n, nChannels, adcComponent):
     adcEvsysGenCMPDepList[n].append("ADC_CORE_" + str(n) + "_ENABLE")
 
     # CORCTRL_SELRES
-    adc_resolution_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"CORCTRL__SELRES\"]").getChildren()
+    adc_resolution_values = getValueGroupNode__ADC("ADC", "CONFIG", "CORCTRL", "SELRES").getChildren()
 
     CORCTRL_SELRES_Config = adcComponent.createKeyValueSetSymbol("ADC_CORE_" + str(n) + "_CORCTRL_SELRES", adcCoreEnable)
+    CORCTRL_SELRES_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
     CORCTRL_SELRES_Config.setLabel("Select Resolution")
 
     for id in range(len(adc_resolution_values)):
@@ -1138,7 +1245,7 @@ def coreConfig(n, nChannels, adcComponent):
         value = adc_resolution_values[id].getAttribute("value")
         description = adc_resolution_values[id].getAttribute("caption")
         CORCTRL_SELRES_Config.addKey(key, value, description)
-        if value == "0x3":
+        if int (value, 0) == 3:
             CORCTRL_SELRES_Config.setDefaultValue(id)
     CORCTRL_SELRES_Config.setOutputMode("Key")
     CORCTRL_SELRES_Config.setDisplayMode("Description")
@@ -1149,6 +1256,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CORCTRL_ADCDIV (TAD = 2*(CORCTRL_ADCDIV)*TQ)
     CORCTRL_ADCDIV_Config = adcComponent.createIntegerSymbol("ADC_CORE_" + str(n) + "_CORCTRL_ADCDIV", adcCoreEnable)
+    CORCTRL_ADCDIV_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
     CORCTRL_ADCDIV_Config.setLabel("Division Ratio for ADC Core Clock")
     CORCTRL_ADCDIV_Config.setMin(1)
     CORCTRL_ADCDIV_Config.setMax(127)
@@ -1171,6 +1279,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CORCTRL_SAMC
     CORCTRL_SAMC_Config = adcComponent.createIntegerSymbol("ADC_CORE_" + str(n) + "_CORCTRL_SAMC", adcCoreEnable)
+    CORCTRL_SAMC_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
     CORCTRL_SAMC_Config.setLabel("Sample Count")
     CORCTRL_SAMC_Config.setMax(1023)
     CORCTRL_SAMC_Config.setVisible(False)
@@ -1200,9 +1309,10 @@ def coreConfig(n, nChannels, adcComponent):
     adc_conversion_rate.setDefaultValue(conversion_freq_mhz)
 
     # CORCTRL_STRGSRC
-    scan_trigger_src_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"CORCTRL__STRGSRC\"]").getChildren()
+    scan_trigger_src_values = getValueGroupNode__ADC("ADC", "CONFIG", "CORCTRL", "STRGSRC").getChildren()
 
     CORCTRL_STRGSRC_Config = adcComponent.createKeyValueSetSymbol("ADC_CORE_" + str(n) + "_CORCTRL_STRGSRC", adcCoreEnable)
+    CORCTRL_STRGSRC_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
     CORCTRL_STRGSRC_Config.setLabel("Scan Trigger Source")
 
     for id in range(len(scan_trigger_src_values)):
@@ -1220,6 +1330,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CORCTRL_STRGLVL
     CORCTRL_STRGLVL_Config = adcComponent.createComboSymbol("ADC_CORE_" + str(n) + "_CORCTRL_STRGLVL", adcCoreEnable, ["Edge", "Level (SCAN will re-trigger as long as Trigger Level is High)"])
+    CORCTRL_STRGLVL_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
     CORCTRL_STRGLVL_Config.setLabel("Scan Trigger Level")
     CORCTRL_STRGLVL_Config.setDefaultValue("Edge")
     CORCTRL_STRGLVL_Config.setVisible(False)
@@ -1229,6 +1340,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CORCTRL_SCNRTDS
     CORCTRL_SCNRTDS_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CORCTRL_SCNRTDS", adcCoreEnable)
+    CORCTRL_SCNRTDS_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
     CORCTRL_SCNRTDS_Config.setLabel("Scan Re-trigger Disable")
     CORCTRL_SCNRTDS_Config.setDefaultValue(False)
     CORCTRL_SCNRTDS_Config.setVisible(False)
@@ -1237,6 +1349,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # PFFCTRL.PFFCR
     PFFCTRL_PFFCR_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_PFFCTRL_PFFCR", adcCoreEnable)
+    PFFCTRL_PFFCR_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:PFFCTRL")
     PFFCTRL_PFFCR_Config.setLabel("Store ADC Results to FIFO")
     PFFCTRL_PFFCR_Config.setDefaultValue(False)
     PFFCTRL_PFFCR_Config.setVisible(False)
@@ -1246,6 +1359,7 @@ def coreConfig(n, nChannels, adcComponent):
     if earlyInterruptPresent == True:
         # CORCTRL.EIRQOVR
         CORCTRL_EIRQOVR_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CORCTRL_EIRQOVR", adcCoreEnable)
+        CORCTRL_EIRQOVR_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
         CORCTRL_EIRQOVR_Config.setLabel("Enable Early Interrupts")
         CORCTRL_EIRQOVR_Config.setDefaultValue(False)
         CORCTRL_EIRQOVR_Config.setVisible(False)
@@ -1254,6 +1368,7 @@ def coreConfig(n, nChannels, adcComponent):
 
         # CORCTRL.EIS
         CORCTRL_EIS_Config = adcComponent.createIntegerSymbol("ADC_CORE_" + str(n) + "_CORCTRL_EIS", adcCoreEnable)
+        CORCTRL_EIS_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:config0.corctrl")
         CORCTRL_EIS_Config.setLabel("TAD Clocks Prior to EOC At Which Early Interrupt Is Generated")
         CORCTRL_EIS_Config.setMin(0)
         CORCTRL_EIS_Config.setMax(7)
@@ -1271,6 +1386,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.CMPEN
     CMPCTRL_CMPEN_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_CMPEN", dig_comparator_config_menu)
+    CMPCTRL_CMPEN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_CMPEN_Config.setLabel("Enable Comparator")
     CMPCTRL_CMPEN_Config.setDefaultValue(False)
     CMPCTRL_CMPEN_Config.setVisible(False)
@@ -1280,6 +1396,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.ADCMPHI
     CMPCTRL_ADCMPHI_Config = adcComponent.createHexSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_ADCMPHI", dig_comparator_config_menu)
+    CMPCTRL_ADCMPHI_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_ADCMPHI_Config.setLabel("Comparator High Limit")
     CMPCTRL_ADCMPHI_Config.setMin(0x00)
     CMPCTRL_ADCMPHI_Config.setMax(0xFFF)
@@ -1290,6 +1407,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.ADCMPLO
     CMPCTRL_ADCMPLO_Config = adcComponent.createHexSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_ADCMPLO", dig_comparator_config_menu)
+    CMPCTRL_ADCMPLO_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_ADCMPLO_Config.setLabel("Comparator Low Limit")
     CMPCTRL_ADCMPLO_Config.setMin(0x00)
     CMPCTRL_ADCMPLO_Config.setMax(0xFFF)
@@ -1300,6 +1418,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.IEHIHI
     CMPCTRL_IEHIHI_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_IEHIHI", dig_comparator_config_menu)
+    CMPCTRL_IEHIHI_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_IEHIHI_Config.setLabel("Enable Comparision Event - ADC value >= ADCMPHI")
     CMPCTRL_IEHIHI_Config.setDefaultValue(False)
     CMPCTRL_IEHIHI_Config.setVisible(False)
@@ -1308,6 +1427,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.IEHILO
     CMPCTRL_IEHILO_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_IEHILO", dig_comparator_config_menu)
+    CMPCTRL_IEHILO_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_IEHILO_Config.setLabel("Enable Comparision Event - ADC value < ADCMPHI")
     CMPCTRL_IEHILO_Config.setDefaultValue(False)
     CMPCTRL_IEHILO_Config.setVisible(False)
@@ -1316,6 +1436,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.IELOHI
     CMPCTRL_IELOHI_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_IELOHI", dig_comparator_config_menu)
+    CMPCTRL_IELOHI_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_IELOHI_Config.setLabel("Enable Comparision Event - ADC value >= ADCMPLO")
     CMPCTRL_IELOHI_Config.setDefaultValue(False)
     CMPCTRL_IELOHI_Config.setVisible(False)
@@ -1324,6 +1445,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.IELOLO
     CMPCTRL_IELOLO_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_IELOLO", dig_comparator_config_menu)
+    CMPCTRL_IELOLO_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_IELOLO_Config.setLabel("Enable Comparision Event - ADC value < ADCMPLO")
     CMPCTRL_IELOLO_Config.setDefaultValue(False)
     CMPCTRL_IELOLO_Config.setVisible(False)
@@ -1332,6 +1454,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # CMPCTRL.IEBTWN
     CMPCTRL_IEBTWN_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_CMPCTRL_IEBTWN", dig_comparator_config_menu)
+    CMPCTRL_IEBTWN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:CMPCTRL[0]")
     CMPCTRL_IEBTWN_Config.setLabel("Enable Comparision Event - ADCMPLO <= ADC Value < ADCMPHI")
     CMPCTRL_IEBTWN_Config.setDefaultValue(False)
     CMPCTRL_IEBTWN_Config.setVisible(False)
@@ -1346,6 +1469,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # FLTCTRL.FLTEN
     FLTCTRL_FLTEN_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_FLTCTRL_FLTEN", dig_filter_config_menu)
+    FLTCTRL_FLTEN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:FLTCTRL[0]")
     FLTCTRL_FLTEN_Config.setLabel("Enable Digital Filter")
     FLTCTRL_FLTEN_Config.setDefaultValue(False)
     FLTCTRL_FLTEN_Config.setVisible(False)
@@ -1354,6 +1478,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # FLTCTRL.FLTCHNID
     FLTCTRL_FLTCHNID_Config = adcComponent.createIntegerSymbol("ADC_CORE_" + str(n) + "_FLTCTRL_FLTCHNID", dig_filter_config_menu)
+    FLTCTRL_FLTCHNID_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:FLTCTRL[0]")
     FLTCTRL_FLTCHNID_Config.setLabel("Channel ID to Filter")
     FLTCTRL_FLTCHNID_Config.setMin(0)
     FLTCTRL_FLTCHNID_Config.setMax(nChannels-1)
@@ -1364,6 +1489,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # FLTCTRL.FMODE
     FLTCTRL_FMODE_Config = adcComponent.createKeyValueSetSymbol("ADC_CORE_" + str(n) + "_FLTCTRL_FMODE", dig_filter_config_menu)
+    FLTCTRL_FMODE_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:FLTCTRL[0]")
     FLTCTRL_FMODE_Config.setLabel("Mode")
     FLTCTRL_FMODE_Config.addKey("0", "0", "Oversampling Mode")
     FLTCTRL_FMODE_Config.addKey("1", "1", "Averaging Mode")
@@ -1375,9 +1501,10 @@ def coreConfig(n, nChannels, adcComponent):
     adcCoreConfigSymbolsList[n].append("ADC_CORE_" + str(n) + "_FLTCTRL_FMODE")
 
     # FLTCTRL.OVRSAM
-    oversampling_ratio_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"FLTCTRL__OVRSAM\"]").getChildren()
+    oversampling_ratio_values = getValueGroupNode__ADC("ADC", "ADC", "FLTCTRL", "OVRSAM").getChildren()
 
     FLTCTRL_OVRSAM_Config = adcComponent.createKeyValueSetSymbol("ADC_CORE_" + str(n) + "_FLTCTRL_OVRSAM", dig_filter_config_menu)
+    FLTCTRL_OVRSAM_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:FLTCTRL[0]")
     FLTCTRL_OVRSAM_Config.setLabel("Oversampling Ratio")
     for id in range(len(oversampling_ratio_values)):
         key = oversampling_ratio_values[id].getAttribute("name")
@@ -1399,6 +1526,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # EVCTRLn.RESRDYEO
     EVCTRL_RESRDYEO_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_EVCTRL_RESRDYEO", event_config_menu)
+    EVCTRL_RESRDYEO_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:EVCTRL[0]")
     EVCTRL_RESRDYEO_Config.setLabel("Enable Result Ready Event Out")
     EVCTRL_RESRDYEO_Config.setDefaultValue(False)
     EVCTRL_RESRDYEO_Config.setVisible(False)
@@ -1409,6 +1537,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # EVCTRLn.CMPEO
     EVCTRL_CMPEO_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_EVCTRL_CMPEO", event_config_menu)
+    EVCTRL_CMPEO_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:EVCTRL[0]")
     EVCTRL_CMPEO_Config.setLabel("Enable Digital Comparator Event Out")
     EVCTRL_CMPEO_Config.setDefaultValue(False)
     EVCTRL_CMPEO_Config.setVisible(False)
@@ -1420,6 +1549,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # EVCTRLn.STARTEI
     EVCTRL_STARTEI_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_EVCTRL_STARTEI", event_config_menu)
+    EVCTRL_STARTEI_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:EVCTRL[0]")
     EVCTRL_STARTEI_Config.setLabel("Start Conversion on Event Input")
     EVCTRL_STARTEI_Config.setDefaultValue(False)
     EVCTRL_STARTEI_Config.setVisible(False)
@@ -1430,6 +1560,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # EVCTRLn.STARTINV
     EVCTRL_STARTINV_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_EVCTRL_STARTINV", event_config_menu)
+    EVCTRL_STARTINV_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:EVCTRL[0]")
     EVCTRL_STARTINV_Config.setLabel("Start Conversion Event Invert Enable")
     EVCTRL_STARTINV_Config.setDefaultValue(False)
     EVCTRL_STARTINV_Config.setVisible(False)
@@ -1459,6 +1590,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # INTENSETn.EOSRDY
     INTENSET_EOSRDY_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_INTENSET_EOSRDY", interrupt_config_menu)
+    INTENSET_EOSRDY_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:INTENSET[0]")
     INTENSET_EOSRDY_Config.setLabel("Enable End of Scan (EOS) interrupt")
     INTENSET_EOSRDY_Config.setDefaultValue(False)
     INTENSET_EOSRDY_Config.setVisible(False)
@@ -1467,6 +1599,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # INTENSETn.CMPHIT
     INTENSET_CMPHIT_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_INTENSET_CMPHIT", interrupt_config_menu)
+    INTENSET_CMPHIT_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:INTENSET[0]")
     INTENSET_CMPHIT_Config.setLabel("Enable Comparator Hit (CMPHIT) interrupt")
     INTENSET_CMPHIT_Config.setDefaultValue(False)
     INTENSET_CMPHIT_Config.setVisible(False)
@@ -1475,6 +1608,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # INTENSETn.FLTRDY
     INTENSET_FLTRDY_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_INTENSET_FLTRDY", interrupt_config_menu)
+    INTENSET_FLTRDY_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:INTENSET[0]")
     INTENSET_FLTRDY_Config.setLabel("Enable Filter Ready (FLTRDY) interrupt")
     INTENSET_FLTRDY_Config.setDefaultValue(False)
     INTENSET_FLTRDY_Config.setVisible(False)
@@ -1483,6 +1617,7 @@ def coreConfig(n, nChannels, adcComponent):
 
     # INTENSETn.CHNERRC
     INTENSET_CHNERRC_Config = adcComponent.createBooleanSymbol("ADC_CORE_" + str(n) + "_INTENSET_CHNERRC", interrupt_config_menu)
+    INTENSET_CHNERRC_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_03620;register:INTENSET[0]")
     INTENSET_CHNERRC_Config.setLabel("Enable Channel Overwritten Error (CHNERRC) interrupt")
     INTENSET_CHNERRC_Config.setDefaultValue(False)
     INTENSET_CHNERRC_Config.setVisible(False)
@@ -1614,6 +1749,34 @@ def adcInterruptHandlerConfig(adcComponent):
     global nSARCore
     global InterruptVectorSecurity
 
+    vectorNode=ATDF.getNode("/avr-tools-device-file/devices/device/interrupts")
+    vectorValues = vectorNode.getChildren()
+    for id in range(0, len(vectorNode.getChildren())):
+        if vectorValues[id].getAttribute("module-instance") == adcInstanceName.getValue():
+            name = vectorValues[id].getAttribute("name")
+            #Create symbols for ADC interrupt names to be used in the FTL
+            if ("Reserved" not in name) and (len(name.split("_")) >= 2):
+                adcIntType = name.split("_")[1]
+                if adcIntType in ADC_Global_InterruptNames:
+                    adcIntHandlerName = adcComponent.createStringSymbol("ADC_CORE_GLOBAL_INT_HANDLER_NAME", None)
+                    adcIntHandlerName.setDefaultValue(adcComponent.getID().upper() + "_" + adcIntType)
+                    adcIntHandlerName.setVisible(True)
+                elif adcIntType in ADC_Core_InterruptNames:
+                    adcIntHandlerName = adcComponent.createStringSymbol("ADC_CORE_" + re.sub("[A-Z, _]", "", name) + "_INT_HANDLER_NAME", None)
+                    adcIntHandlerName.setDefaultValue(adcComponent.getID().upper() + "_" + adcIntType)
+                    adcIntHandlerName.setVisible(True)
+
+                InterruptVectorSecurity.append(name + "_SET_NON_SECURE")
+
+    # Confiure secure/non-secure interrupt
+    if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+        adcIsNonSecure = Database.getSymbolValue("core", adcComponent.getID().upper() + "_IS_NON_SECURE")
+        if len(InterruptVectorSecurity) != 1:
+            for vector in InterruptVectorSecurity:
+                Database.setSymbolValue("core", vector, adcIsNonSecure)
+        else:
+            Database.setSymbolValue("core", InterruptVectorSecurity, adcIsNonSecure)
+
     # Dummy symbol to update ADC GLOBAL NVIC Interrupt
     adcGlobalNVICInt = adcComponent.createBooleanSymbol("ADC_GLOBAL_NVIC_INT", None)
     adcGlobalNVICInt.setVisible(False)
@@ -1629,22 +1792,6 @@ def adcInterruptHandlerConfig(adcComponent):
     adcCoreIntEnabled = adcComponent.createBooleanSymbol("ADC_CORE_CORE_INT_ENABLED", None)
     adcCoreIntEnabled.setVisible(False)
     adcCoreIntEnabled.setDependencies(updateCoreIntEnabled, adcCoreIntEnabledDepList)
-
-    vectorNode=ATDF.getNode("/avr-tools-device-file/devices/device/interrupts")
-    vectorValues = vectorNode.getChildren()
-    for id in range(0, len(vectorNode.getChildren())):
-        if vectorValues[id].getAttribute("module-instance") == adcInstanceName.getValue():
-            name = vectorValues[id].getAttribute("name")
-            InterruptVectorSecurity.append(name + "_SET_NON_SECURE")
-
-    # Confiure secure/non-secure interrupt
-    if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
-        adcIsNonSecure = Database.getSymbolValue("core", adcComponent.getID().upper() + "_IS_NON_SECURE")
-        if len(InterruptVectorSecurity) != 1:
-            for vector in InterruptVectorSecurity:
-                Database.setSymbolValue("core", vector, adcIsNonSecure)
-        else:
-            Database.setSymbolValue("core", InterruptVectorSecurity, adcIsNonSecure)
 
 def adcEvsysConfig(adcComponent):
     global nSARCore
@@ -1749,8 +1896,53 @@ def codeGenerationConfig (adcComponent, Module):
 
         adcSystemDefFile.setDependencies(fileUpdate, ["core." + adcComponent.getID().upper() + "_IS_NON_SECURE"])
 
+def handleMessage(messageID, args):
+    retDict = {}
+    if (messageID == "ADC_CONFIG_HW_IO"):
+        global nSARCore
+        global nSARChannel
+        
+        component = str(adcInstanceName.getValue()).lower()
+        channel, enable = args['config']
 
-    adcComponent.addPlugin("../peripheral/adc_03620/plugin/adc_03620.jar")
+        # Get core from channel number
+        core = 0
+        numchannels = 0
+        for n in range(0, nSARCore):
+            numchannels += int(nSARChannel[n])
+            if channel < numchannels:
+                core = n
+                break
+        
+        for n in range(0, core):
+            channel -= nSARChannel[n]
+
+        coreSymbolName = "ADC_CORE_{}_ENABLE".format(core)
+        channelSymbolName = "ADC_CORE_{}_CH_{}_ENABLE".format(core, channel)
+
+        if enable == True:
+            Database.setSymbolValue(component, coreSymbolName, enable)
+            res = Database.setSymbolValue(component, channelSymbolName, enable)
+        else:
+            res = Database.clearSymbolValue(component, channelSymbolName)
+
+            # Check if Core Symbol has to be cleared
+            clearCoreSymbol = True
+            for n in range(0, nSARChannel[core]):
+                channelSymbolName = "ADC_CORE_{}_CH_{}_ENABLE".format(core, n)
+                if Database.getSymbolValue(component, channelSymbolName) == True:
+                    clearCoreSymbol = False
+                    break
+
+            if clearCoreSymbol == True:
+                Database.clearSymbolValue(component, coreSymbolName)
+        
+        if res == True:
+            retDict = {"Result": "Success"}
+        else:
+            retDict = {"Result": "Fail"}
+
+    return retDict
 
 
 def instantiateComponent(adcComponent):
@@ -1787,7 +1979,20 @@ def instantiateComponent(adcComponent):
 
     adcEvsysConfig(adcComponent)
 
+    adcEvsysGeneratorNamesPopulate(adcInstanceName.getValue())
+
+    adcEvsysUserNamesPopulate(adcInstanceName.getValue())
+
     # Enable ADC Core 0 by default
     enableCoreNSymbols(adcInstanceName.getComponent(), defaultCore, True)
 
     codeGenerationConfig(adcComponent, Module)
+
+    adcComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar",
+        "ADCHS_UI_MANAGER_ID_adc_03620",
+        {
+            "plugin_name": "ADC Configuration",
+            "main_html_path": "csp/plugins/configurators/adc-configurators/adc_03620/build/index.html",
+            "componentId": adcComponent.getID(),
+        }
+    )

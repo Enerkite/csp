@@ -175,6 +175,7 @@ def qeiAddKeyValueSetFromATDFInitValue(Parent, ModuleName, RegisterName, BitFiel
             if value_groupNode is not None:
                 Component = Parent.createKeyValueSetSymbol(RegisterName + '__' +
                     BitFieldName, Menu)
+                Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1CON")
                 qeiValGrp_names = []
                 _get_bitfield_names(value_groupNode, qeiValGrp_names)
 
@@ -236,6 +237,7 @@ def qeiAddBooleanFromATDF1ValueValueGroup(Parent, ModuleName, RegisterName, BitF
     labelNode = ATDF.getNode(value_groupPath)
     if labelNode is not None:
         Component = Parent.createBooleanSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1CON")
         Component.setLabel(labelNode.getAttribute('caption'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -251,6 +253,7 @@ def qeiAddBooleanFromATDFBitfieldName(Parent, ModuleName, RegisterName, BitField
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createBooleanSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1CON")
         Component.setLabel(labelNode.getAttribute('name'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -266,6 +269,7 @@ def qeiAddBooleanFromATDFBitfieldCaption(Parent, ModuleName, RegisterName, BitFi
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createBooleanSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1CON")
         Component.setLabel(labelNode.getAttribute('caption'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -299,6 +303,7 @@ def qeiAddLongFromATDFRegisterCaption(Parent, ModuleName, RegisterName, BitField
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createLongSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1CON")
         Component.setLabel(labelNode.getAttribute('caption') + ' - ' + BitFieldName)
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -314,6 +319,7 @@ def qeiAddLongFromATDFBitfieldCaption(Parent, ModuleName, RegisterName, BitField
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createLongSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1CON")
         Component.setLabel(labelNode.getAttribute('caption'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -540,6 +546,7 @@ def instantiateComponent(qeiComponent):
     qeiconDeplist.append("QEI"+str(instanceNum)+"CON__CNTPOL")
 
     qeiSym_INDEX_AVAILABLE = qeiComponent.createBooleanSymbol("QEI_INDEX_AVAILABLE", None)
+    qeiSym_INDEX_AVAILABLE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1IOC")
     qeiSym_INDEX_AVAILABLE.setLabel("Is Index Pulse Available?")
     qeiSym_QEIIOC_IDXPOL = qeiAddKeyValueSetFromATDFInitValue(qeiComponent, Module, "QEI"+str(instanceNum)+"IOC", "IDXPOL", qeiSym_INDEX_AVAILABLE, True)
     qeiiocDeplist.append("QEI"+str(instanceNum)+"IOC__IDXPOL")
@@ -547,6 +554,7 @@ def instantiateComponent(qeiComponent):
     qeiconDeplist.append("QEI"+str(instanceNum)+"CON__IMV")
 
     qeiSym_HOME_AVAILABLE = qeiComponent.createBooleanSymbol("QEI_HOME_AVAILABLE", None)
+    qeiSym_HOME_AVAILABLE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1IOC")
     qeiSym_HOME_AVAILABLE.setLabel("Is Home Signal Available?")
     qeiSym_QEIIOC_HOMPOL = qeiAddKeyValueSetFromATDFInitValue(qeiComponent, Module, "QEI"+str(instanceNum)+"IOC", "HOMPOL", qeiSym_HOME_AVAILABLE, True)
     qeiiocDeplist.append("QEI"+str(instanceNum)+"IOC__HOMPOL")
@@ -562,11 +570,13 @@ def instantiateComponent(qeiComponent):
     qeiSym_Comparator_Menu.setLabel("Position Comparator")
 
     qeiSym_QEICMPL = qeiComponent.createLongSymbol("QEI"+str(instanceNum)+"CMPL__CMPL", qeiSym_Comparator_Menu)
+    qeiSym_QEICMPL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1CMPL")
     qeiSym_QEICMPL.setLabel("Lower Compare Value")
     qeiSym_QEICMPL.setMin(0)
     qeiSym_QEICMPL.setMax(pow(2, 32) - 1)
 
     qeiSym_QEIICC = qeiComponent.createLongSymbol("QEI"+str(instanceNum)+"ICC__ICCH", qeiSym_Comparator_Menu)
+    qeiSym_QEIICC.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1ICC")
     qeiSym_QEIICC.setLabel("Higher Compare Value")
     qeiSym_QEIICC.setMin(0)
     qeiSym_QEIICC.setMax(pow(2, 32) - 1)
@@ -578,36 +588,43 @@ def instantiateComponent(qeiComponent):
     qeiSym_INTERRUPTS_MENU.setLabel("Interrupts")
 
     qeiSym_QEISTAT_IDXIEN = qeiComponent.createBooleanSymbol("QEI"+str(instanceNum)+"STAT__IDXIEN", qeiSym_INTERRUPTS_MENU)
+    qeiSym_QEISTAT_IDXIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1STAT")
     qeiSym_QEISTAT_IDXIEN.setLabel("Enable Index Interrupt")
     qeistatDeplist.append("QEI"+str(instanceNum)+"STAT__IDXIEN")
     evicDeplist.append("QEI"+str(instanceNum)+"STAT__IDXIEN")
 
     qeiSym_QEISTAT_HOMIEN = qeiComponent.createBooleanSymbol("QEI"+str(instanceNum)+"STAT__HOMIEN", qeiSym_INTERRUPTS_MENU)
+    qeiSym_QEISTAT_HOMIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1STAT")
     qeiSym_QEISTAT_HOMIEN.setLabel("Enable Home Interrupt")
     qeistatDeplist.append("QEI"+str(instanceNum)+"STAT__HOMIEN")
     evicDeplist.append("QEI"+str(instanceNum)+"STAT__HOMIEN")
 
     qeiSym_QEISTAT_VELOVIEN = qeiComponent.createBooleanSymbol("QEI"+str(instanceNum)+"STAT__VELOVIEN", qeiSym_INTERRUPTS_MENU)
+    qeiSym_QEISTAT_VELOVIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1STAT")
     qeiSym_QEISTAT_VELOVIEN.setLabel("Enable Velocity Counter Overflow Interrupt")
     qeistatDeplist.append("QEI"+str(instanceNum)+"STAT__VELOVIEN")
     evicDeplist.append("QEI"+str(instanceNum)+"STAT__VELOVIEN")
 
     qeiSym_QEISTAT_POSOVIEN = qeiComponent.createBooleanSymbol("QEI"+str(instanceNum)+"STAT__POSOVIEN", qeiSym_INTERRUPTS_MENU)
+    qeiSym_QEISTAT_POSOVIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1STAT")
     qeiSym_QEISTAT_POSOVIEN.setLabel("Enable Position Counter Overflow Interrupt")
     qeistatDeplist.append("QEI"+str(instanceNum)+"STAT__POSOVIEN")
     evicDeplist.append("QEI"+str(instanceNum)+"STAT__POSOVIEN")
 
     qeiSym_QEISTAT_PCIIEN = qeiComponent.createBooleanSymbol("QEI"+str(instanceNum)+"STAT__PCIIEN", qeiSym_INTERRUPTS_MENU)
+    qeiSym_QEISTAT_PCIIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1STAT")
     qeiSym_QEISTAT_PCIIEN.setLabel("Enable Position Counter Initialization Complete Interrupt")
     qeistatDeplist.append("QEI"+str(instanceNum)+"STAT__PCIIEN")
     evicDeplist.append("QEI"+str(instanceNum)+"STAT__PCIIEN")
 
     qeiSym_QEISTAT_PCLEQIEN = qeiComponent.createBooleanSymbol("QEI"+str(instanceNum)+"STAT__PCLEQIEN", qeiSym_INTERRUPTS_MENU)
+    qeiSym_QEISTAT_PCLEQIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1STAT")
     qeiSym_QEISTAT_PCLEQIEN.setLabel("Enable Position Counter Less Than or Equal Interrupt")
     qeistatDeplist.append("QEI"+str(instanceNum)+"STAT__PCLEQIEN")
     evicDeplist.append("QEI"+str(instanceNum)+"STAT__PCLEQIEN")
 
     qeiSym_QEISTAT_PCHEQIEN = qeiComponent.createBooleanSymbol("QEI"+str(instanceNum)+"STAT__PCHEQIEN", qeiSym_INTERRUPTS_MENU)
+    qeiSym_QEISTAT_PCHEQIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:qei_01494;register:QEI1STAT")
     qeiSym_QEISTAT_PCHEQIEN.setLabel("Enable Position Counter Greater Than or Equal Interrupt")
     qeistatDeplist.append("QEI"+str(instanceNum)+"STAT__PCHEQIEN")
     evicDeplist.append("QEI"+str(instanceNum)+"STAT__PCHEQIEN")
@@ -661,7 +678,10 @@ def instantiateComponent(qeiComponent):
 
     qeiHeaderFile = qeiComponent.createFileSymbol("QEI_COMMON_HEADER", None)
     qeiHeaderFile.setMarkup(True)
-    qeiHeaderFile.setSourcePath("../peripheral/qei_01494/templates/plib_qei_common.h.ftl")
+    if "PIC32M" in Database.getSymbolValue("core", "PRODUCT_FAMILY"):    
+        qeiHeaderFile.setSourcePath("../peripheral/qei_01494/templates/plib_qei_common.h.ftl")
+    else:
+        qeiHeaderFile.setSourcePath("../peripheral/qei_01494/templates/plib_qei_common_pic32c.h.ftl")
     qeiHeaderFile.setOutputName("plib_qei_common.h")
     qeiHeaderFile.setDestPath("peripheral/qei/")
     qeiHeaderFile.setProjectPath("config/" + configName + "/peripheral/qei/")
@@ -670,7 +690,10 @@ def instantiateComponent(qeiComponent):
 
     qeiHeader1File = qeiComponent.createFileSymbol("QEI_HEADER1", None)
     qeiHeader1File.setMarkup(True)
-    qeiHeader1File.setSourcePath("../peripheral/qei_01494/templates/plib_qei.h.ftl")
+    if "PIC32M" in Database.getSymbolValue("core", "PRODUCT_FAMILY"):    
+        qeiHeader1File.setSourcePath("../peripheral/qei_01494/templates/plib_qei.h.ftl")
+    else:
+        qeiHeader1File.setSourcePath("../peripheral/qei_01494/templates/plib_qei_pic32c.h.ftl")
     qeiHeader1File.setOutputName("plib_" + qeiInstanceName.getValue().lower() + ".h")
     qeiHeader1File.setDestPath("peripheral/qei/")
     qeiHeader1File.setProjectPath("config/" + configName + "/peripheral/qei/")
@@ -679,7 +702,10 @@ def instantiateComponent(qeiComponent):
 
     qeiSource1File = qeiComponent.createFileSymbol("QEI_SOURCE1", None)
     qeiSource1File.setMarkup(True)
-    qeiSource1File.setSourcePath("../peripheral/qei_01494/templates/plib_qei.c.ftl")
+    if "PIC32M" in Database.getSymbolValue("core", "PRODUCT_FAMILY"):    
+        qeiSource1File.setSourcePath("../peripheral/qei_01494/templates/plib_qei.c.ftl")
+    else:
+        qeiSource1File.setSourcePath("../peripheral/qei_01494/templates/plib_qei_pic32c.c.ftl")    
     qeiSource1File.setOutputName("plib_" + qeiInstanceName.getValue().lower() + ".c")
     qeiSource1File.setDestPath("peripheral/qei/")
     qeiSource1File.setProjectPath("config/" + configName + "/peripheral/qei/")

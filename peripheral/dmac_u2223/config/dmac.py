@@ -21,11 +21,74 @@
 * ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
 * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
 *****************************************************************************"""
-
+import re
 from os.path import join
 from xml.etree import ElementTree
 
 Log.writeInfoMessage("Loading DMA Manager for " + Variables.get("__PROCESSOR"))
+global has_digits
+global dmacEvsysGenNameGet
+global dmacEvsysUserNameGet
+global dmac_evsys_generatorsNamesList
+global dmac_evsys_usersNamesList
+dmac_evsys_generatorsNamesList = []
+dmac_evsys_usersNamesList = []
+
+
+def dmacEvsysGeneratorNamesPopulate(instanceName):
+    global dmac_evsys_generatorsNamesList
+
+    generatorNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/generators")
+    generatorValues = generatorNode.getChildren()
+    for id in range(0, len(generatorNode.getChildren())):
+        if generatorValues[id].getAttribute("module-instance") == instanceName:
+            dmac_evsys_generatorsNamesList.append(generatorValues[id].getAttribute("name"))
+
+def dmacEvsysUserNamesPopulate(instanceName):
+    global dmac_evsys_usersNamesList
+
+    usersNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/users")
+    usersValues = usersNode.getChildren()
+    for id in range(0, len(usersNode.getChildren())):
+        if usersValues[id].getAttribute("module-instance") == instanceName:
+            dmac_evsys_usersNamesList.append(usersValues[id].getAttribute("name"))
+
+def dmacEvsysGenNameGet(genNameMatchList):
+    global dmac_evsys_generatorsNamesList
+
+    for genName in dmac_evsys_generatorsNamesList:
+        if all ( x in genName for x in genNameMatchList):
+            return genName
+
+def dmacEvsysUserNameGet(usrNameMatchList):
+    global dmac_evsys_usersNamesList
+
+    for userName in dmac_evsys_usersNamesList:
+        if all ( x in userName for x in usrNameMatchList):
+            return userName
+
+def getValueGroupNode__DMAC(module_name, register_group, register_name, bitfield_name , mode = None):
+    bitfield_node_path = ""
+    value_group_node = None
+
+    if mode != None:
+        bitfield_node_path = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[modes=\"{2}\",name=\"{3}\"]/bitfield@[name=\"{4}\"]".format(module_name, register_group, mode, register_name, bitfield_name)
+    else:
+         bitfield_node_path = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[name=\"{2}\"]/bitfield@[name=\"{3}\"]".format(module_name, register_group, register_name, bitfield_name)
+
+    bitfield_node = ATDF.getNode(bitfield_node_path)
+
+    if bitfield_node != None:
+        if bitfield_node.getAttribute("values") == None:
+            Log.writeDebugMessage(register_name + "_" + bitfield_name + "does not have value-group attribute")
+        else:
+            value_group_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"{0}\"]/value-group@[name=\"{1}\"]".format(module_name, bitfield_node.getAttribute("values")))
+            if value_group_node == None:
+                Log.writeDebugMessage("value-group = " + bitfield_node.getAttribute("values") + " not defined")
+    else:
+        Log.writeDebugMessage("bitfield_name = " + bitfield_name + " not found" )
+
+    return value_group_node
 
 ################################################################################
 #### Global Variables ####
@@ -65,6 +128,11 @@ global dmacChannelIds
 dmacChannelIds = []
 
 dmacDep = []
+
+dmacEvsysGeneratorNamesPopulate("DMAC")
+dmacEvsysUserNamesPopulate("DMAC")
+
+
 # Create lists for peripheral triggers and the corresponding ID values
 node = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals")
 modules = node.getChildren()
@@ -145,24 +213,27 @@ def dmacTriggerLogic(symbol, event):
 
     symbolID = symbol.getID()
 
+    trigger = ""
+
     if event["value"] in triggerSettings:
         trigger = event["value"]
     else:
         if "Receive" in event["value"]:
             trigger = "Standard_Receive"
-        else:
+        elif "Transmit" in event["value"]:
             trigger = "Standard_Transmit"
 
-    symbol.clearValue()
+    if trigger != "":
+        symbol.clearValue()
 
-    if "TRIGACT" in symbolID:
-        symbol.setSelectedKey(str(triggerSettings[trigger][0]), 2)
-    elif "SRCINC" in symbolID:
-        symbol.setSelectedKey(str(triggerSettings[trigger][1]), 2)
-    elif "DSTINC" in symbolID:
-        symbol.setSelectedKey(str(triggerSettings[trigger][2]), 2)
-    elif "BEATSIZE" in symbolID:
-        symbol.setSelectedKey(str(triggerSettings[trigger][3]), 2)
+        if "TRIGACT" in symbolID:
+            symbol.setSelectedKey(str(triggerSettings[trigger][0]), 2)
+        elif "SRCINC" in symbolID:
+            symbol.setSelectedKey(str(triggerSettings[trigger][1]), 2)
+        elif "DSTINC" in symbolID:
+            symbol.setSelectedKey(str(triggerSettings[trigger][2]), 2)
+        elif "BEATSIZE" in symbolID:
+            symbol.setSelectedKey(str(triggerSettings[trigger][3]), 2)
 
 # The following business logic creates a list of enabled DMA channels and sorts
 # them in the descending order. The left most channel number will be the highest
@@ -216,14 +287,21 @@ def onChannelEnable(symbol, event):
         dmacSystemDefFile.setEnabled(dmaGlobalEnable)
 
 
+def has_digits(string):
+    import re
+    res = re.compile('\d').search(string)
+    return res is not None
 
 def createDMAChannelVectorList():
     # Returns a list containing dictionary {channel_number : vector_name}, where vector_name is read from ATDF
     # The list index corelates to DMAC channel and contains a dictionary with channel number and the vector name to use for that channel
     # Total size of the list will be equal to DMA_CHANNEL_COUNT (read from ATDF)
     # Example: dmaChannelVectorList = [{0 : DMAC_0}, {1 : DMAC_1}, {2 : DMAC_2}, {3 : DMAC_3}, {4 : DMAC_OTHER}, {5 : DMAC_OTHER} ... {31 : DMAC_OTHER}]
+    import re
     global dmaChannelVectorList
 
+    highest_ch_num = 0
+    interrupt_name_proto = ""
     dmaVectorNameList = []
 
     dmaChannelCount = Database.getSymbolValue("core", "DMA_CHANNEL_COUNT")
@@ -238,8 +316,18 @@ def createDMAChannelVectorList():
             # DMA vector name is "DMAC_OTHER"
             for y in range(len(dmaChannelVectorList), dmaChannelCount):
                 dmaChannelVectorList.append({str(y): n})
+        elif "TCMPL" in n:
+            ch_num = re.sub("[A-Z, _]", "", n)      #Extract the ch number by replacing any characters in A-Z and "_" with "".
+            dmaChannelVectorList.append({ch_num: n})
+            highest_ch_num = max(highest_ch_num, int(ch_num))
+            interrupt_name_proto = n                #Save the interrupt name prototype to be used later
         else:
-            channelList = n[5:].split("_")
+            name = n.replace("DMAC_", "")
+            if has_digits(name) == True:
+                name = re.sub("[^0-9, _]", "", name)
+            if name.startswith('_') == True:
+                name = name[1:]
+            channelList = name.split("_")
             if len(channelList) == 1:
                 # Enter here where DMA vector names are defined as "DMAC_0" and "DMAC_OTHER"
                 dmaChannelVectorList.append({channelList[0]: n})
@@ -249,6 +337,10 @@ def createDMAChannelVectorList():
                 endCh = channelList[1]
                 for x in range(int(startCh), int(endCh) + 1):
                     dmaChannelVectorList.append({str(x): n})
+
+    if interrupt_name_proto != "" and highest_ch_num < dmaChannelCount:
+        for x in range((highest_ch_num + 1), (dmaChannelCount + 1)):
+            dmaChannelVectorList.append({str(x): re.sub("[0-9]", str(highest_ch_num), interrupt_name_proto)})   #update the ch number in the interrupt name prototype by replacing any number in the prototype with the highest_ch_num
 
     return dmaChannelVectorList
 
@@ -262,6 +354,7 @@ def updateInterruptLogic(symbol, event):
     dmaChannelCount = Database.getSymbolValue("core", "DMA_CHANNEL_COUNT")
 
     if dmacMultiVectorSupported:
+
         vectorValues = ATDF.getNode("/avr-tools-device-file/devices/device/interrupts").getChildren()
 
         # First disable all the DMAC channel interrupt lines, unlock them and set the default handler
@@ -271,6 +364,8 @@ def updateInterruptLogic(symbol, event):
                 Database.setSymbolValue("core", vectorName + "_INTERRUPT_ENABLE", False, 2)
                 Database.setSymbolValue("core", vectorName + "_INTERRUPT_HANDLER_LOCK", False, 2)
                 Database.setSymbolValue("core", vectorName + "_INTERRUPT_HANDLER", vectorName + "_Handler", 2)
+                if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+                    Database.setSymbolValue("core", vectorName + "_SET_NON_SECURE", False)  #By default set to "SECURE" state
 
         # Now enable DMAC channel interrupt lines for which DMAC channel is enabled
         for n in range(0, dmaChannelCount):
@@ -283,11 +378,14 @@ def updateInterruptLogic(symbol, event):
                 Database.setSymbolValue("core", vectorName + "_INTERRUPT_HANDLER_LOCK", True, 2)
                 Database.setSymbolValue("core", vectorName + "_INTERRUPT_HANDLER", vectorName + "_InterruptHandler", 2)
 
+                if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+                    dmacXisNonSecure = Database.getSymbolValue("core", dmacInstanceName.getValue() + "_IS_NON_SECURE")
+                    Database.setSymbolValue("core", vectorName + "_SET_NON_SECURE", dmacXisNonSecure)
+
     else:
         InterruptVector = dmacInstanceName.getValue()+"_INTERRUPT_ENABLE"
         InterruptHandler = dmacInstanceName.getValue()+"_INTERRUPT_HANDLER"
         InterruptHandlerLock = dmacInstanceName.getValue()+"_INTERRUPT_HANDLER_LOCK"
-        dmacInterruptVectorSecurity = dmacInstanceName.getValue() + "_SET_NON_SECURE"
 
         dmaIntEnabled = False
 
@@ -302,8 +400,13 @@ def updateInterruptLogic(symbol, event):
 
         if dmaIntEnabled == True:
             Database.setSymbolValue("core", InterruptHandler, dmacInstanceName.getValue()+"_InterruptHandler", 2)
+            if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+                dmacXisNonSecure = Database.getSymbolValue("core", dmacInstanceName.getValue() + "_IS_NON_SECURE")
+                Database.setSymbolValue("core", dmacInstanceName.getValue() + "_SET_NON_SECURE", dmacXisNonSecure)
         else:
             Database.setSymbolValue("core", InterruptHandler, "DMAC_Handler", 2)
+            if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+                Database.setSymbolValue("core", dmacInstanceName.getValue() + "_SET_NON_SECURE", False)  #By default set to "SECURE" state
 
 
 def updateDMACInterruptWarringStatus(symbol, event):
@@ -326,6 +429,8 @@ def dmacTriggerCalc(symbol, event):
     symbol.setValue(per_instance.get(event["value"]), 2)
 
 def dmacEvsysControl(symbol, event):
+    global dmacEvsysGenNameGet
+    global dmacEvsysUserNameGet
 
     channel = symbol.getID().split("DMAC_EVSYS_DUMMY")[1]
 
@@ -333,8 +438,11 @@ def dmacEvsysControl(symbol, event):
     input = Database.getSymbolValue("core", "DMAC_ENABLE_EVSYS_IN_" + channel)
     output = Database.getSymbolValue("core", "DMAC_ENABLE_EVSYS_OUT_" + channel)
 
-    Database.setSymbolValue("evsys", "GENERATOR_DMAC_CH_" + channel + "_ACTIVE", (enable & output), 2)
-    Database.setSymbolValue("evsys", "USER_DMAC_CH_" + channel + "_READY", (enable & input), 2)
+    evsysGenName = dmacEvsysGenNameGet(["CH", channel])
+    evsysUserName = dmacEvsysUserNameGet(["CH", channel])
+
+    Database.setSymbolValue("evsys", "GENERATOR_" + evsysGenName + "_ACTIVE", (enable & output), 2)
+    Database.setSymbolValue("evsys", "USER_" + evsysUserName + "_READY", (enable & input), 2)
 
 # This function enables DMA channel and selects respective trigger if DMA mode
 # is selected for any peripheral ID.
@@ -418,6 +526,7 @@ dmacRUNSTDBYNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="DM
 
 # DMA_ENABLE: Needed to conditionally generate API mapping in DMA System service
 dmacEnable = coreComponent.createBooleanSymbol("DMA_ENABLE", dmacMenu)
+dmacEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CTRL")
 dmacEnable.setLabel("Use DMA Service ?")
 dmacEnable.setVisible(False)
 dmacEnable.setDefaultValue(False)
@@ -427,6 +536,7 @@ dmacIntEnable.setVisible(False)
 
 # DMA_CHANNEL_COUNT: Needed for DMA system service to generate channel enum
 dmacChCount = coreComponent.createIntegerSymbol("DMA_CHANNEL_COUNT", dmacEnable)
+dmacChCount.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CRCCTRL")
 dmacChCount.setLabel("DMA (DMAC) Channels Count")
 dmacChCount.setDefaultValue(dmacChannelCount)
 dmacChCount.setVisible(False)
@@ -434,15 +544,38 @@ dmacChCount.setVisible(False)
 if dmacMultiVectorSupported == True:
     createDMAChannelVectorList()
 
+    multi_iqrn_sym_exists = Database.getSymbolValue("core", dmacInstanceName.getValue() + "_MULTI_IRQn")
+    if multi_iqrn_sym_exists == None:
+        nvic_multi_vector = coreComponent.createBooleanSymbol(dmacInstanceName.getValue() + "_MULTI_IRQn", None)
+        nvic_multi_vector.setDefaultValue(True)
+        nvic_multi_vector.setVisible(False)
+
+    for n in range(0, len(dmaChannelVectorList)):
+        # Get the vector name to use for the given DMAC channel
+        for chn, isr_name in dmaChannelVectorList[n].items():
+            dmacIntHandlerName = coreComponent.createStringSymbol("DMAC_INT_HANDLER_NAME_" + chn, None)
+            dmacIntHandlerName.setDefaultValue(isr_name)
+            dmacIntHandlerName.setVisible(False)
+
+            if multi_iqrn_sym_exists == None:
+
+                # DMA channel interrupt number - needed by core drivers to disable during critical section
+                DMA_ChannelX_VectorEnum = coreComponent.createStringSymbol(dmacInstanceName.getValue() + "_CHANNEL" + str(chn) + "_INT_SRC", None)
+                DMA_ChannelX_VectorEnum.setLabel("DMA Channel " + str(chn) + " interrupt Vector Number Enum")
+                DMA_ChannelX_VectorEnum.setDefaultValue(isr_name + "_IRQn")
+                DMA_ChannelX_VectorEnum.setVisible(False)
+
 dmacEventCount = coreComponent.createIntegerSymbol("DMA_EVSYS_CHANNEL_COUNT", dmacEnable)
 dmacEventCount.setDefaultValue(4)
 dmacEventCount.setVisible(False)
 
 dmacHighestCh = coreComponent.createIntegerSymbol("DMAC_HIGHEST_CHANNEL", dmacEnable)
+dmacHighestCh.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CRCCTRL")
 dmacHighestCh.setLabel("DMA (DMAC) Highest Active Channel")
 dmacHighestCh.setVisible(False)
 
 dmacChannelLinkedList = coreComponent.createBooleanSymbol("DMAC_LL_ENABLE", dmacMenu)
+dmacChannelLinkedList.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:BTCTRL")
 dmacChannelLinkedList.setLabel("Use Linked List Mode ?")
 
 priorityRegisterName = coreComponent.createStringSymbol("PRIORITY_REGISTER_NAME", None)
@@ -457,6 +590,7 @@ for dmacCount in range(0, 4):
 
     # Level 0/1/2/3 Round-Robin Arbitration Enable
     PRICTRL0_LVLPRI_SelectionSym = coreComponent.createKeyValueSetSymbol("DMAC_LVLXPRIO_" + str(dmacCount), dmacMenu)
+    PRICTRL0_LVLPRI_SelectionSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:PRICTRL0")
     PRICTRL0_LVLPRI_SelectionSym.setLabel("Priority Level " + str(dmacCount) + " Arbitration Scheme")
 
     PRICTRL0_LVLPRI_SelectionSym.addKey("STATIC_LVL", "0", "Static Priority Arbitration")
@@ -470,26 +604,31 @@ for channelID in range(0, dmacChCount.getValue()):
     global per_instance
 
     dmacChannelEnable = coreComponent.createBooleanSymbol("DMAC_ENABLE_CH_" + str(channelID), dmacMenu)
+    dmacChannelEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLA")
     dmacChannelEnable.setLabel("Use DMAC Channel " + str(channelID))
     dmacChannelIds.append("DMAC_ENABLE_CH_" + str(channelID))
 
     if dmacRUNSTDBYNode != None:
         # Channel Run in Standby
         CH_CHCTRLA_RUNSTDBY_Ctrl = coreComponent.createBooleanSymbol("DMAC_CHCTRLA_RUNSTDBY_CH_" + str(channelID), dmacChannelEnable)
+        CH_CHCTRLA_RUNSTDBY_Ctrl.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLA")
         CH_CHCTRLA_RUNSTDBY_Ctrl.setLabel("Run Channel in Standby mode")
 
     # Enable interrupt
     dmacChannelEnableInt = coreComponent.createBooleanSymbol("DMAC_ENABLE_CH_" + str(channelID) + "_INTERRUPT", dmacChannelEnable)
+    dmacChannelEnableInt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHINTENSET")
     dmacChannelEnableInt.setLabel("Enable Interrupt")
     dmacChannelEnableInt.setDefaultValue(True)
     dmacChannelInt.append("DMAC_ENABLE_CH_" + str(channelID) + "_INTERRUPT")
 
     # CHCTRLB - Trigger Source
     dmacSym_CHCTRLB_TRIGSRC = coreComponent.createComboSymbol("DMAC_CHCTRLB_TRIGSRC_CH_" + str(channelID), dmacChannelEnable, sorted(per_instance.keys()))
+    dmacSym_CHCTRLB_TRIGSRC.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
     dmacSym_CHCTRLB_TRIGSRC.setLabel("Trigger Source")
     dmacSym_CHCTRLB_TRIGSRC.setDefaultValue("Software Trigger")
 
     dmacSym_PERID_Val = coreComponent.createIntegerSymbol("DMAC_CHCTRLB_TRIGSRC_CH_" + str(channelID) + "_PERID_VAL", dmacChannelEnable)
+    dmacSym_PERID_Val.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
     dmacSym_PERID_Val.setLabel("PERID Value")
     dmacSym_PERID_Val.setDefaultValue(0)
     dmacSym_PERID_Val.setDependencies(dmacTriggerCalc, ["DMAC_CHCTRLB_TRIGSRC_CH_" + str(channelID)])
@@ -497,12 +636,14 @@ for channelID in range(0, dmacChCount.getValue()):
 
     # DMA manager will use LOCK symbol to lock the "DMAC_CHCTRLB_TRIGSRC_CH_ + str(channelID)" symbol
     dmacSym_CHCTRLB_TRIGSRC_LOCK = coreComponent.createBooleanSymbol("DMAC_CHCTRLB_TRIGSRC_CH_" + str(channelID) + "_PERID_LOCK", dmacChannelEnable)
+    dmacSym_CHCTRLB_TRIGSRC_LOCK.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
     dmacSym_CHCTRLB_TRIGSRC_LOCK.setLabel("Lock DMA Request")
     dmacSym_CHCTRLB_TRIGSRC_LOCK.setVisible(False)
     dmacSym_CHCTRLB_TRIGSRC_LOCK.setUseSingleDynamicValue(True)
 
     # CHCTRLB - Trigger Action
     dmacSym_CHCTRLB_TRIGACT = coreComponent.createKeyValueSetSymbol("DMAC_CHCTRLB_TRIGACT_CH_" + str(channelID), dmacChannelEnable)
+    dmacSym_CHCTRLB_TRIGACT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
     dmacSym_CHCTRLB_TRIGACT.setLabel("Trigger Action")
     dmacSym_CHCTRLB_TRIGACT.addKey("BLOCK", "0", "One Block Transfer Per DMA Request")
     dmacSym_CHCTRLB_TRIGACT.addKey("BEAT", "2", "One Beat Transfer per DMA Request")
@@ -514,6 +655,7 @@ for channelID in range(0, dmacChCount.getValue()):
 
     # Channel Priority Level
     CHCTRLB_LVL_SelectionSym = coreComponent.createKeyValueSetSymbol("DMAC_CHCTRLB_LVL_CH_" + str(channelID), dmacChannelEnable)
+    CHCTRLB_LVL_SelectionSym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
     CHCTRLB_LVL_SelectionSym.setLabel("Channel Priority Level")
     CHCTRLB_LVL_SelectionSym.addKey("LVL0", "0", "Priority Level 0")
     CHCTRLB_LVL_SelectionSym.addKey("LVL1", "1", "Priority Level 1")
@@ -525,6 +667,7 @@ for channelID in range(0, dmacChCount.getValue()):
 
     # BTCTRL - Destination Increment
     dmacSym_BTCTRL_DSTINC_Val = coreComponent.createKeyValueSetSymbol("DMAC_BTCTRL_DSTINC_CH_" + str(channelID), dmacChannelEnable)
+    dmacSym_BTCTRL_DSTINC_Val.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:BTCTRL")
     dmacSym_BTCTRL_DSTINC_Val.setLabel("Destination Address Mode")
     dmacSym_BTCTRL_DSTINC_Val.addKey("FIXED_AM", "0", "Fixed Address Mode")
     dmacSym_BTCTRL_DSTINC_Val.addKey("INCREMENTED_AM", "1", "Increment Address After Every Transfer")
@@ -535,6 +678,7 @@ for channelID in range(0, dmacChCount.getValue()):
 
     # BTCTRL - Source Increment
     dmacSym_BTCTRL_SRCINC_Val = coreComponent.createKeyValueSetSymbol("DMAC_BTCTRL_SRCINC_CH_" + str(channelID), dmacChannelEnable)
+    dmacSym_BTCTRL_SRCINC_Val.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:BTCTRL")
     dmacSym_BTCTRL_SRCINC_Val.setLabel("Source Address Mode")
     dmacSym_BTCTRL_SRCINC_Val.addKey("FIXED_AM", "0", "Fixed Address Mode")
     dmacSym_BTCTRL_SRCINC_Val.addKey("INCREMENTED_AM", "1", "Increment Address After Every Transfer")
@@ -545,9 +689,10 @@ for channelID in range(0, dmacChCount.getValue()):
 
     # BTCTRL - Beat Size
     dmacSym_BTCTRL_BEATSIZE = coreComponent.createKeyValueSetSymbol("DMAC_BTCTRL_BEATSIZE_CH_" + str(channelID), dmacChannelEnable)
+    dmacSym_BTCTRL_BEATSIZE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:BTCNT")
     dmacSym_BTCTRL_BEATSIZE.setLabel("Beat Size")
 
-    dmacBeatSizeNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMAC\"]/value-group@[name=\"DMAC_BTCTRL__BEATSIZE\"]")
+    dmacBeatSizeNode = getValueGroupNode__DMAC("DMAC", "DMAC_DESCRIPTOR", "BTCTRL", "BEATSIZE")
     dmacBeatSizeValues = []
     dmacBeatSizeValues = dmacBeatSizeNode.getChildren()
 
@@ -573,12 +718,14 @@ for channelID in range(0, dmacChCount.getValue()):
         dmaEVSYSMenu.setLabel("Event System Configuration")
 
         dmaEvsysOut = coreComponent.createBooleanSymbol("DMAC_ENABLE_EVSYS_OUT_" + str(channelID), dmaEVSYSMenu)
+        dmaEvsysOut.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
         dmaEvsysOut.setLabel("Enable Event Output for Channel " + str(channelID))
 
         dmaEvsysEVOSEL = coreComponent.createKeyValueSetSymbol("DMAC_BTCTRL_EVSYS_EVOSEL_" + str(channelID), dmaEVSYSMenu)
+        dmaEvsysEVOSEL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:BTCTRL")
         dmaEvsysEVOSEL.setLabel("Event Output Selection")
 
-        dmaEvsysEVOSELNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMAC\"]/value-group@[name=\"DMAC_BTCTRL__EVOSEL\"]")
+        dmaEvsysEVOSELNode = getValueGroupNode__DMAC("DMAC", "DMAC_DESCRIPTOR", "BTCTRL", "EVOSEL")
         dmaEvsysEVOSELValues = dmaEvsysEVOSELNode.getChildren()
 
         for index in range(len(dmaEvsysEVOSELValues)):
@@ -591,12 +738,14 @@ for channelID in range(0, dmacChCount.getValue()):
         dmaEvsysEVOSEL.setDisplayMode("Description")
 
         dmaEvsysIn = coreComponent.createBooleanSymbol("DMAC_ENABLE_EVSYS_IN_" + str(channelID), dmaEVSYSMenu)
+        dmaEvsysIn.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
         dmaEvsysIn.setLabel("Enable Event Input for Channel " + str(channelID))
 
         dmaEvsysEVACT = coreComponent.createKeyValueSetSymbol("DMAC_CHCTRLB_EVACT_" + str(channelID), dmaEVSYSMenu)
+        dmaEvsysEVACT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
         dmaEvsysEVACT.setLabel("Event Input Action")
 
-        dmaEvsysEVACTNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMAC\"]/value-group@[name=\"DMAC_CHCTRLB__EVACT\"]")
+        dmaEvsysEVACTNode = getValueGroupNode__DMAC("DMAC", "DMAC", "CHCTRLB", "EVACT")
         dmaEvsysEVACTValues = dmaEvsysEVACTNode.getChildren()
 
         for index in range(len(dmaEvsysEVACTValues)):
@@ -618,7 +767,7 @@ for channelID in range(0, dmacChCount.getValue()):
 
 dmacEnable.setDependencies(onChannelEnable, dmacChannelIds)
 dmacHighestCh.setDependencies(onChannelEnable, dmacChannelIds)
-dmacIntEnable.setDependencies(updateInterruptLogic, dmacChannelIds + dmacChannelInt)
+dmacIntEnable.setDependencies(updateInterruptLogic, dmacChannelIds + dmacChannelInt + ["core." + dmacInstanceName.getValue() + "_IS_NON_SECURE"])
 
 # DMA - Source AM Mask
 xdmacSym_BTCTRL_SRCINC_MASK = coreComponent.createStringSymbol("DMA_SRC_AM_MASK", dmacChannelEnable)
@@ -673,16 +822,19 @@ dmacSym_BTCTRL_BEATSIZE_WORD.setVisible(False)
 # Interface for Peripheral clients
 for per in per_instance.keys():
     dmacChannelNeeded = coreComponent.createBooleanSymbol("DMA_CH_NEEDED_FOR_" + str(per), dmacMenu)
+    dmacChannelNeeded.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
     dmacChannelNeeded.setLabel("Local DMA_CH_NEEDED_FOR_" + str(per))
     dmacChannelNeeded.setVisible(False)
     peridValueListSymbols.append("DMA_CH_NEEDED_FOR_" + str(per))
 
     dmacChannel = coreComponent.createIntegerSymbol("DMA_CH_FOR_" + str(per), dmacMenu)
+    dmacChannel.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
     dmacChannel.setLabel("Local DMA_CH_FOR_" + str(per))
     dmacChannel.setDefaultValue(-1)
     dmacChannel.setVisible(False)
 
 dmacPERIDChannelUpdate = coreComponent.createBooleanSymbol("DMA_CHANNEL_ALLOC", dmacChannelEnable)
+dmacPERIDChannelUpdate.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dmac_u2223;register:CHCTRLB")
 dmacPERIDChannelUpdate.setLabel("Local dmacChannelAllocLogic")
 dmacPERIDChannelUpdate.setVisible(False)
 dmacPERIDChannelUpdate.setDependencies(dmacChannelAllocLogic, peridValueListSymbols)

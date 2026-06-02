@@ -38,6 +38,7 @@ global  systickInterrupt
 global  systickUsedBySysTime
 global  systickCommentForSysTime
 global  calAchievableTickRate
+global  systickMaxCount
 
 Log.writeInfoMessage("Loading SYSTICK for " + Variables.get("__PROCESSOR"))
 
@@ -100,8 +101,7 @@ def sysTickMax(systick, event):
 
     freq_proc = int(Database.getSymbolValue("core", "CPU_CLOCK_FREQUENCY"))
 
-    systickCVRNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SysTick"]/register-group@[name="SysTick"]/register@[name="CVR"]/bitfield@[name="CURRENT"]')
-    currentValueMask = str(systickCVRNode.getAttribute("mask"))
+    currentValueMask = systickMaxCount
 
     if clock == 0:
         if freq_ext != 0 and freq_ext != None:
@@ -120,7 +120,11 @@ def calAchievableTickRate(periodVal, sourceFreq):
             #Read the calculated timer count and Calculate the actual tick rate
             achievableTickRateHz = (1.0/sourceFreq) * periodVal
             achievableTickRateHz = (1.0/achievableTickRateHz) * 100000.0
-            dummy_dict = Database.sendMessage(Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID"), "SYS_TIME_ACHIEVABLE_TICK_RATE_HZ", {"tick_rate_hz": long(achievableTickRateHz)})
+            if Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID") == "sys_time":
+                dummy_dict = Database.sendMessage(Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID"), "SYS_TIME_ACHIEVABLE_TICK_RATE_HZ", {"tick_rate_hz": long(achievableTickRateHz)})
+            elif Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID") == "dvrt":
+                dummy_dict = Database.sendMessage(Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID"), "DVRT_ACHIEVABLE_TICK_RATE_HZ", {"tick_rate_hz": long(achievableTickRateHz)})
+
 
 def systickCal(symbol, event):
     global calAchievableTickRate
@@ -159,16 +163,28 @@ def systickPubCapabilities(symbol, event):
     # Send SYS TICK capability ("PERIOD_MODE") and get SYS TIME Tick Ms in return from SYS Time
     if event["value"] == True:
         modeDict = {"plib_mode": "PERIOD_MODE"}
-        sysTimePLIBConfig = Database.sendMessage(Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID"), "SYS_TIME_PLIB_CAPABILITY", modeDict)
-        if sysTimePLIBConfig["plib_mode"] == "SYS_TIME_PLIB_MODE_PERIOD":
-            systickPeriodMS.setReadOnly(True)
-            systickEnable.setReadOnly(True)
-            systickInterrupt.setReadOnly(True)
-            systickEnable.setValue(True)
-            systickInterrupt.setValue(True)
-            systickCommentForSysTime.setVisible(True)
-            systickUsedBySysTime.setValue(True)
-            systickPeriodMS.setValue(sysTimePLIBConfig["sys_time_tick_ms"])
+        if Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID") == "sys_time":
+            sysTimePLIBConfig = Database.sendMessage(Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID"), "SYS_TIME_PLIB_CAPABILITY", modeDict)
+            if sysTimePLIBConfig["plib_mode"] == "SYS_TIME_PLIB_MODE_PERIOD":
+                systickPeriodMS.setReadOnly(True)
+                systickEnable.setReadOnly(True)
+                systickInterrupt.setReadOnly(True)
+                systickEnable.setValue(True)
+                systickInterrupt.setValue(True)
+                systickCommentForSysTime.setVisible(True)
+                systickUsedBySysTime.setValue(True)
+                systickPeriodMS.setValue(sysTimePLIBConfig["sys_time_tick_ms"])
+        elif Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID") == "dvrt":
+            sysTimePLIBConfig = Database.sendMessage(Database.getSymbolValue("core","SYSTICK_SYS_TIME_COMPONENT_ID"), "DVRT_SYS_TICK_PLIB_CAPABILITY", modeDict)
+            if sysTimePLIBConfig["plib_mode"] == "DVRT_PLIB_MODE_PERIOD":
+                systickPeriodMS.setReadOnly(True)
+                systickEnable.setReadOnly(True)
+                systickInterrupt.setReadOnly(True)
+                systickEnable.setValue(True)
+                systickInterrupt.setValue(True)
+                systickCommentForSysTime.setVisible(True)
+                systickUsedBySysTime.setValue(True)
+                systickPeriodMS.setValue(sysTimePLIBConfig["sys_tick_ms"])
     else:
         systickUsedBySysTime.setValue(False)
         systickPeriodMS.setReadOnly(False)
@@ -199,6 +215,7 @@ sysTickMenu = coreComponent.createMenuSymbol("SYSTICK_MENU", cortexMenu)
 sysTickMenu.setLabel("SysTick")
 
 systickSysTimeComponentId = coreComponent.createStringSymbol("SYSTICK_SYS_TIME_COMPONENT_ID", sysTickMenu)
+systickSysTimeComponentId.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickSysTimeComponentId.setLabel("Component id")
 systickSysTimeComponentId.setVisible(False)
 systickSysTimeComponentId.setDefaultValue("")
@@ -213,16 +230,24 @@ systickCommentForSysTime.setVisible(False)
 systickCommentForSysTime.setLabel("SYS TIME is using SysTick for Timebase")
 
 systickEnable = coreComponent.createBooleanSymbol("systickEnable", sysTickMenu)
+systickEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickEnable.setLabel("Enable SysTick")
 systickEnable.setDependencies(systickUse, ["HarmonyCore.SELECT_RTOS"])
 
 systickPublishCapabilities = coreComponent.createBooleanSymbol("SYSTICK_PUBLISH_CAPABILITIES", sysTickMenu)
+systickPublishCapabilities.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickPublishCapabilities.setLabel("Systick Publish Capabilities")
 systickPublishCapabilities.setVisible(False)
 systickPublishCapabilities.setDefaultValue(False)
 systickPublishCapabilities.setDependencies(systickPubCapabilities, ["SYSTICK_PUBLISH_CAPABILITIES"])
 
+systickAvailableStatus = coreComponent.createBooleanSymbol("SYSTICK_BUSY", sysTickMenu)
+systickAvailableStatus.setLabel("Systick Busy")
+systickAvailableStatus.setVisible(False)
+systickAvailableStatus.setDefaultValue(False)
+
 systickUsedBySysTime = coreComponent.createBooleanSymbol("SYSTICK_USED_BY_SYS_TIME", sysTickMenu)
+systickUsedBySysTime.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickUsedBySysTime.setLabel("Systick Used By SYS Time")
 systickUsedBySysTime.setVisible(False)
 systickUsedBySysTime.setDefaultValue(False)
@@ -233,10 +258,12 @@ systickConfigMenu.setVisible(False)
 systickConfigMenu.setDependencies(sysTickEnableCfgMenu, ["systickEnable"])
 
 systickInterrupt = coreComponent.createBooleanSymbol("USE_SYSTICK_INTERRUPT", systickConfigMenu)
+systickInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickInterrupt.setLabel("Enable Interrupt")
 systickInterrupt.setDependencies(setInterruptEnable, ["systickEnable"])
 
 systickClock = coreComponent.createKeyValueSetSymbol("SYSTICK_CLOCK", systickConfigMenu)
+systickClock.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickClock.setLabel("SysTick Clock")
 systickClock.setOutputMode("Value")
 systickClock.setDisplayMode("Description")
@@ -245,14 +272,20 @@ if Database.getSymbolValue("core","SYSTICK_EXTERNAL_CLOCK"):
 systickClock.addKey("HCLK", str(1) , "Processor clock" )
 systickClock.setDefaultValue(int(Database.getSymbolValue("core","SYSTICK_EXTERNAL_CLOCK")))
 
+systickRegPrefixStr = ""
+
 systickNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SysTick"]/register-group@[name="SysTick"]/register@[name="VAL"]/bitfield@[name="CURRENT"]')
 #Check for old register name
 if systickNode is None:
     systickNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SysTick"]/register-group@[name="SysTick"]/register@[name="CVR"]/bitfield@[name="CURRENT"]')
-maxCount = str(systickNode.getAttribute("mask"))
-max = ((float(1) / int(Database.getSymbolValue("core", "CPU_CLOCK_FREQUENCY"))) * int(maxCount, 0) * 1000)
+if systickNode == None:
+    systickNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SysTick"]/register-group@[name="SysTick"]/register@[name="SYST_CVR"]/bitfield@[name="CURRENT"]')
+    #systickRegPrefixStr = "SYST_"
+systickMaxCount = str(systickNode.getAttribute("mask"))
+max = ((float(1) / int(Database.getSymbolValue("core", "CPU_CLOCK_FREQUENCY"))) * int(systickMaxCount, 0) * 1000)
 
 systickPeriodMS = coreComponent.createFloatSymbol("SYSTICK_PERIOD_MS", systickConfigMenu)
+systickPeriodMS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickPeriodMS.setLabel("Systick Period(Milliseconds)")
 systickPeriodMS.setVisible(True)
 systickPeriodMS.setDefaultValue(float(1.0))
@@ -261,6 +294,7 @@ systickPeriodMS.setMax(float(max))
 systickPeriodMS.setDependencies(sysTickMax, ["core.CPU_CLOCK_FREQUENCY", "SYSTICK_CLOCK", "core.SYSTICK_CLOCK_FREQUENCY"])
 
 systickPeriodMSLongInt = coreComponent.createLongSymbol("SYSTICK_PERIOD_MS_LONG_INT", systickConfigMenu)
+systickPeriodMSLongInt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:%NOREGISTER%")
 systickPeriodMSLongInt.setLabel("Systick Period(Milliseconds) Long")
 systickPeriodMSLongInt.setVisible(False)
 systickPeriodMSLongInt.setDefaultValue(0)
@@ -269,6 +303,7 @@ systickPeriodMSLongInt.setDependencies(updateSysTickMS, ["SYSTICK_PERIOD_MS_LONG
 
 systickDefault = int(Database.getSymbolValue("core", "CPU_CLOCK_FREQUENCY")) / 1000
 systickPeriod = coreComponent.createStringSymbol("SYSTICK_PERIOD", systickConfigMenu)
+systickPeriod.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:systick;register:LOAD")
 systickPeriod.setLabel("SysTick Period")
 systickPeriod.setVisible(False)
 systickPeriod.setDefaultValue(str(hex(systickDefault)))
@@ -278,6 +313,10 @@ systickPeriodUS = coreComponent.createIntegerSymbol("SYSTICK_PERIOD_US", systick
 systickPeriodUS.setVisible(False)
 systickPeriodUS.setDefaultValue(1000)
 systickPeriodUS.setMin(0)
+
+systickRegisterPrefix = coreComponent.createStringSymbol("SYSTICK_REG_PREFIX", systickConfigMenu)
+systickRegisterPrefix.setDefaultValue(systickRegPrefixStr)
+systickRegisterPrefix.setVisible(False)
 
 # Setup Peripheral Interrupt in Interrupt manager
 systickinterruptVector = "SysTick_INTERRUPT_ENABLE"

@@ -44,7 +44,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <time.h>
 
 #ifdef __cplusplus // Provide C++ Compatibility
  extern "C" {
@@ -91,6 +90,7 @@ typedef enum
     RTC_INT_SECOND   = 0x04,          // Second Event
     RTC_INT_TIME     = 0x08,          // Time Event
     RTC_INT_CALENDAR = 0x10,          // Calendar enable
+    RTC_INT_TIME_DATE_ERR = 0x20,     // Time and/or Date Error Event
 } RTC_INT_MASK;
 
 <#if RTC_TAMPER_CHANNELS?? && RTC_TAMP_ENABLE == true>

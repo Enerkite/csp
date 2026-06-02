@@ -323,7 +323,8 @@ def update_tc_clock_frequency(symbol, event):
 global update_flexcom_clock_frequency
 def update_flexcom_clock_frequency(symbol,event):
     frequency = -1
-    clk_sym_map = { "USART": "FLEXCOM_USART_MR_USCLKS",
+    clk_sym_map = { "NO_COM": "",
+                    "USART": "FLEXCOM_USART_MR_USCLKS",
                     "SPI": "FLEXCOM_SPI_MR_BRSRCCLK",
                     "TWI": "FLEXCOM_TWI_CWGR_BRSRCCLK"
                   }
@@ -331,20 +332,23 @@ def update_flexcom_clock_frequency(symbol,event):
     flexcom_comp = Database.getComponentByID(instance_name.lower())
     if flexcom_comp is not None:
         clk_sym = clk_sym_map[flexcom_comp.getSymbolByID("FLEXCOM_MODE").getSelectedKey()]
-        source_clock = flexcom_comp.getSymbolByID(clk_sym).getSelectedKey()
-        mck0div_freq = event["source"].getSymbolValue("MCK0DIV_FREQUENCY")
-        # Source clock is bus clock
-        if source_clock == "MCK" or source_clock == "PERIPH_CLK":
-            frequency = mck0div_freq
-        # Source clock is bus clock / 8
-        elif source_clock == "DIV":
-            frequency = mck0div_freq / 8
-        # Source clock is GCLK
-        elif source_clock == "GCLK":
-            frequency = event["source"].getSymbolValue(instance_name + "_GCLK_FREQUENCY")
-        # Source clock is external, set the internal frequency to zero
-        else:
+        if clk_sym == "":
             frequency = 0
+        else:
+            source_clock = flexcom_comp.getSymbolByID(clk_sym).getSelectedKey()
+            mck0div_freq = event["source"].getSymbolValue("MCK0DIV_FREQUENCY")
+            # Source clock is bus clock
+            if source_clock == "MCK" or source_clock == "PERIPH_CLK":
+                frequency = mck0div_freq
+            # Source clock is bus clock / 8
+            elif source_clock == "DIV":
+                frequency = mck0div_freq / 8
+            # Source clock is GCLK
+            elif source_clock == "GCLK":
+                frequency = event["source"].getSymbolValue(instance_name + "_GCLK_FREQUENCY")
+            # Source clock is external, set the internal frequency to zero
+            else:
+                frequency = 0
 
         symbol.setValue(frequency)
 
@@ -431,6 +435,7 @@ if __name__ == "__main__":
 
     moscxtfreq = clk_component.createIntegerSymbol("CLK_MOSCXTFREQ",
                                                                 mainck_menu)
+    moscxtfreq.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_mt;register:CKGR_MOR")
     moscxtfreq.setLabel("MOSCXTFREQ")
     moscxtfreq.setDescription("Main Oscillator/External Clock Frequency")
     moscxtfreq.setMin(12000000)
@@ -711,6 +716,7 @@ if __name__ == "__main__":
                          param_node.get("name").split("CLOCK_ID")[1]
                     pcr_en = clk_component.createBooleanSymbol(
                                 clock_id_suffix + "_CLOCK_ENABLE", pcr_menu)
+                    pcr_en.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_mt;register:PMC_PCR")
                     pcr_en.setLabel(clock_id_suffix)
                     peripheral_clock_list.append(clock_id_suffix + "_CLOCK_ENABLE")
 
@@ -747,11 +753,13 @@ if __name__ == "__main__":
 
                 gclk_en = clk_component.createBooleanSymbol(
                             "CLK_"+instance_name+"_GCLKEN", gclk_periph)
+                gclk_en.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_mt;register:GCLKEN")
                 gclk_en.setLabel("GCLKEN")
                 gclk_freq_deps.append(gclk_en.getID())
 
                 gclk_css = clk_component.createKeyValueSetSymbol(
                             "CLK_"+instance_name+"_GCLKCSS", gclk_periph)
+                gclk_css.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_mt;register:PMC_PCR")
                 gclk_css.setLabel("GCLKCSS")
                 gclk_css.setOutputMode("Value")
                 for val_node in gclkcss_vg_node:
@@ -765,6 +773,7 @@ if __name__ == "__main__":
 
                 gclk_div = clk_component.createIntegerSymbol(
                             "CLK_"+instance_name+"_GCLKDIV", gclk_periph)
+                gclk_div.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_mt;register:PMC_PCR")
                 gclk_div.setLabel("GCLKDIV")
                 gclk_div.setMin(0)
                 gclk_div.setMax(255)
@@ -805,6 +814,7 @@ if __name__ == "__main__":
         pckx_freq_deps = []
         pckx_en = clk_component.createBooleanSymbol(
                                         "CLK_SCER_PCK"+str(pckx), pck_menu)
+        pckx_en.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:clk_pic32cx_mt;register:PMC_SCER")
         pckx_en.setLabel("PCK"+str(pckx))
         pckx_freq_deps.append(pckx_en.getID())
 

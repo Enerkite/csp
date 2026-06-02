@@ -76,14 +76,14 @@
 // *****************************************************************************
 // *****************************************************************************
 
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 5.4 deviated: 5  Deviation record ID -  H3_MISRAC_2012_R_5_4_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 5.4 deviated: 5  Deviation record ID -  H3_MISRAC_2023_R_5_4_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
     <#if COMPILER_CHOICE == "XC32">
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunknown-pragmas"
     </#if>
-    #pragma coverity compliance block deviate "MISRA C-2012 Rule 5.4" "H3_MISRAC_2012_R_5_4_DR_1"
+    #pragma coverity compliance block deviate "MISRA C-2023 Rule 5.4" "H3_MISRAC_2023_R_5_4_DR_1"
 </#if>
 <#if EVIC_IRQ_MIN != -1 && EVIC_IRQ_MAX != -1>
 <#list EVIC_IRQ_MIN..EVIC_IRQ_MAX as i>
@@ -106,12 +106,12 @@
 </#if>
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-    #pragma coverity compliance end_block "MISRA C-2012 Rule 5.4"
+    #pragma coverity compliance end_block "MISRA C-2023 Rule 5.4"
     <#if COMPILER_CHOICE == "XC32">
     #pragma GCC diagnostic pop
     </#if>
 </#if>
-    /* MISRAC 2012 deviation block end */
+    /* MISRAC 2023 deviation block end */
 typedef uint32_t INT_SOURCE;
 
 <#if 0 < NumOfEnabledExtInt>
@@ -157,6 +157,10 @@ void EVIC_INT_Enable( void );
 bool EVIC_INT_Disable( void );
 
 void EVIC_INT_Restore( bool state );
+
+bool EVIC_INT_SourceDisable( INT_SOURCE source );
+
+void EVIC_INT_SourceRestore( INT_SOURCE source, bool status );
 
 <#if 0 < NumOfEnabledExtInt>
 bool EVIC_ExternalInterruptCallbackRegister(

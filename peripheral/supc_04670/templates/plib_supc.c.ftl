@@ -175,7 +175,7 @@ void ${SUPC_INSTANCE_NAME}_Initialize(void)
                                                                       ${SUPC_MR_CORSMDIS?then('| SUPC_MR_CORSMDIS_Msk', '')}
                                                                       ${SUPC_MR_CORSMRSTEN?then('| SUPC_MR_CORSMRSTEN_Msk', '')}
                                                                       ${SUPC_MR_VREGDIS?then('', '| SUPC_MR_VREGDIS_Msk')}
-                                                                      ${SUPC_MR_CORSMM?then('', '| SUPC_MR_CORSMM_Msk')};</@compress>
+                                                                      ${SUPC_MR_CORSMM?then('| SUPC_MR_CORSMM_Msk', '')};</@compress>
 
 <#if SUPC_EMR_COREBGEN || SUPC_EMR_FULLGPBRC || SUPC_EMR_FLRSGPBR>
         <@compress single_line=true>${SUPC_INSTANCE_NAME}_REGS->SUPC_EMR = (${SUPC_INSTANCE_NAME}_REGS->SUPC_EMR & ~SUPC_EMR_Msk)
@@ -251,8 +251,8 @@ void ${SUPC_INSTANCE_NAME}_WaitModeEnter(WAITMODE_FLASH_STATE flash_lpm, WAITMOD
     PMC_REGS->PMC_FSMR = ((uint32_t) flash_lpm | (uint32_t) source);
 
     /* Set Flash Wait State at 0 */
-    SEFC0_REGS->SEFC_EEFC_FMR = SEFC_EEFC_FMR_FWS(0) | SEFC_EEFC_FMR_CLOE_Msk;
-    SEFC1_REGS->SEFC_EEFC_FMR = SEFC_EEFC_FMR_FWS(0) | SEFC_EEFC_FMR_CLOE_Msk;
+    SEFC0_REGS->SEFC_EEFC_FMR = SEFC_EEFC_FMR_FWS(0) | SEFC_EEFC_FMR_CLOE_Msk | SEFC_EEFC_FMR_ALWAYS1_Msk;
+    SEFC1_REGS->SEFC_EEFC_FMR = SEFC_EEFC_FMR_FWS(0) | SEFC_EEFC_FMR_CLOE_Msk | SEFC_EEFC_FMR_ALWAYS1_Msk;
 
     /* Set the WAITMODE bit */
     PMC_REGS->CKGR_MOR |= (CKGR_MOR_KEY_PASSWD | CKGR_MOR_WAITMODE_Msk);
@@ -283,7 +283,7 @@ void ${SUPC_INSTANCE_NAME}_WaitModeEnter(WAITMODE_FLASH_STATE flash_lpm, WAITMOD
     /* Restore Clock Setting */
     SEFC0_Initialize();
     SEFC1_Initialize();
-    CLK_Initialize();
+    CLOCK_Initialize();
 
     /* Enable CPU Interrupt */
     __DMB();
@@ -296,7 +296,7 @@ void ${SUPC_INSTANCE_NAME}_BackupModeEnter(void)
 
 <#if SUPC_CR_VROFF>
     /* Switch off voltage regulator */
-    ${SUPC_INSTANCE_NAME}_REGS->SUPC_CR |= SUPC_CR_KEY_PASSWD | SUPC_CR_VROFF_Msk;
+    ${SUPC_INSTANCE_NAME}_REGS->SUPC_CR = SUPC_CR_KEY_PASSWD | SUPC_CR_VROFF_Msk;
 
 </#if>
     /* Enable CPU Interrupt */
@@ -309,7 +309,7 @@ void ${SUPC_INSTANCE_NAME}_BackupModeEnter(void)
 }
 
 <#if SUPC_IER_VDD3V3SMEV || SUPC_IER_VBATSMEV || SUPC_IER_LPDBC0 || SUPC_IER_LPDBC1 || SUPC_IER_LPDBC2 || SUPC_IER_LPDBC3 || SUPC_IER_LPDBC4>
-volatile static SUPC_OBJECT supcObj;
+static volatile SUPC_OBJECT supcObj;
 
 void ${SUPC_INSTANCE_NAME}_CallbackRegister(SUPC_CALLBACK callback, uintptr_t context)
 {
@@ -320,7 +320,7 @@ void ${SUPC_INSTANCE_NAME}_CallbackRegister(SUPC_CALLBACK callback, uintptr_t co
 void __attribute__((used)) ${SUPC_INSTANCE_NAME}_InterruptHandler(void)
 {
     uint32_t supc_status = ${SUPC_INSTANCE_NAME}_REGS->SUPC_ISR;
-    uintptr_t context = supcObj.context; 
+    uintptr_t context = supcObj.context;
     /* Callback user function */
     if(supcObj.callback != NULL)
     {

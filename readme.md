@@ -21,9 +21,7 @@ the following links for release notes, training materials, and interface
 reference information.
 
 - [Release Notes](./release_notes.md)
-- [MPLAB® Harmony License](mplab_harmony_license.md)
-- [MPLAB® Harmony 3 CSP Wiki](https://github.com/Microchip-MPLAB-Harmony/csp/wiki)
-- [MPLAB® Harmony 3 CSP API Help](https://microchip-mplab-harmony.github.io/csp)
+- [License](License.md)
 
 # Contents Summary
 
@@ -31,13 +29,21 @@ reference information.
 | ---        | ---                                                       |
 | apps       | Example applications for CSP library components           |
 | arch       | Initialization and starter code templates and data        |
-| docs       | CSP library help documentation                            |
 | peripheral | Peripheral library templates and configuration data       |
 | plugins    | UI configurator plugins for different peripherals         |
 
+## Documentation
+
+Click [here](https://onlinedocs.microchip.com/v2/keyword-lookup?keyword=MH3_csp&redirect=true) to view the online documentation of csp repository.
+
+To view the documentation offline, follow these steps:
+ - Download the publication as a zip file from [here](https://onlinedocs.microchip.com/download/GUID-450989FA-38E4-4D68-AB61-15ADB29AD718?type=webhelp).
+ - Extract the zip file into a folder.
+ - Navigate to the folder and open **index.html** in a web browser of your choice.
+
 ____
 
-[![License](https://img.shields.io/badge/license-Harmony%20license-orange.svg)](https://github.com/Microchip-MPLAB-Harmony/csp/blob/master/mplab_harmony_license.md)
+[![License](https://img.shields.io/badge/license-Harmony%20license-orange.svg)](https://github.com/Microchip-MPLAB-Harmony/csp/blob/master/License.md)
 [![Latest release](https://img.shields.io/github/release/Microchip-MPLAB-Harmony/csp.svg)](https://github.com/Microchip-MPLAB-Harmony/csp/releases/latest)
 [![Latest release date](https://img.shields.io/github/release-date/Microchip-MPLAB-Harmony/csp.svg)](https://github.com/Microchip-MPLAB-Harmony/csp/releases/latest)
 [![Commit activity](https://img.shields.io/github/commit-activity/y/Microchip-MPLAB-Harmony/csp.svg)](https://github.com/Microchip-MPLAB-Harmony/csp/graphs/commit-activity)

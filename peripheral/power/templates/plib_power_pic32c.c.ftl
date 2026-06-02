@@ -57,7 +57,7 @@
 // Section: Power Implementation
 // *****************************************************************************
 // *****************************************************************************
-<#if (core.PRODUCT_FAMILY == "PIC32CX_BZ3")>
+<#if (core.PRODUCT_FAMILY == "PIC32CX_BZ3" || core.PRODUCT_FAMILY == "PIC32CX_BZ6")>
 #define Power_Down_Control_register_ll (*((volatile uint32_t *)(0x41012430)))
 </#if>
 
@@ -91,7 +91,7 @@ void POWER_LowPowerModeEnter (POWER_LOW_POWER_MODE mode)
                         break;
         case LOW_POWER_SLEEP_MODE:
                         CRU_REGS->CRU_OSCCONSET = CRU_OSCCON_SLPEN_Msk;
-<#if (core.PRODUCT_FAMILY == "PIC32CX_BZ3")>
+<#if (core.PRODUCT_FAMILY == "PIC32CX_BZ3" || core.PRODUCT_FAMILY == "PIC32CX_BZ6")>
                         // Set BT to enter in low power mode
                         Power_Down_Control_register_ll |= 0x20U;
                         Power_Down_Control_register_ll |= 0x80U;
@@ -100,7 +100,7 @@ void POWER_LowPowerModeEnter (POWER_LOW_POWER_MODE mode)
 <#if DREAM_MODE_EXIST??>               
         case LOW_POWER_DREAM_MODE:
                         CRU_REGS->CRU_OSCCONSET = CRU_OSCCON_SLPEN_Msk | CRU_OSCCON_DRMEN_Msk;
-<#if (core.PRODUCT_FAMILY == "PIC32CX_BZ3")>
+<#if (core.PRODUCT_FAMILY == "PIC32CX_BZ3" || core.PRODUCT_FAMILY == "PIC32CX_BZ6")>
                         // Set BT to enter in low power mode
                         Power_Down_Control_register_ll |= 0x20U;
                         Power_Down_Control_register_ll |= 0x80U;
@@ -114,7 +114,7 @@ void POWER_LowPowerModeEnter (POWER_LOW_POWER_MODE mode)
                         DSCON_REGS->DSCON_DSCON |= DSCON_DSCON_DSEN_Msk;
                         break;
 </#if>
-<#if EXTREME_DEEP_SLEEP_MODE_EXIST??>                        
+<#if EXTREME_DEEP_SLEEP_MODE_EXIST?? && EXTREME_DEEP_SLEEP_MODE_EXIST == true>                        
         case LOW_POWER_EXTREME_DEEP_SLEEP_MODE:
                         DSCON_REGS->DSCON_DSCON &= (~DSCON_DSCON_XSEMAEN_Msk); // Disable Extended semaphore register
                         DSCON_REGS->DSCON_DSCON &= (~DSCON_DSCON_XSEMAEN_Msk);
@@ -148,7 +148,7 @@ void POWER_LowPowerModeEnter (POWER_LOW_POWER_MODE mode)
 <#if DEEP_SLEEP_MODE_EXIST??>
 POWER_DS_WAKEUP_SOURCE POWER_DS_WakeupSourceGet( void )
 {
-    return (POWER_DS_WAKEUP_SOURCE)(DSCON_REGS->DSCON_DSWAKE);
+    return (POWER_DS_WAKEUP_SOURCE)(DSCON_REGS->DSCON_${DSCON_DSWSRC_REG_NAME});
 }
 
 void POWER_DS_SoftwareRestore(void)
@@ -168,7 +168,8 @@ void POWER_DS_SoftwareRestore(void)
 // DSCON.RELEASE must be 0 before calling this
 void POWER_DS_WakeupSourceClear( POWER_DS_WAKEUP_SOURCE wakeupSource )
 {
-    DSCON_REGS->DSCON_DSWAKE &= ~((uint32_t)wakeupSource);
+    DSCON_REGS->DSCON_${DSCON_DSWSRC_REG_NAME} &= ~((uint32_t)wakeupSource);
+    DSCON_REGS->DSCON_${DSCON_DSWSRC_REG_NAME} &= ~((uint32_t)wakeupSource);
 }
 
 void POWER_DS_ExtendedSemaphoreEnable(void)
@@ -264,8 +265,8 @@ void POWER_DS_SemaphoreWrite(POWER_DS_SEMAPHORE sema, uint32_t semaValue)
     }
     else
     {
-        DSCON_REGS->DSCON_DSSEMA1 = semaValue;
-        DSCON_REGS->DSCON_DSSEMA1 = semaValue;
+        DSCON_REGS->DSCON_DSXSEMA1 = semaValue;
+        DSCON_REGS->DSCON_DSXSEMA1 = semaValue;
     }
 
     /* Lock System */

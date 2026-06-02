@@ -29,7 +29,7 @@
 ###################################################################################################
 global tcTimerUnit
 tcTimerUnit = { "millisecond" : 1,
-                "microsecond" : 1000, 
+                "microsecond" : 1000,
                 "nanosecond"  : 1000000,
                 }
 
@@ -66,7 +66,7 @@ def tcPeriodCalc(symbol, event):
     unit = tcTimerUnit[tcSym_TimerUnit.getValue()]
     period = (time / (resolution * unit)) - 1
     symbol.setValue(long(period), 2)
-    symbol.setMax(pow(2, int(tcSym_CTRLA_MODE.getSelectedKey()[5:])) - 1)    
+    symbol.setMax(pow(2, int(tcSym_CTRLA_MODE.getSelectedKey()[5:])) - 1)
     calcAchievableFreq()
 
 def tcTimerEvsys(symbol, event):
@@ -80,7 +80,6 @@ def tcTimerEvsys(symbol, event):
             if (evsysVal != tcVal):
                 Database.setSymbolValue("evsys", "GENERATOR_"+tcInstanceName.getValue()+"_OVF_ACTIVE", tcVal, 2)
             if ((evsysVal_evu) != tcVal_evu):
-                print("Timer event")
                 Database.setSymbolValue("evsys", "USER_"+tcInstanceName.getValue()+"_EVU_READY", bool(tcVal_evu), 2)
         else:
             if(evsysVal == True and component.getSymbolValue("TC_COMPARE_EVCTRL_OVFEO") == False):
@@ -107,11 +106,13 @@ tcSym_TimerMenu.setDependencies(updateTimerMenuVisibleProperty, ["TC_OPERATION_M
 
 #timer one shot mode
 tcSym_Timer_CTRLBSET_ONESHOT = tcComponent.createBooleanSymbol("TC_TIMER_CTRLBSET_ONESHOT", tcSym_TimerMenu)
+tcSym_Timer_CTRLBSET_ONESHOT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:CTRLBSET")
 tcSym_Timer_CTRLBSET_ONESHOT.setLabel("Enable One-Shot Mode")
 
 global tcSym_TimerUnit
 timerUnit = ["millisecond", "microsecond", "nanosecond"]
 tcSym_TimerUnit = tcComponent.createComboSymbol("TC_TIMER_UNIT", tcSym_TimerMenu, timerUnit)
+tcSym_TimerUnit.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:CCx")
 tcSym_TimerUnit.setLabel("Timer Period Unit")
 tcSym_TimerUnit.setDefaultValue("millisecond")
 
@@ -123,6 +124,7 @@ if clock_freq == 0:
 resolution = (int(tcSym_CTRLA_PRESCALER.getSelectedKey()[3:]) * 1000000000.0) / clock_freq
 max = (65536.0 * resolution / 1000000)
 tcSym_Timer_TIME_MS = tcComponent.createFloatSymbol("TC_TIMER_TIME_MS", tcSym_TimerMenu)
+tcSym_Timer_TIME_MS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:CCx")
 tcSym_Timer_TIME_MS.setLabel("Time")
 tcSym_Timer_TIME_MS.setDefaultValue(1)
 tcSym_Timer_TIME_MS.setMin(0.0)
@@ -134,6 +136,7 @@ tcSym_Timer_TIME_MS.setDependencies(tcTimeMaxValue, ["TC_CTRLA_MODE", "core."+tc
 global tcSym_TimerPeriod
 period = (tcSym_Timer_TIME_MS.getValue() * 1000000 / resolution) - 1
 tcSym_TimerPeriod = tcComponent.createLongSymbol("TC_TIMER_PERIOD", tcSym_Timer_TIME_MS)
+tcSym_TimerPeriod.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:CC")
 tcSym_TimerPeriod.setLabel("Timer Period")
 tcSym_TimerPeriod.setVisible(True)
 tcSym_TimerPeriod.setReadOnly(True)
@@ -146,11 +149,13 @@ tcSym_TimerPeriod.setDependencies(tcPeriodCalc, ["TC_CTRLA_MODE", "core."+tcInst
 #timer interrupt mode
 global tcSym_Timer_INTENSET_OVF
 tcSym_Timer_INTENSET_OVF = tcComponent.createBooleanSymbol("TC_TIMER_INTENSET_OVF", tcSym_TimerMenu)
+tcSym_Timer_INTENSET_OVF.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:INTENSET")
 tcSym_Timer_INTENSET_OVF.setLabel("Enable Timer Period Interrupt")
 tcSym_Timer_INTENSET_OVF.setDefaultValue(True)
 
 global tcSym_Timer_INTENSET_MC1
 tcSym_Timer_INTENSET_MC1 = tcComponent.createBooleanSymbol("TC_TIMER_INTENSET_MC1", tcSym_TimerMenu)
+tcSym_Timer_INTENSET_MC1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:INTENSET")
 tcSym_Timer_INTENSET_MC1.setLabel("Enable Timer Compare Interrupt")
 tcSym_Timer_INTENSET_MC1.setVisible(False)
 tcSym_Timer_INTENSET_MC1.setDefaultValue(False)
@@ -159,14 +164,17 @@ tcSym_TimerEventMenu = tcComponent.createMenuSymbol("TC_TIMER_EVENT_MENU", tcSym
 tcSym_TimerEventMenu.setLabel("Events")
 
 tcSym_Timer_EVCTRL_OVFEO = tcComponent.createBooleanSymbol("TC_TIMER_EVCTRL_OVFEO", tcSym_TimerEventMenu)
+tcSym_Timer_EVCTRL_OVFEO.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:EVCTRL")
 tcSym_Timer_EVCTRL_OVFEO.setLabel("Enable Timer Period Overflow Event")
 tcSym_Timer_EVCTRL_OVFEO.setDefaultValue(False)
 
 tcSym_Timer_EVCTRL_EV = tcComponent.createBooleanSymbol("TC_TIMER_EVCTRL_EV", tcSym_TimerEventMenu)
+tcSym_Timer_EVCTRL_EV.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:EVCTRL")
 tcSym_Timer_EVCTRL_EV.setLabel("Enable Timer Input Event")
 tcSym_Timer_EVCTRL_EV.setDefaultValue(False)
 
 tcSym_Timer_EVCTRL_EVACT = tcComponent.createKeyValueSetSymbol("TC_TIMER_EVCTRL_EVACT", tcSym_Timer_EVCTRL_EV)
+tcSym_Timer_EVCTRL_EVACT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:EVCTRL")
 tcSym_Timer_EVCTRL_EVACT.setLabel("Select Input Event Action")
 tcSym_Timer_EVCTRL_EVACT.setVisible(False)
 tcSym_Timer_EVCTRL_EVACT.addKey("START", "0", "Start Timer")
@@ -175,6 +183,7 @@ tcSym_Timer_EVCTRL_EVACT.addKey("COUNT", "2", "Count on Event")
 tcSym_Timer_EVCTRL_EVACT.setDependencies(tcEVACTVisible, ["TC_TIMER_EVCTRL_EV"])
 
 tcSym_Timer_EVCTRL_TCINV = tcComponent.createBooleanSymbol("TC_TIMER_EVCTRL_TCINV", tcSym_Timer_EVCTRL_EV)
+tcSym_Timer_EVCTRL_TCINV.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_u2212;register:EVCTRL")
 tcSym_Timer_EVCTRL_TCINV.setLabel("Invert Input Event")
 tcSym_Timer_EVCTRL_TCINV.setVisible(False)
 tcSym_Timer_EVCTRL_TCINV.setDependencies(tcEVACTVisible, ["TC_TIMER_EVCTRL_EV"])

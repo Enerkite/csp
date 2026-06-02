@@ -26,7 +26,7 @@ def udpateSymbolEnableAndVisibility (symbol, event):
     symbol.setVisible(event["symbol"].getSelectedKey() == "XC32")
 
 # load family specific configurations
-print("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 # load device specific configurations (fuses), temporary, to be removed once XC32 updated
 devCfgComment = coreComponent.createCommentSymbol("CoreCfgComment1", devCfgMenu)
@@ -297,7 +297,7 @@ coreComponent.addPlugin("../peripheral/port_u2210/plugin/port_u2210.jar")
 
 # load clock manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_d21/config/clk.py")
-coreComponent.addPlugin("../peripheral/clk_sam_d21/plugin/clk_sam_d21.jar")
+coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "CLOCK_MANAGER_D21", {"plugin_name": "Clock Configuration", "main_html_path": "csp/plugins/configurators/clock-configurators/clk_sam_d21_configurator/build/index.html"})
 
 # load NVIC
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/nvic/config/nvic.py")

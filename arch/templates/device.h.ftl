@@ -18,7 +18,7 @@
 
 // DOM-IGNORE-BEGIN
 /*******************************************************************************
-* Copyright (C) 2018 Microchip Technology Inc. and its subsidiaries.
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
 * Subject to your compliance with these terms, you may use Microchip software
 * and any derivatives exclusively with Microchip products. It is your
@@ -47,6 +47,10 @@
 <#if core.PRODUCT_FAMILY?contains("PIC32M") == true>
 #include <xc.h>
 #include <sys/attribs.h>
+<#elseif core.PRODUCT_FAMILY?contains("dsPIC33A") == true>
+#include <xc.h>
+<#elseif core.PRODUCT_FAMILY?contains("PIC32A") == true>
+#include <xc.h>
 <#else>
 <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
@@ -63,6 +67,9 @@
 #ifndef DONT_USE_PREDEFINED_PERIPHERALS_HANDLERS
     #define DONT_USE_PREDEFINED_PERIPHERALS_HANDLERS
 #endif //DONT_USE_PREDEFINED_PERIPHERALS_HANDLERS
+#ifndef DISABLE_CMSIS_INIT
+    #define DISABLE_CMSIS_INIT
+#endif //DISABLE_CMSIS_INIT
 #include "${__PROCESSOR?lower_case?remove_beginning("at")}.h"
 <#if core.COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop

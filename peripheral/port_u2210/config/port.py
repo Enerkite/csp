@@ -28,10 +28,37 @@ import re
 global sort_alphanumeric
 global peripheralFunctionality
 
-peripheralFunctionality = ["GPIO", "Alternate", "LED_AH", "LED_AL", "SWITCH_AH", "SWITCH_AL", "VBUS_AH", "VBUS_AL", "RTC", "SUPC"]
+peripheralFunctionality = ["GPIO", "Alternate", "LED_AH", "LED_AL", "SWITCH_AH", "SWITCH_AL", "VBUS_AH", "VBUS_AL", "RTC", "SUPC", "RTC_IN", "RTC_OUT"]
+
+global portPeripheralFunc
+portPeripheralFunc = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"]
 
 global availablePinDictionary
 availablePinDictionary = {}
+
+## SHD: Dictionary to store symbols created for each pin
+global pinSymbolsDictionary
+pinSymbolsDictionary = dict()
+
+global port_evsys_usersNamesList
+port_evsys_usersNamesList = []
+
+def portEvsysUserNamesPopulate(instanceName):
+    global port_evsys_usersNamesList
+
+    usersNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/users")
+    usersValues = usersNode.getChildren()
+    for id in range(0, len(usersNode.getChildren())):
+        if usersValues[id].getAttribute("module-instance") == instanceName:
+            port_evsys_usersNamesList.append(usersValues[id].getAttribute("name"))
+
+global portEvsysUserNameGet
+def portEvsysUserNameGet(usrNameMatchList):
+    global port_evsys_usersNamesList
+
+    for userName in port_evsys_usersNamesList:
+        if all ( x in userName for x in usrNameMatchList):
+            return userName
 
 ###################################################################################################
 ########################### Callback functions for dependencies   #################################
@@ -39,9 +66,187 @@ availablePinDictionary = {}
 
 global getAvailablePins
 
+global setPinConfigurationValue
+global getPinConfigurationValue
+global clearPinConfigurationValue
+
+def setPinConfigurationValue(pinNumber, setting, value):
+    if setting == "direction":
+        if value == "In":
+            symbol = pinSymbolsDictionary.get(pinNumber).get("input")
+            symbol.setValue("True")
+            symbol = pinSymbolsDictionary.get(pinNumber).get("direction")
+            symbol.clearValue()
+        elif value == "Out":
+            symbol = pinSymbolsDictionary.get(pinNumber).get("input")
+            symbol.clearValue()
+            symbol = pinSymbolsDictionary.get(pinNumber).get("direction")
+            symbol.setValue("Out")
+        elif value == "In/Out":
+            symbol = pinSymbolsDictionary.get(pinNumber).get("input")
+            symbol.setValue("True")
+            symbol = pinSymbolsDictionary.get(pinNumber).get("direction")
+            symbol.setValue("Out")
+    elif setting == "trustzone":
+        symbol = pinSymbolsDictionary.get(pinNumber).get("trustzone")
+        if symbol is not None:
+            if value.upper() == "NON-SECURE":
+                symbol.setSelectedKey("NON-SECURE")
+            else:
+                symbol.setSelectedKey("SECURE")
+    else:
+        symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+        if symbol:
+            symbol.clearValue()
+            symbol.setValue(value)
+
+        if setting == 'function':
+            symbol = pinSymbolsDictionary.get(pinNumber).get('mode')
+            if symbol != None:
+                if (value.startswith("ADC") or (value.startswith("DAC")) or (value.startswith("PTC"))) and value[-1].isnumeric():
+                    symbol.setValue("ANALOG")
+                elif value.startswith("SDADC"):
+                    symbol.setValue("ANALOG")
+                else:
+                    symbol.clearValue()
+
+            symbol = pinSymbolsDictionary.get(pinNumber).get('peripheralfunction')
+            periphFnValue = value
+            if symbol:
+                if periphFnValue != "GPIO":
+                    instance = value.split("_")[0]
+                    module = "".join(filter(lambda x: x.isalpha(), instance))
+                    pad = availablePinDictionary[str(pinNumber)]
+                    query = '/avr-tools-device-file/devices/device/peripherals/module@[name=\"{}\"]/instance@[name=\"{}\"]/signals/signal@[pad=\"{}\"]'.format(module, instance, pad)
+                    node = ATDF.getNode(query)
+                    if node is not None:
+                        periphFnValue = node.getAttribute("function")
+
+                    if ((periphFnValue not in portPeripheralFunc) and (periphFnValue not in peripheralFunctionality)):
+                        periphFnValue = "GPIO"
+
+                symbol.clearValue()
+                symbol.setValue(periphFnValue)
+
+        elif setting == 'pull up':
+            if value == "True":
+                symbol = pinSymbolsDictionary.get(pinNumber).get('pullen')
+                symbol.setValue("True")
+                symbol = pinSymbolsDictionary.get(pinNumber).get('latch')
+                symbol.setValue("High")
+            else:
+                symbol = pinSymbolsDictionary.get(pinNumber).get('pullen')
+                symbol.clearValue()
+
+        elif setting == 'pull down':
+            if value == "True":
+                symbol = pinSymbolsDictionary.get(pinNumber).get('pullen')
+                symbol.setValue("True")
+                symbol = pinSymbolsDictionary.get(pinNumber).get('latch')
+                symbol.clearValue()
+            else:
+                symbol = pinSymbolsDictionary.get(pinNumber).get('pullen')
+                symbol.clearValue()
+
+def getPinConfigurationValue(pinNumber, setting):
+    symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+    if symbol:
+        return symbol.getValue()
+
+    if setting == 'pull up':
+        symbol = pinSymbolsDictionary.get(pinNumber).get('pullen')
+        pullen = symbol.getValue()
+        symbol = pinSymbolsDictionary.get(pinNumber).get('latch')
+        pulllatch = symbol.getValue()
+        if pullen ==" True" and pulllatch == "High":
+            return "True"
+        else:
+            return "False"
+
+    elif setting == 'pull down':
+        symbol = pinSymbolsDictionary.get(pinNumber).get('pullen')
+        pullen = symbol.getValue()
+        symbol = pinSymbolsDictionary.get(pinNumber).get('latch')
+        pulllatch = symbol.getValue()
+        if pullen ==" True" and (pulllatch == "Low" or pulllatch == ""):
+            return "True"
+        else:
+            return "False"
+
+    elif setting == "direction":
+        symbol = pinSymbolsDictionary.get(pinNumber).get("input")
+        inputValue = symbol.getValue()
+        symbol = pinSymbolsDictionary.get(pinNumber).get("direction")
+        dirValue = symbol.getValue()
+        if inputValue == "True" and dirValue == "":
+            return "In"
+        elif dirValue == "Out" and (inputValue == "" or inputValue == "False"):
+            return "Out"
+        elif inputValue == "True" and dirValue == "Out":
+            return "In/Out"
+
+    elif setting == "trustzone":
+        symbol = pinSymbolsDictionary.get(pinNumber).get("trustzone")
+        if symbol is not None:
+            return symbol.getSelectedKey()
+
+def clearPinConfigurationValue(pinNumber, setting):
+    pinSymbol = pinSymbolsDictionary.get(pinNumber)
+    if pinSymbol is not None:
+        if setting == 'function':
+            symbol = pinSymbol.get(setting)
+            if symbol is not None:
+                symbol.clearValue()
+
+            symbol = pinSymbol.get('peripheralfunction')
+            if symbol is not None:
+                symbol.setReadOnly(True)
+                symbol.setReadOnly(False)
+                symbol.clearValue()
+
+            symbol = pinSymbol.get('mode')
+            if symbol is not None:
+                symbol.setReadOnly(True)
+                symbol.setReadOnly(False)
+                symbol.clearValue()
+
+        elif setting == 'pull up' or setting == 'pull down':
+            symbol = pinSymbol.get('pullen')
+            if symbol is not None:
+                symbol.setReadOnly(True)
+                symbol.setReadOnly(False)
+                symbol.clearValue()
+            symbol = pinSymbol.get('latch')
+            if symbol is not None:
+                symbol.setReadOnly(True)
+                symbol.setReadOnly(False)
+                symbol.clearValue()
+
+        elif setting == "direction":
+            symbol = pinSymbol.get("input")
+            if symbol is not None:
+                symbol.setReadOnly(True)
+                symbol.setReadOnly(False)
+                symbol.clearValue()
+            symbol = pinSymbol.get("direction")
+            if symbol is not None:
+                symbol.setReadOnly(True)
+                symbol.setReadOnly(False)
+                symbol.clearValue()
+
+        else:
+            symbol = pinSymbol.get(setting)
+            if symbol is not None:
+                symbol.setReadOnly(True)
+                symbol.setReadOnly(False)
+                symbol.clearValue()
+
+
+portSecAliasRegSpace = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"PORT\"]/instance@[name=\"PORT\"]/register-group@[name=\"PORT_SEC\"]")
+
 portRegName = coreComponent.createStringSymbol("PORT_REG_NAME", None)
 portRegName.setVisible(False)
-if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true" and portSecAliasRegSpace != None:
     portRegName.setValue("PORT_SEC")
 else:
     portRegName.setValue("PORT")
@@ -49,6 +254,29 @@ else:
 def getAvailablePins():
 
     return availablePinDictionary
+
+def getValueGroupNode__Port(module_name, register_group, register_name, bitfield_name , mode = None):
+    bitfield_node_path = ""
+    value_group_node = None
+
+    if mode != None:
+        bitfield_node_path = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[modes=\"{2}\",name=\"{3}\"]/bitfield@[name=\"{4}\"]".format(module_name, register_group, mode, register_name, bitfield_name)
+    else:
+         bitfield_node_path = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[name=\"{2}\"]/bitfield@[name=\"{3}\"]".format(module_name, register_group, register_name, bitfield_name)
+
+    bitfield_node = ATDF.getNode(bitfield_node_path)
+
+    if bitfield_node != None:
+        if bitfield_node.getAttribute("values") == None:
+            Log.writeDebugMessage(register_name + "_" + bitfield_name + "does not have value-group attribute")
+        else:
+            value_group_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"{0}\"]/value-group@[name=\"{1}\"]".format(module_name, bitfield_node.getAttribute("values")))
+            if value_group_node == None:
+                Log.writeDebugMessage("value-group = " + bitfield_node.getAttribute("values") + " not defined")
+    else:
+        Log.writeDebugMessage("bitfield_name = " + bitfield_name + " not found" )
+
+    return value_group_node
 
 def packageChange(symbol, pinout):
     global uniquePinout
@@ -72,9 +300,11 @@ def packageChange(symbol, pinout):
             portBitPositionNode = ATDF.getNode("/avr-tools-device-file/pinouts/pinout@[name=\"" + str(package.get(pinout["value"])) + "\"]")
             for id in range(0,len(portBitPositionNode.getChildren())):
                 if "BGA" in pinout["value"] or "WLCSP" in pinout["value"] or "DRQFN" in pinout["value"]:
-                    pin_map[portBitPositionNode.getChildren()[id].getAttribute("position")] = portBitPositionNode.getChildren()[id].getAttribute("pad")
+                    # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+                    pin_map[portBitPositionNode.getChildren()[id].getAttribute("position")] = re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', portBitPositionNode.getChildren()[id].getAttribute("pad"))
                 else:
-                    pin_map[int(portBitPositionNode.getChildren()[id].getAttribute("position"))] = portBitPositionNode.getChildren()[id].getAttribute("pad")
+                    # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+                    pin_map[int(portBitPositionNode.getChildren()[id].getAttribute("position"))] = re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', portBitPositionNode.getChildren()[id].getAttribute("pad"))
 
             if "BGA" in pinout["value"] or "WLCSP" in pinout["value"] or "DRQFN" in pinout["value"]:
                 ## BGA package ID's are alphanumeric unlike TQFP special sorting required
@@ -121,7 +351,6 @@ def setupPortPINCFG(usePortLocalPINCFG, event):
         if (Database.getSymbolValue("core", "PORT_GROUP_PINCFG_DRVSTR")) == True:
             driveStrength = component.getSymbolValue( "PIN_" + str(event["id"].split("_")[1]) + "_DRVSTR")
         peripheralFunc = component.getSymbolValue( "PIN_" + str(event["id"].split("_")[1]) +"_PERIPHERAL_FUNCTION")
-
 
         if groupName != "None":
 
@@ -206,8 +435,9 @@ def evsysControl(symbol, event):
             if(Database.getSymbolValue("core", "PORT_"+ str(j) + "_EVACT"+str(i)+"_ENABLE")) == True:
                 status = True
                 break
-        if Database.getSymbolValue("evsys", "USER_PORT_EV_" + str(i) + "_READY") != status:
-            Database.setSymbolValue("evsys", "USER_PORT_EV_" + str(i) + "_READY", status, 2)
+        evsysUserName = portEvsysUserNameGet(["EV", str(i)])
+        if Database.getSymbolValue("evsys", "USER_" + evsysUserName + "_READY") != status:
+            Database.setSymbolValue("evsys", "USER_" + evsysUserName + "_READY", status, 2)
 
     evctrl = 0
 
@@ -238,10 +468,13 @@ def setupPortPinMux(portSym_PORT_PMUX_local, event):
             prePinMuxVal = component.getSymbolValue("PORT_GROUP_" + str(portGroupName.index(groupName)) + "_PMUX" + str(bitPosition/2))
             intPrePinMuxVal = int(prePinMuxVal,0)
 
-            if ((bitPosition%2) == 0):
-                peripheralFuncVal = portPeripheralFunc.index(event["value"]) | ( intPrePinMuxVal & 0xf0 )
-            else :
-                peripheralFuncVal = (portPeripheralFunc.index(event["value"]) << 4) | ( intPrePinMuxVal & 0x0f )
+            if event["value"] in portPeripheralFunc:
+                if ((bitPosition%2) == 0):
+                    peripheralFuncVal = portPeripheralFunc.index(event["value"]) | ( intPrePinMuxVal & 0xf0 )
+                else :
+                    peripheralFuncVal = (portPeripheralFunc.index(event["value"]) << 4) | ( intPrePinMuxVal & 0x0f )
+            else:
+                Log.writeWarningMessage("{0} is not a peripheral function for pin P{1}{2}".format(event["value"], groupName, bitPosition))
 
             component.setSymbolValue("PORT_GROUP_" + str(portGroupName.index(groupName)) + "_PMUX" + str(bitPosition/2), str(hex(peripheralFuncVal)), 1)
         else :
@@ -268,16 +501,32 @@ def setupPortPinMux(portSym_PORT_PMUX_local, event):
 
 def update_port_nonsec_mask(symbol, event):
     pinNum = event["id"].split("_IS_NON_SECURE")[0].split("PIN_")[1]
-    portGroup = ord(Database.getSymbolValue("core", "PIN_" + str(pinNum) + "_PORT_GROUP")) - 65
-    pinPos = int(Database.getSymbolValue("core", "PIN_" + str(pinNum) + "_PORT_PIN"))
-    portNonSecRegValue = int(Database.getSymbolValue("core", "PORT_GROUP_" + str(portGroup) + "_NONSEC"))
+    groupName = Database.getSymbolValue("core", "PIN_" + str(pinNum) + "_PORT_GROUP")
+    if groupName:
+        portGroup = ord(groupName) - 65
+        pinPos = int(Database.getSymbolValue("core", "PIN_" + str(pinNum) + "_PORT_PIN"))
+        if Database.getSymbolValue("core", "PORT_GROUP_" + str(portGroup) + "_NONSEC") != None:
+            portNonSecRegValue = int(Database.getSymbolValue("core", "PORT_GROUP_" + str(portGroup) + "_NONSEC"))
 
-    if event["value"] == 1:
-        portNonSecRegValue = portNonSecRegValue | 1<<pinPos
-    else:
-        portNonSecRegValue = portNonSecRegValue & ~(1<<pinPos)
+            if event["value"] == 1:
+                portNonSecRegValue = portNonSecRegValue | 1<<pinPos
+            else:
+                portNonSecRegValue = portNonSecRegValue & ~(1<<pinPos)
 
-    Database.setSymbolValue("core", "PORT_GROUP_" + str(portGroup) + "_NONSEC", long(portNonSecRegValue))
+            Database.setSymbolValue("core", "PORT_GROUP_" + str(portGroup) + "_NONSEC", long(portNonSecRegValue))
+
+
+def updateSecurityAttributeVisibility(symbol, event):
+    component = event["source"]
+    portPinCount = component.getSymbolValue("PORT_PIN_COUNT")
+    for pinNumber in range(1, portPinCount + 1):
+        pinSecuritySym = component.getSymbolByID("PIN_" + str(pinNumber) + "_IS_NON_SECURE")
+        if event["value"] == True:
+            pinSecuritySym.setReadOnly(False)
+        else:
+            pinSecuritySym.setReadOnly(True)
+            pinSecuritySym.setSelectedKey("SECURE")
+
 ###################################################################################################
 ######################################### PORT Main Menu  #########################################
 ###################################################################################################
@@ -293,6 +542,8 @@ pincount = 0
 global uniquePinout
 global swdPin
 
+portEvsysUserNamesPopulate("PORT")
+
 uniquePinout = 1
 portMenu = coreComponent.createMenuSymbol("PORT_MENU", None)
 portMenu.setLabel("Ports")
@@ -304,16 +555,19 @@ portSymAPI_Prefix.setDefaultValue("PORT")
 portSymAPI_Prefix.setVisible(False)
 
 portEnable = coreComponent.createBooleanSymbol("PORT_ENABLE", portMenu)
+portEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:CTRL")
 portEnable.setLabel("Use PORT PLIB ?")
 portEnable.setDefaultValue(True)
 portEnable.setReadOnly(True)
 
 portExport = coreComponent.createBooleanSymbol("PORT_EXPORT", portEnable)
+portExport.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:PINCFG")
 portExport.setLabel("Export PORT configuration")
 portExport.setDefaultValue(True)
 portExport.setVisible(False)
 
 portExportAs = coreComponent.createComboSymbol("PORT_EXPORT_AS", portExport, ["CSV File"])
+portExportAs.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:PINCFG")
 portExportAs.setLabel("Export PORT configuration as ")
 portExportAs.setVisible(False)
 
@@ -326,6 +580,7 @@ for id in range(0,len(packageNode.getChildren())):
 uniquePinout = len(set(package.values()))
 
 portPackage = coreComponent.createComboSymbol("COMPONENT_PACKAGE", portEnable, package.keys())
+portPackage.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:CTRL")
 portPackage.setLabel("Pin Package")
 portPackage.setReadOnly(True)
 
@@ -392,11 +647,14 @@ pinoutNode = ATDF.getNode('/avr-tools-device-file/pinouts/pinout@[name= "' + str
 for id in range(0,len(pinoutNode.getChildren())):
     if pinoutNode.getChildren()[id].getAttribute("type") == None:
         if "BGA" in portPackage.getValue() or "WLCSP" in portPackage.getValue() or "DRQFN" in portPackage.getValue():
-            pin_map[pinoutNode.getChildren()[id].getAttribute("position")] = pinoutNode.getChildren()[id].getAttribute("pad")
+            # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+            pin_map[pinoutNode.getChildren()[id].getAttribute("position")] = re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', pinoutNode.getChildren()[id].getAttribute("pad"))
         else:
-            pin_map[int(pinoutNode.getChildren()[id].getAttribute("position"))] = pinoutNode.getChildren()[id].getAttribute("pad")
+            # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+            pin_map[int(pinoutNode.getChildren()[id].getAttribute("position"))] = re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', pinoutNode.getChildren()[id].getAttribute("pad"))
     else:
-        pin_map_internal[pinoutNode.getChildren()[id].getAttribute("type").split("INTERNAL_")[1]] = pinoutNode.getChildren()[id].getAttribute("pad")
+        # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+        pin_map_internal[pinoutNode.getChildren()[id].getAttribute("type").split("INTERNAL_")[1]] = re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', pinoutNode.getChildren()[id].getAttribute("pad"))
 
 if "BGA" in portPackage.getValue() or "WLCSP" in portPackage.getValue() or "DRQFN" in portPackage.getValue():
     pin_position = sort_alphanumeric(pin_map.keys())
@@ -406,6 +664,10 @@ else:
     pin_position_internal = sorted(pin_map_internal.keys())
 
 internalPincount = pincount + len(pin_map_internal.keys())
+
+pinTotalPins = coreComponent.createIntegerSymbol("PIO_PIN_TOTAL" , pinConfiguration)
+pinTotalPins.setVisible(False)
+pinTotalPins.setDefaultValue(internalPincount)
 
 portSym_PinMaxIndex = coreComponent.createIntegerSymbol("PORT_PIN_MAX_INDEX", None)
 portSym_PinMaxIndex.setVisible(False)
@@ -425,6 +687,8 @@ portPINCFGDriverStrength.setVisible(False)
 
 for pinNumber in range(1, internalPincount + 1):
 
+    symbolsDict = dict()
+
     if pinNumber < pincount + 1:
         pinPad = str(pin_map.get(pin_position[pinNumber-1]))
     else:
@@ -438,7 +702,8 @@ for pinNumber in range(1, internalPincount + 1):
     if portSignalNode != None:
 
         signalIndex = int(portSignalNode.getAttribute("index"))
-        signalPad = str(portSignalNode.getAttribute("pad"))
+        # Convert single digit [0-9] string to the two digit [00-09] string, For example "PA9" to "PA09"
+        signalPad = str(re.sub(r'(?<!\d)(\d)(?!\d)', r'0\1', portSignalNode.getAttribute("pad")))
 
         if signalIndex != None and signalPad != None:
             portSym_PinPad = coreComponent.createStringSymbol("PORT_PIN_PAD_" + str(signalIndex), None)
@@ -477,11 +742,13 @@ for pinNumber in range(1, internalPincount + 1):
 
     pinBitPosition.append(pinNumber)
     pinBitPosition[pinNumber-1] = coreComponent.createIntegerSymbol("PIN_" + str(pinNumber) + "_PORT_PIN", pin[pinNumber-1])
+    pinBitPosition[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinBitPosition[pinNumber-1].setLabel("Bit Position")
     pinBitPosition[pinNumber-1].setReadOnly(True)
 
     pinGroup.append(pinNumber)
     pinGroup[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PORT_GROUP", pin[pinNumber-1])
+    pinGroup[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinGroup[pinNumber-1].setLabel("Group")
     pinGroup[pinNumber-1].setReadOnly(True)
 
@@ -506,74 +773,102 @@ for pinNumber in range(1, internalPincount + 1):
 
     pinName.append(pinNumber)
     pinName[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_FUNCTION_NAME", pin[pinNumber-1])
+    pinName[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinName[pinNumber-1].setLabel("Name")
     pinName[pinNumber-1].setDefaultValue("")
     pinName[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('name', pinName[pinNumber-1])
 
 
     pinType.append(pinNumber)
     pinType[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_FUNCTION_TYPE", pin[pinNumber-1])
+    pinType[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinType[pinNumber-1].setLabel("Type")
     pinType[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('function', pinType[pinNumber-1])
 
     pinPeripheralFunction.append(pinNumber)
     pinPeripheralFunction[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PERIPHERAL_FUNCTION", pin[pinNumber-1])
+    pinPeripheralFunction[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinPeripheralFunction[pinNumber-1].setLabel("Peripheral Selection")
     pinPeripheralFunction[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('peripheralfunction', pinPeripheralFunction[pinNumber-1])
 
     pinMode.append(pinNumber)
     pinMode[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_MODE", pin[pinNumber-1])
+    pinMode[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinMode[pinNumber-1].setLabel("Mode")
     pinMode[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('mode', pinMode[pinNumber-1])
 
     pinDirection.append(pinNumber)
     pinDirection[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_DIR", pin[pinNumber-1])
+    pinDirection[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:DIR")
     pinDirection[pinNumber-1].setLabel("Direction")
     pinDirection[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('direction', pinDirection[pinNumber-1])
 
     pinLatch.append(pinNumber)
     pinLatch[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_LAT", pin[pinNumber-1])
+    pinLatch[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinLatch[pinNumber-1].setLabel("Initial Latch Value")
     pinLatch[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('latch', pinLatch[pinNumber-1])
 
     pinPullEnable.append(pinNumber)
     pinPullEnable[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_PULLEN", pin[pinNumber-1])
+    pinPullEnable[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinPullEnable[pinNumber-1].setLabel("Pull Enable")
     pinPullEnable[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('pullen', pinPullEnable[pinNumber-1])
 
     pinInputEnable.append(pinNumber)
     pinInputEnable[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_INEN", pin[pinNumber-1])
+    pinInputEnable[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
     pinInputEnable[pinNumber-1].setLabel("Input Enable")
     pinInputEnable[pinNumber-1].setReadOnly(True)
+    symbolsDict.setdefault('input', pinInputEnable[pinNumber-1])
 
     if portPINCFGOpenDrain.getValue() == True:
         pinOpenDrain.append(pinNumber)
         pinOpenDrain[pinNumber-1] = coreComponent.createStringSymbol("PIN_" + str(pinNumber) + "_ODRAIN", pin[pinNumber-1])
+        pinOpenDrain[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
         pinOpenDrain[pinNumber-1].setLabel("Open Drain")
         pinOpenDrain[pinNumber-1].setReadOnly(True)
+        symbolsDict.setdefault('open drain', pinOpenDrain[pinNumber-1])
 
     if portPINCFGSlewRate.getValue() == True:
-        portSLEWLIMValueGroupNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"PORT\"]/value-group@[name=\"PINCFG__SLEWLIM\"]")
+        portSLEWLIMValueGroupNode = getValueGroupNode__Port("PORT", "GROUP", "PINCFG", "SLEWLIM")
+        pinSlewRate.append(pinNumber)
+        pinSlewRate[pinNumber-1] = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_SLEWRATE", pin[pinNumber-1])
+        pinSlewRate[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
+        pinSlewRate[pinNumber-1].setLabel("Slew Rate")
+        pinSlewRate[pinNumber-1].setDisplayMode("Key")
         if portSLEWLIMValueGroupNode != None:
-            pinSlewRate.append(pinNumber)
-            pinSlewRate[pinNumber-1] = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_SLEWRATE", pin[pinNumber-1])
-            pinSlewRate[pinNumber-1].setLabel("Slew Rate")
-            pinSlewRate[pinNumber-1].setDisplayMode("Key")
             for index in range(0, len(portSLEWLIMValueGroupNode.getChildren())):
                 portSLEWLIMKeyName = portSLEWLIMValueGroupNode.getChildren()[index].getAttribute("name")
                 portSLEWLIMValue = portSLEWLIMValueGroupNode.getChildren()[index].getAttribute("value")
                 portSLEWLIMDescription = portSLEWLIMValueGroupNode.getChildren()[index].getAttribute("caption")
                 pinSlewRate[pinNumber-1].addKey(portSLEWLIMKeyName, portSLEWLIMValue, portSLEWLIMDescription)
-            pinSlewRate[pinNumber-1].setReadOnly(True)
+        else:
+            pinSlewRate[pinNumber-1].addKey("DISABLED", "0", "Output Driver Slew Rate Limit is disabled.")
+            pinSlewRate[pinNumber-1].addKey("ENABLED", "1", "Output Driver Slew Rate Limit is enabled.")
+        pinSlewRate[pinNumber-1].setReadOnly(True)
+        symbolsDict.setdefault('slewrate', pinSlewRate[pinNumber-1])
 
     if portPINCFGDriverStrength.getValue() == True:
         pinDrvStr.append(pinNumber)
         pinDrvStr[pinNumber-1] = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_DRVSTR", pin[pinNumber-1])
+        pinDrvStr[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
         pinDrvStr[pinNumber-1].setLabel("Drive Strength")
         pinDrvStr[pinNumber-1].setDisplayMode("Key")
         pinDrvStr[pinNumber-1].addKey("NORMAL", "0", "Normal")
         pinDrvStr[pinNumber-1].addKey("STRONG", "1", "Strong")
         pinDrvStr[pinNumber-1].setReadOnly(True)
+        symbolsDict.setdefault('drv', pinDrvStr[pinNumber-1])
+
+    ## Add symbol to global dictionary
+    pinSymbolsDictionary.setdefault(pinNumber, symbolsDict)
 
     #creating list for direction dependency
     pinDirList.append(pinNumber)
@@ -595,6 +890,7 @@ for pinNumber in range(1, internalPincount + 1):
 
     if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
         pinSecurity = coreComponent.createKeyValueSetSymbol("PIN_" + str(pinNumber) + "_IS_NON_SECURE", pin[pinNumber-1])
+        pinSecurity.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:WRCONFIG")
         pinSecurity.setLabel("Security mode")
         pinSecurity.addKey("SECURE", "0", "False")
         pinSecurity.addKey("NON-SECURE", "1", "True")
@@ -602,9 +898,20 @@ for pinNumber in range(1, internalPincount + 1):
         pinSecurity.setDisplayMode("Key")
         pinSecurity.setVisible(True)
         pinSecurity.setDefaultValue(0)
+        if Database.getSymbolValue("core", "CONFIG_OVERALL_SEC_TO_NONSEC_FOR_MIXSEC") != None:
+            pinSecurity.setReadOnly(Database.getSymbolValue("core", "PORT_IS_NON_SECURE") == False)
         pinSecurity.setDependencies(update_port_nonsec_mask, ["PIN_" + str(pinNumber) + "_IS_NON_SECURE"])
+        symbolsDict.setdefault('trustzone', pinSecurity)
 
 portSym_PinMaxIndex.setDefaultValue(max_index)
+
+if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+    if Database.getSymbolValue("core", "CONFIG_OVERALL_SEC_TO_NONSEC_FOR_MIXSEC") != None:
+        pinSecurityVisibility = coreComponent.createBooleanSymbol("PIN_SECURITY_VISIBILITY", None)
+        pinSecurityVisibility.setVisible(False)
+        pinSecurityVisibility.setDependencies(updateSecurityAttributeVisibility, ["core.PORT_IS_NON_SECURE"])
+
+
 
 ###################################################################################################
 ################################# PORT Configuration related code #################################
@@ -628,9 +935,6 @@ portSym_PinCount = coreComponent.createIntegerSymbol("PORT_PIN_COUNT", portMenu)
 portSym_PinCount.setVisible(False)
 portSym_PinCount.setDefaultValue(internalPincount)
 
-global portPeripheralFunc
-portPeripheralFunc = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"]
-
 global group
 group = [0 for i in range(int(portModuleGC.getAttribute("count")))]
 
@@ -644,7 +948,7 @@ port = []
 visibility = False
 portSym_GroupName = []
 
-portEvsysActionNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"PORT\"]/value-group@[name=\"PORT_EVCTRL__EVACT0\"]")
+portEvsysActionNode = getValueGroupNode__Port("PORT", "GROUP", "EVCTRL", "EVACT0")
 if portEvsysActionNode != None:
     portEvsysActionValues = portEvsysActionNode.getChildren()
 
@@ -662,23 +966,27 @@ for portNumber in range(0, len(group)):
 
     usePort.append(portNumber)
     usePort[portNumber] = coreComponent.createBooleanSymbol("PORT_GROUP_" + str(portNumber), port[portNumber])
+    usePort[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:PMUX")
     usePort[portNumber].setLabel("Use PORT GROUP " + str(portGroupName[portNumber]))
     usePort[portNumber].setValue(True, 1)
     usePort[portNumber].setVisible(visibility)
 
     portSym_PORT_DIR = coreComponent.createStringSymbol("PORT_GROUP_" + str(portNumber) + "_DIR", port[portNumber])
+    portSym_PORT_DIR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:DIR")
     portSym_PORT_DIR.setLabel("Port Pin Direction")
     portSym_PORT_DIR.setVisible(visibility)
     portSym_PORT_DIR.setDefaultValue(str(hex(0)))
     portSym_PORT_DIR.setDependencies(setupPortDir, pinDirList)
 
     portSym_PORT_LATCH = coreComponent.createStringSymbol("PORT_GROUP_" + str(portNumber) + "_OUT", port[portNumber])
+    portSym_PORT_LATCH.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:OUT")
     portSym_PORT_LATCH.setLabel("Port Pin Output Value")
     portSym_PORT_LATCH.setDefaultValue(str(hex(0)))
     portSym_PORT_LATCH.setDependencies(setupPortLat, pinLatchList)
     portSym_PORT_LATCH.setVisible(visibility)
 
     portSym_PORT_CTRL = coreComponent.createStringSymbol("PORT_GROUP_" + str(portNumber) + "_CTRL", port[portNumber])
+    portSym_PORT_CTRL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:CTRL")
     portSym_PORT_CTRL.setLabel("Enable Input Synchronizer")
     portSym_PORT_CTRL.setDefaultValue(str(hex(0)))
     portSym_PORT_CTRL.setVisible(visibility)
@@ -688,6 +996,7 @@ for portNumber in range(0, len(group)):
         portPin.append(str(pinNum))
 
         portSym_PORT_PINCFG = coreComponent.createStringSymbol("PORT_GROUP_" + str(portNumber) + "_PINCFG" + str(pinNum) , port[portNumber])
+        portSym_PORT_PINCFG.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:PINCFG")
         portSym_PORT_PINCFG.setLabel("PORT GROUP " + str(portGroupName[portNumber]) + " PINCFG" + str(pinNum))
         portSym_PORT_PINCFG.setDefaultValue(str(hex(0)))
         portSym_PORT_PINCFG.setVisible(visibility)
@@ -702,6 +1011,7 @@ for portNumber in range(0, len(group)):
 
     for pinNum in range(0, 16):
         portSym_PORT_PMUX = coreComponent.createStringSymbol("PORT_GROUP_" + str(portNumber) + "_PMUX" + str(pinNum) , port[portNumber])
+        portSym_PORT_PMUX.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:PMUX")
         portSym_PORT_PMUX.setLabel("PORT GROUP " + str(portGroupName[portNumber]) + " PMUX" + str(pinNum))
 
         defaultVal = str(hex(0))
@@ -724,10 +1034,12 @@ for portNumber in range(0, len(group)):
 
         for i in range(0, 4):
             portEVSYSEnable = coreComponent.createBooleanSymbol("PORT_" + str(portNumber) + "_EVACT" + str(i) + "_ENABLE", portEVSYS)
+            portEVSYSEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:EVCTRL")
             portEVSYSEnable.setLabel("Enable Event" + str(i) + " Input")
             evsysDep.append("PORT_" + str(portNumber) + "_EVACT" + str(i) + "_ENABLE")
 
             portEvsysAction = coreComponent.createKeyValueSetSymbol("PORT_" + str(portNumber) + "_EVACT" + str(i) + "_ACTION",portEVSYSEnable)
+            portEvsysAction.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:EVCTRL")
             portEvsysAction.setLabel("Event" + str(i) + " Action")
             for index in range(0, len(portEvsysActionValues)):
                 portEvsysActionKeyName = portEvsysActionValues[index].getAttribute("name")
@@ -741,6 +1053,7 @@ for portNumber in range(0, len(group)):
             evsysDep.append("PORT_" + str(portNumber) + "_EVACT" + str(i) + "_ACTION")
 
             portEvsysPin = coreComponent.createKeyValueSetSymbol("PORT_" + str(portNumber) + "_EVACT" + str(i) + "_PIN",portEVSYSEnable)
+            portEvsysPin.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:EVCTRL")
             portEvsysPin.setLabel("Event" + str(i) + " Pin")
             for index in range(0, 32):
                 portEvsysPin.addKey("P" + str(index), str(index) , "Pin " + str(index))
@@ -751,6 +1064,7 @@ for portNumber in range(0, len(group)):
             evsysDep.append("PORT_" + str(portNumber) + "_EVACT" + str(i) + "_PIN")
 
         portSym_PORT_EVCTRL = coreComponent.createStringSymbol("PORT_GROUP_" + str(portNumber) + "_EVCTRL", port[portNumber])
+        portSym_PORT_EVCTRL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:port_u2210;register:EVCTRL")
         portSym_PORT_EVCTRL.setLabel("Port Event Control")
         portSym_PORT_EVCTRL.setVisible(True)
         #portSym_PORT_EVCTRL.setVisible(visibility)
@@ -770,7 +1084,8 @@ portSymPMUX_FUNCTIONS.setTarget("core.PERIPHERAL_PMUX_FUNCTIONS_LIST")
 portSymPMUX_FUNCTIONS.setVisible(False)
 
 portPMUXValueGroupValues = 0
-portPMUXValueGroupNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"PORT\"]/value-group@[name=\"PORT_PMUX__PMUXE\"]")
+portPMUXValueGroupNode = getValueGroupNode__Port("PORT", "GROUP", "PMUX", "PMUXE")
+
 if portPMUXValueGroupNode != None:
     portPMUXValueGroupValues = portPMUXValueGroupNode.getChildren()
 
@@ -849,6 +1164,7 @@ portSym_SystemDefFile.setType("STRING")
 portSym_SystemDefFile.setMarkup(True)
 
 if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+
     nonSecportSym_HeaderFile = coreComponent.createFileSymbol("PORT_HEADER_NONSEC", None)
     nonSecportSym_HeaderFile.setSourcePath("../peripheral/port_u2210/templates/trustZone/plib_port_nonsecure.h.ftl")
     nonSecportSym_HeaderFile.setOutputName("plib_port.h")

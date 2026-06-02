@@ -118,11 +118,13 @@ def instantiateComponent(freqmComponent):
 
     #FREQM Interrupt Mode
     freqmSym_INTERRUPTMODE = freqmComponent.createBooleanSymbol("FREQM_INTERRUPT_MODE", None)
+    freqmSym_INTERRUPTMODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:freqm_u2257;register:INTENSET")
     freqmSym_INTERRUPTMODE.setLabel("Enable Interrupt ?")
     freqmSym_INTERRUPTMODE.setDescription("Selection of polled or Interrupt Mode")
 
     #FREQM Selection of the division for the Reference Clock
     freqmSym_CFGA_DIVREF = freqmComponent.createBooleanSymbol("FREQM_REF_CLK_DIV", None)
+    freqmSym_CFGA_DIVREF.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:freqm_u2257;register:CFGA")
     freqmSym_CFGA_DIVREF.setLabel("Divide reference clock by 8")
     freqmSym_CFGA_DIVREF.setDescription("selection of either refclk1 or refclk8")
     freqmSym_CFGA_DIVREF.setVisible(False)
@@ -146,6 +148,7 @@ def instantiateComponent(freqmComponent):
 
     #FREQM Selection of the Reference Clock Cycles
     freqmSym_CFGA_REFNUM = freqmComponent.createKeyValueSetSymbol("FREQM_REF_CLK_CYCLES", None)
+    freqmSym_CFGA_REFNUM.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:freqm_u2257;register:CFGA")
     freqmSym_CFGA_REFNUM.setLabel("Measurement Time (Ref Cycles)")
     freqmSym_CFGA_REFNUM.setDescription(" Measurement Time specified in terms of reference clock cycles")
     freqmSym_CFGA_REFNUM.addKey("1_CLOCK", "1", "1 Clock Cycles")
@@ -173,6 +176,21 @@ def instantiateComponent(freqmComponent):
     freqmSym_MeasurementTime_Comment = freqmComponent.createCommentSymbol("FREQ_MEASUREMENT_TIME_COMMENT", None)
     freqmSym_MeasurementTime_Comment.setLabel("*** Measurement Time " + str(measurementTime) + " mS ***")
     freqmSym_MeasurementTime_Comment.setDependencies(updateMeasurementTime, ["core." + freqmInstanceName.getValue() + "_REF_CLOCK_FREQUENCY","FREQM_REF_CLK_CYCLES", "FREQM_REF_CLK_DIV"])
+
+    # The freqm calculation formula varies slightly depending on the IP version. Read the IP version to use the correct formula.
+    freqm_ip_ver = freqmComponent.createStringSymbol("FREQM_IP_VERSION", None)
+    freqm_ip_ver.setVisible(False)
+
+    freqm_module = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FREQM\"]")
+    freqm_id = freqm_module.getAttribute("id")
+    if freqm_id != None and freqm_id == "U2257":
+        freqm_version = freqm_module.getAttribute("version")
+        if freqm_version != None and (freqm_version == "1.0.1" or freqm_version == "1.1.0"):
+            freqm_ip_ver.setDefaultValue("v1")
+        else:
+            freqm_ip_ver.setDefaultValue("-")
+    else:
+        freqm_ip_ver.setDefaultValue("-")
 
     ############################################################################
     #### Dependency ####

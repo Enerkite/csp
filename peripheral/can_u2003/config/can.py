@@ -65,10 +65,8 @@ def RxBufferElementSize(element, event):
     if ((event["id"] == 'CAN_OPMODE' and event["value"] != 'NORMAL' and Database.getSymbolValue(canInstanceName.getValue().lower(), "RXBUF_USE") == True)
     or (event["id"] == 'RXBUF_USE' and event["value"] == True and Database.getSymbolValue(canInstanceName.getValue().lower(), "CAN_OPMODE") != 'NORMAL')):
         element.setVisible(True)
-        element.setReadOnly(False)
     else:
         element.setVisible(False)
-        element.setReadOnly(True)
 
 # for FD. Expects keyValue symbol. Use for RX and TX
 def adornElementSize(fifo):
@@ -88,10 +86,8 @@ def adornElementSize(fifo):
 def updateElementSize(symbol, event):
     if event["value"] != 'NORMAL':
         symbol.setVisible(True)
-        symbol.setReadOnly(False)
     else:
         symbol.setVisible(False)
-        symbol.setReadOnly(True)
 
 # for extended and standard filters
 def adornFilterType(filterType):
@@ -136,13 +132,16 @@ def canCreateStdFilter(component, menu, filterNumber):
     stdFilter = component.createMenuSymbol(canInstanceName.getValue() + "_STD_FILTER"+ str(filterNumber), menu)
     stdFilter.setLabel("Standard Filter " + str(filterNumber))
     stdFilterType = component.createKeyValueSetSymbol(canInstanceName.getValue() + "_STD_FILTER" + str(filterNumber) + "_TYPE", stdFilter)
+    stdFilterType.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:SIDFC")
     stdFilterType.setLabel("Type")
     adornFilterType(stdFilterType)
     sfid1 = component.createHexSymbol(canInstanceName.getValue() + "_STD_FILTER" + str(filterNumber) + "_SFID1", stdFilter)
+    sfid1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:SIDFC")
     sfid1.setLabel("ID1")
     sfid1.setMin(0)
     sfid1.setMax(0x7FF)
     sfid2 = component.createHexSymbol(canInstanceName.getValue() + "_STD_FILTER" + str(filterNumber) + "_SFID2", stdFilter)
+    sfid2.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:SIDFC")
     sfid2.setLabel("ID2")
     sfid2.setMin(0)
     sfid2.setMax(0x7FF)
@@ -152,6 +151,7 @@ def canCreateStdFilter(component, menu, filterNumber):
     stdFilterRangeInvalidSym.setVisible(False)
 
     config = component.createKeyValueSetSymbol(canInstanceName.getValue() + "_STD_FILTER" + str(filterNumber) + "_CONFIG", stdFilter)
+    config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:%NOREGISTER%")
     config.setLabel("Element Configuration")
     adornFilterConfig(config)
 
@@ -183,13 +183,16 @@ def canCreateExtFilter(component, menu, filterNumber):
     extFilter = component.createMenuSymbol(canInstanceName.getValue() + "_EXT_FILTER" + str(filterNumber), menu)
     extFilter.setLabel("Extended Filter " + str(filterNumber))
     extFilterType = component.createKeyValueSetSymbol(canInstanceName.getValue() + "_EXT_FILTER" + str(filterNumber) + "_TYPE", extFilter)
+    extFilterType.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:XIDFC")
     extFilterType.setLabel("Type")
     adornFilterType(extFilterType)
     efid1 = component.createHexSymbol(canInstanceName.getValue() + "_EXT_FILTER" + str(filterNumber) + "_EFID1", extFilter)
+    efid1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:XIDFC")
     efid1.setLabel("ID1")
     efid1.setMin(0)
     efid1.setMax(0x1FFFFFFF)
     efid2 = component.createHexSymbol(canInstanceName.getValue() + "_EXT_FILTER" + str(filterNumber) + "_EFID2", extFilter)
+    efid2.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:XIDFC")
     efid2.setLabel("ID2")
     efid2.setMin(0)
     efid2.setMax(0x1FFFFFFF)
@@ -199,6 +202,7 @@ def canCreateExtFilter(component, menu, filterNumber):
     extFilterRangeInvalidSym.setVisible(False)
 
     config = component.createKeyValueSetSymbol(canInstanceName.getValue() + "_EXT_FILTER" + str(filterNumber) + "_CONFIG", extFilter)
+    config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:%NOREGISTER%")
     config.setLabel("Element Configuration")
     adornFilterConfig(config)
 
@@ -484,7 +488,7 @@ def instantiateComponent(canComponent):
     canInstanceName = canComponent.createStringSymbol("CAN_INSTANCE_NAME", None)
     canInstanceName.setVisible(False)
     canInstanceName.setDefaultValue(canComponent.getID().upper())
-    print("Running " + canInstanceName.getValue())
+    Log.writeInfoMessage("Running " + canInstanceName.getValue())
 
     def hideMenu(menu, event):
         menu.setVisible(event["value"])
@@ -510,10 +514,12 @@ def instantiateComponent(canComponent):
 
     # CAN operation mode - default to FD
     canOpMode = canComponent.createComboSymbol("CAN_OPMODE", None, opModeValues)
+    canOpMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:CCCR")
     canOpMode.setLabel("CAN Operation Mode")
     canOpMode.setDefaultValue("NORMAL")
 
     canInterruptMode = canComponent.createBooleanSymbol("INTERRUPT_MODE", None)
+    canInterruptMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:ILS")
     canInterruptMode.setLabel("Interrupt Mode")
     canInterruptMode.setDefaultValue(False)
 
@@ -534,6 +540,7 @@ def instantiateComponent(canComponent):
     canBitTimingCalculationMenu.setDescription("CAN Bit Timing Calculation for Normal and CAN-FD Operation")
 
     canCoreClockValue = canComponent.createIntegerSymbol("CAN_CORE_CLOCK_FREQ", canBitTimingCalculationMenu)
+    canCoreClockValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canCoreClockValue.setLabel("Clock Frequency")
     canCoreClockValue.setReadOnly(True)
     canCoreClockValue.setDefaultValue(int(Database.getSymbolValue("core", canInstanceName.getValue() + "_CLOCK_FREQUENCY")))
@@ -554,11 +561,13 @@ def instantiateComponent(canComponent):
     canNominalBitTimingMenu.setDescription("This timing must be less or equal to the CAN-FD Data Bit Timing if used")
 
     canAutomaticNominalBitTimingCalculation = canComponent.createBooleanSymbol("AUTO_NOMINAL_BIT_TIMING_CALCULATION", canNominalBitTimingMenu)
+    canAutomaticNominalBitTimingCalculation.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canAutomaticNominalBitTimingCalculation.setLabel("Automatic Nominal Bit Timing Calculation")
     canAutomaticNominalBitTimingCalculation.setDefaultValue(False)
     canAutomaticNominalBitTimingCalculation.setDependencies(updateNominalBitTimingSymbols, ["AUTO_NOMINAL_BIT_TIMING_CALCULATION"])
 
     canNominalBitrate = canComponent.createIntegerSymbol("NOMINAL_BITRATE", canNominalBitTimingMenu)
+    canNominalBitrate.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canNominalBitrate.setLabel("Bit Rate (Kbps)")
     canNominalBitrate.setMin(1)
     canNominalBitrate.setMax(1000)
@@ -566,6 +575,7 @@ def instantiateComponent(canComponent):
     canNominalBitrate.setDependencies(nominalBitTimingCalculation, ["NOMINAL_BITRATE", "AUTO_NOMINAL_BIT_TIMING_CALCULATION", "core." + canInstanceName.getValue() + "_CLOCK_FREQUENCY"])
 
     canNominalSamplePoint = canComponent.createFloatSymbol("NOMINAL_SAMPLE_POINT", canNominalBitTimingMenu)
+    canNominalSamplePoint.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canNominalSamplePoint.setLabel("Sample Point %")
     canNominalSamplePoint.setMin(50.0)
     canNominalSamplePoint.setMax(100.0)
@@ -574,6 +584,7 @@ def instantiateComponent(canComponent):
     canNominalSamplePoint.setReadOnly(Database.getSymbolValue(canInstanceName.getValue().lower(), "AUTO_NOMINAL_BIT_TIMING_CALCULATION") == True)
 
     NBTPprescale = canComponent.createIntegerSymbol("NBTP_NBRP", canNominalBitTimingMenu)
+    NBTPprescale.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     NBTPprescale.setLabel("Bit Rate Prescaler")
     NBTPprescale.setMin(0)
     NBTPprescale.setMax(511)
@@ -582,21 +593,25 @@ def instantiateComponent(canComponent):
     NBTPprescale.setReadOnly(Database.getSymbolValue(canInstanceName.getValue().lower(), "AUTO_NOMINAL_BIT_TIMING_CALCULATION") == True)
 
     canNominalTotalTimeQuanta = canComponent.createIntegerSymbol("NBTP_TOTAL_TIME_QUANTA", canNominalBitTimingMenu)
+    canNominalTotalTimeQuanta.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canNominalTotalTimeQuanta.setLabel("Total Time Quanta (TQ)")
     canNominalTotalTimeQuanta.setReadOnly(True)
 
     canNominalSyncSegment = canComponent.createIntegerSymbol("NBTP_SYNC", canNominalTotalTimeQuanta)
+    canNominalSyncSegment.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canNominalSyncSegment.setLabel("Sync Segment (TQ)")
     canNominalSyncSegment.setDefaultValue(1)
     canNominalSyncSegment.setReadOnly(True)
 
     NBTPBeforeSP = canComponent.createIntegerSymbol("NBTP_NTSEG1", canNominalTotalTimeQuanta)
+    NBTPBeforeSP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     NBTPBeforeSP.setLabel("Time Segment Before Sample Point (TQ)")
     NBTPBeforeSP.setMin(2)
     NBTPBeforeSP.setMax(256)
     NBTPBeforeSP.setReadOnly(True)
 
     NBTPAfterSP = canComponent.createIntegerSymbol("NBTP_NTSEG2", canNominalTotalTimeQuanta)
+    NBTPAfterSP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     NBTPAfterSP.setLabel("Time Segment After Sample Point (TQ)")
     NBTPAfterSP.setMin(1)
     NBTPAfterSP.setMax(128)
@@ -612,22 +627,26 @@ def instantiateComponent(canComponent):
     NBTPAfterSP.setDefaultValue(tseg2)
 
     NBTPsyncJump = canComponent.createIntegerSymbol("NBTP_NSJW", canNominalBitTimingMenu)
+    NBTPsyncJump.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     NBTPsyncJump.setLabel("Synchronization Jump Width (TQ)")
     NBTPsyncJump.setMin(1)
     NBTPsyncJump.setMax(128)
     NBTPsyncJump.setDefaultValue(sjw)
 
     canNominalTimeQuantaPeriod = canComponent.createStringSymbol("NOMINAL_TIME_QUANTA_PERIOD", canNominalBitTimingMenu)
+    canNominalTimeQuantaPeriod.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canNominalTimeQuantaPeriod.setLabel("Time Quanta (ns)")
     canNominalTimeQuantaPeriod.setDefaultValue(str(tqPeriod))
     canNominalTimeQuantaPeriod.setReadOnly(True)
 
     canCalculatedNominalBitrate = canComponent.createIntegerSymbol("CALCULATED_NOMINAL_BITRATE", canNominalBitTimingMenu)
+    canCalculatedNominalBitrate.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canCalculatedNominalBitrate.setLabel("Calculated Bit Rate (Kbps)")
     canCalculatedNominalBitrate.setDefaultValue(calculatedNominalBitrate)
     canCalculatedNominalBitrate.setReadOnly(True)
 
     canNominalCalculatedError = canComponent.createStringSymbol("CALCULATED_NOMINAL_ERRORRATE", canNominalBitTimingMenu)
+    canNominalCalculatedError.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:NBTP")
     canNominalCalculatedError.setLabel("Error %")
     canNominalCalculatedError.setDefaultValue(str(errorRate))
     canNominalCalculatedError.setReadOnly(True)
@@ -644,17 +663,20 @@ def instantiateComponent(canComponent):
     canDataBitTimingMenu.setDependencies(showWhenFD, ["CAN_OPMODE"])
 
     canAutomaticDataBitTimingCalculation = canComponent.createBooleanSymbol("AUTO_DATA_BIT_TIMING_CALCULATION", canDataBitTimingMenu)
+    canAutomaticDataBitTimingCalculation.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canAutomaticDataBitTimingCalculation.setLabel("Automatic Data Bit Timing Calculation")
     canAutomaticDataBitTimingCalculation.setDefaultValue(False)
     canAutomaticDataBitTimingCalculation.setDependencies(updateDataBitTimingSymbols, ["AUTO_DATA_BIT_TIMING_CALCULATION"])
 
     canDataBitrate = canComponent.createIntegerSymbol("DATA_BITRATE", canDataBitTimingMenu)
+    canDataBitrate.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canDataBitrate.setLabel("Bit Rate (Kbps)")
     canDataBitrate.setMin(1)
     canDataBitrate.setDefaultValue(500)
     canDataBitrate.setDependencies(dataBitTimingCalculation, ["DATA_BITRATE", "AUTO_DATA_BIT_TIMING_CALCULATION", "CAN_OPMODE", "core." + canInstanceName.getValue() + "_CLOCK_FREQUENCY"])
 
     canDataSamplePoint = canComponent.createFloatSymbol("DATA_SAMPLE_POINT", canDataBitTimingMenu)
+    canDataSamplePoint.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canDataSamplePoint.setLabel("Sample Point %")
     canDataSamplePoint.setMin(50.0)
     canDataSamplePoint.setMax(100.0)
@@ -663,6 +685,7 @@ def instantiateComponent(canComponent):
     canDataSamplePoint.setReadOnly(Database.getSymbolValue(canInstanceName.getValue().lower(), "AUTO_DATA_BIT_TIMING_CALCULATION") == True)
 
     DBTPprescale = canComponent.createIntegerSymbol("DBTP_DBRP", canDataBitTimingMenu)
+    DBTPprescale.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     DBTPprescale.setLabel("Bit Rate Prescaler")
     DBTPprescale.setMin(0)
     DBTPprescale.setMax(31)
@@ -670,21 +693,25 @@ def instantiateComponent(canComponent):
     DBTPprescale.setReadOnly(Database.getSymbolValue(canInstanceName.getValue().lower(), "AUTO_DATA_BIT_TIMING_CALCULATION") == True)
 
     canDataTotalTimeQuanta = canComponent.createIntegerSymbol("DBTP_TOTAL_TIME_QUANTA", canDataBitTimingMenu)
+    canDataTotalTimeQuanta.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canDataTotalTimeQuanta.setLabel("Total Time Quanta (TQ)")
     canDataTotalTimeQuanta.setReadOnly(True)
 
     canDataSyncSegment = canComponent.createIntegerSymbol("DBTP_SYNC", canDataTotalTimeQuanta)
+    canDataSyncSegment.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canDataSyncSegment.setLabel("Sync Segment (TQ)")
     canDataSyncSegment.setDefaultValue(1)
     canDataSyncSegment.setReadOnly(True)
 
     DBTPBeforeSP = canComponent.createIntegerSymbol("DBTP_DTSEG1", canDataTotalTimeQuanta)
+    DBTPBeforeSP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     DBTPBeforeSP.setLabel("Time Segment Before Sample Point (TQ)")
     DBTPBeforeSP.setMin(2)
     DBTPBeforeSP.setMax(32)
     DBTPBeforeSP.setReadOnly(True)
 
     DBTPAfterSP = canComponent.createIntegerSymbol("DBTP_DTSEG2", canDataTotalTimeQuanta)
+    DBTPAfterSP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     DBTPAfterSP.setLabel("Time Segment After Sample Point (TQ)")
     DBTPAfterSP.setMin(1)
     DBTPAfterSP.setMax(16)
@@ -700,22 +727,26 @@ def instantiateComponent(canComponent):
     DBTPAfterSP.setDefaultValue(tseg2)
 
     DBTPsyncJump = canComponent.createIntegerSymbol("DBTP_DSJW", canDataBitTimingMenu)
+    DBTPsyncJump.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     DBTPsyncJump.setLabel("Synchronization Jump Width (TQ)")
     DBTPsyncJump.setMin(1)
     DBTPsyncJump.setDefaultValue(sjw)
     DBTPsyncJump.setMax(8)
 
     canDataTimeQuantaPeriod = canComponent.createStringSymbol("DATA_TIME_QUANTA_PERIOD", canDataBitTimingMenu)
+    canDataTimeQuantaPeriod.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canDataTimeQuantaPeriod.setLabel("Time Quanta (ns)")
     canDataTimeQuantaPeriod.setDefaultValue(str(tqPeriod))
     canDataTimeQuantaPeriod.setReadOnly(True)
 
     canCalculatedDataBitrate = canComponent.createIntegerSymbol("CALCULATED_DATA_BITRATE", canDataBitTimingMenu)
+    canCalculatedDataBitrate.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canCalculatedDataBitrate.setLabel("Calculated Bit Rate (Kbps)")
     canCalculatedDataBitrate.setDefaultValue(calculatedDataBitrate)
     canCalculatedDataBitrate.setReadOnly(True)
 
     canDataCalculatedError = canComponent.createStringSymbol("CALCULATED_DATA_ERRORRATE", canDataBitTimingMenu)
+    canDataCalculatedError.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:DBTP")
     canDataCalculatedError.setLabel("Error %")
     canDataCalculatedError.setDefaultValue(str(errorRate))
     canDataCalculatedError.setReadOnly(True)
@@ -726,6 +757,7 @@ def instantiateComponent(canComponent):
 
     # ----- Rx FIFO 0 -----
     canRXF0 = canComponent.createBooleanSymbol("RXF0_USE", None)
+    canRXF0.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXESC")
     canRXF0.setLabel("Use RX FIFO 0")
     canRXF0.setDefaultValue(True)
     canRXF0.setReadOnly(True)
@@ -736,12 +768,14 @@ def instantiateComponent(canComponent):
 
     # number of RX FIFO 0 elements
     canRXF0Elements = canComponent.createIntegerSymbol("RXF0_ELEMENTS", canRXF0Menu)
+    canRXF0Elements.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXF0C")
     canRXF0Elements.setLabel("Number of Elements")
     canRXF0Elements.setDefaultValue(1)
     canRXF0Elements.setMin(0)
     canRXF0Elements.setMax(64)
 
     canRXF0watermarkP = canComponent.createIntegerSymbol("RXF0_WP", canRXF0Menu)
+    canRXF0watermarkP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:%NOREGISTER%")
     canRXF0watermarkP.setLabel("Watermark %")
     canRXF0watermarkP.setDefaultValue(0)
     canRXF0watermarkP.setMin(0)
@@ -749,6 +783,7 @@ def instantiateComponent(canComponent):
 
     #This is a computed value
     canRXF0watermark = canComponent.createIntegerSymbol("RXF0_WATERMARK", canRXF0Menu)
+    canRXF0watermark.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXF0C")
     canRXF0watermark.setLabel("Watermark at element")
     canRXF0watermark.setDescription("A value of 0 disables watermark")
     canRXF0watermark.setDefaultValue(0)
@@ -756,18 +791,21 @@ def instantiateComponent(canComponent):
     canRXF0watermark.setDependencies(RXF0WatermarkUpdate, ["RXF0_ELEMENTS", "RXF0_WP"])
 
     canRXF0elementSize = canComponent.createKeyValueSetSymbol("RXF0_BYTES_CFG", canRXF0Menu)
+    canRXF0elementSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXESC")
     canRXF0elementSize.setLabel("Element Size")
     canRXF0elementSize.setVisible(False)
     adornElementSize(canRXF0elementSize)
     canRXF0elementSize.setDependencies(updateElementSize, ["CAN_OPMODE"])
 
     canRx0overwrite = canComponent.createBooleanSymbol("RXF0_OVERWRITE", canRXF0Menu)
+    canRx0overwrite.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXF0C")
     canRx0overwrite.setLabel("Use Overwrite Mode")
     canRx0overwrite.setDescription("Overwrite RX FIFO 0 entries without blocking")
     canRx0overwrite.setDefaultValue(True)
 
     # ----- Rx FIFO 1 -----
     canRXF1 = canComponent.createBooleanSymbol("RXF1_USE", None)
+    canRXF1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXESC")
     canRXF1.setLabel("Use RX FIFO 1")
     canRXF1.setDefaultValue(True)
 
@@ -776,12 +814,14 @@ def instantiateComponent(canComponent):
     canRXF1Menu.setDependencies(hideMenu, ["RXF1_USE"])
 
     canRXF1Elements = canComponent.createIntegerSymbol("RXF1_ELEMENTS", canRXF1Menu)
+    canRXF1Elements.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXF0C")
     canRXF1Elements.setLabel("Number of Elements")
     canRXF1Elements.setDefaultValue(1)
     canRXF1Elements.setMin(1)
     canRXF1Elements.setMax(64)
 
     canRXF1watermarkP = canComponent.createIntegerSymbol("RXF1_WP", canRXF1Menu)
+    canRXF1watermarkP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:%NOREGISTER%")
     canRXF1watermarkP.setLabel("Watermark %")
     canRXF1watermarkP.setDefaultValue(0)
     canRXF1watermarkP.setMin(0)
@@ -789,6 +829,7 @@ def instantiateComponent(canComponent):
 
     #This is a computed value for watermark
     canRX1watermark = canComponent.createIntegerSymbol("RXF1_WATERMARK", canRXF1Menu)
+    canRX1watermark.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXF0C")
     canRX1watermark.setLabel("Watermark at element")
     canRX1watermark.setDescription("A value of 0 disables watermark")
     canRX1watermark.setDefaultValue(0)
@@ -796,22 +837,26 @@ def instantiateComponent(canComponent):
     canRX1watermark.setDependencies(RXF1WatermarkUpdate, ["RXF1_ELEMENTS", "RXF1_WP"])
 
     canRXF1elementSize = canComponent.createKeyValueSetSymbol("RXF1_BYTES_CFG", canRXF1Menu)
+    canRXF1elementSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXESC")
     canRXF1elementSize.setLabel("Element Size")
     canRXF1elementSize.setVisible(False)
     adornElementSize(canRXF1elementSize)
     canRXF1elementSize.setDependencies(updateElementSize, ["CAN_OPMODE"])
 
     canRXF1overwrite = canComponent.createBooleanSymbol("RXF1_OVERWRITE", canRXF1Menu)
+    canRXF1overwrite.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXF0C")
     canRXF1overwrite.setLabel("Use Overwrite Mode")
     canRXF1overwrite.setDescription("Overwrite RX FIFO 1 entries without blocking")
     canRXF1overwrite.setDefaultValue(True)
 
     # ----- Rx Buffer -----
     canRXBuf = canComponent.createBooleanSymbol("RXBUF_USE", None)
+    canRXBuf.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXESC")
     canRXBuf.setLabel("Use Dedicated Rx Buffer")
     canRXBuf.setDefaultValue(False)
 
     canRXBufElements = canComponent.createIntegerSymbol("RX_BUFFER_ELEMENTS", canRXBuf)
+    canRXBufElements.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TXBTIE")
     canRXBufElements.setLabel("Number of Elements")
     canRXBufElements.setDefaultValue(1)
     canRXBufElements.setMin(1)
@@ -820,6 +865,7 @@ def instantiateComponent(canComponent):
     canRXBufElements.setDependencies(hideMenu, ["RXBUF_USE"])
 
     canRXBufelementSize = canComponent.createKeyValueSetSymbol("RX_BUFFER_BYTES_CFG", canRXBuf)
+    canRXBufelementSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXESC")
     canRXBufelementSize.setLabel("Element Size")
     canRXBufelementSize.setVisible(False)
     adornElementSize(canRXBufelementSize)
@@ -828,6 +874,7 @@ def instantiateComponent(canComponent):
     # ------  T X  --------------
     # ----- Tx FIFO -----
     canTX = canComponent.createBooleanSymbol("TX_USE", None)
+    canTX.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:IE")
     canTX.setLabel("Use TX FIFO")
     canTX.setDefaultValue(True)
     canTX.setReadOnly(True)
@@ -839,12 +886,14 @@ def instantiateComponent(canComponent):
 
     # number of TX FIFO elements
     canTXnumElements = canComponent.createIntegerSymbol("TX_FIFO_ELEMENTS", canTXmenu)
+    canTXnumElements.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TXBC")
     canTXnumElements.setLabel("Number of Elements")
     canTXnumElements.setDefaultValue(1)
     canTXnumElements.setMin(1)
     canTXnumElements.setMax(32)
 
     canTXwatermarkP = canComponent.createIntegerSymbol("TX_FIFO_WP", canTXmenu)
+    canTXwatermarkP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:%NOREGISTER%")
     canTXwatermarkP.setLabel("Watermark %")
     canTXwatermarkP.setDefaultValue(0)
     canTXwatermarkP.setMin(0)
@@ -852,6 +901,7 @@ def instantiateComponent(canComponent):
 
     #This is a computed value for watermark
     canTXwatermark = canComponent.createIntegerSymbol("TX_FIFO_WATERMARK", canTXmenu)
+    canTXwatermark.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TXEFC")
     canTXwatermark.setLabel("Watermark at element")
     canTXwatermark.setDescription("A value of 0 disables watermark")
     canTXwatermark.setDefaultValue(0)
@@ -859,23 +909,27 @@ def instantiateComponent(canComponent):
     canTXwatermark.setDependencies(TXWatermarkUpdate, ["TX_FIFO_ELEMENTS", "TX_FIFO_WP"])
 
     canTXElementCfg = canComponent.createKeyValueSetSymbol("TX_FIFO_BYTES_CFG", canTXmenu)
+    canTXElementCfg.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TXESC")
     canTXElementCfg.setLabel("Element Size")
     adornElementSize(canTXElementCfg)
     canTXElementCfg.setVisible(False)
     canTXElementCfg.setDependencies(updateElementSize, ["CAN_OPMODE"])
 
     canTXpause = canComponent.createBooleanSymbol("TX_PAUSE", None)
+    canTXpause.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TXBRP")
     canTXpause.setLabel("Enable TX Pause")
     canTXpause.setDescription("Pause 2 CAN bit times between transmissions")
     canTXpause.setDefaultValue(False)
 
     # ----- Tx Buffer -----
     canTXBuf = canComponent.createBooleanSymbol("TXBUF_USE", None)
+    canTXBuf.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TXBC")
     canTXBuf.setLabel("Use Dedicated Tx Buffer")
     canTXBuf.setDefaultValue(False)
 
     # number of TX buffer elements
     canTXBufElements = canComponent.createIntegerSymbol("TX_BUFFER_ELEMENTS", canTXBuf)
+    canTXBufElements.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:RXESC")
     canTXBufElements.setLabel("Number of TX Buffer Elements")
     canTXBufElements.setDefaultValue(1)
     canTXBufElements.setMin(1)
@@ -889,6 +943,7 @@ def instantiateComponent(canComponent):
     canStdFilterMenu.setDependencies(adjustStdFilters, ["FILTERS_STD"])
 
     canStdFilterNumber = canComponent.createIntegerSymbol("FILTERS_STD", canStdFilterMenu)
+    canStdFilterNumber.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:GFC")
     canStdFilterNumber.setLabel("Number of Standard Filters:")
     canStdFilterNumber.setDefaultValue(0)
     canStdFilterNumber.setMin(0)
@@ -900,6 +955,7 @@ def instantiateComponent(canComponent):
 
     #What to do when a NO-MATCH is detected on a standard packet
     canNoMatchStandard = canComponent.createKeyValueSetSymbol("FILTERS_STD_NOMATCH", None)
+    canNoMatchStandard.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:GFC")
     canNoMatchStandard.setLabel("Standard message No-Match disposition:")
     canNoMatchStandard.addKey("CAN_GFC_ANFS_RXF0", "0", "Move to RX FIFO 0")
     canNoMatchStandard.addKey("CAN_GFC_ANFS_RXF1", "1", "Move to RX FIFO 1")
@@ -910,6 +966,7 @@ def instantiateComponent(canComponent):
 
     # Reject all standard IDs?
     canStdReject = canComponent.createBooleanSymbol("FILTERS_STD_REJECT", None)
+    canStdReject.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:GFC")
     canStdReject.setLabel("Reject Standard Remote Frames")
     canStdReject.setDescription("Reject all remote frames with 11-bit standard IDs")
     canStdReject.setDefaultValue(False)
@@ -921,6 +978,7 @@ def instantiateComponent(canComponent):
 
     #How many extended filters
     canExtFilterNumber = canComponent.createIntegerSymbol("FILTERS_EXT", canExtFilterMenu)
+    canExtFilterNumber.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:GFC")
     canExtFilterNumber.setLabel("Number of Extended Filters:")
     canExtFilterNumber.setDefaultValue(0)
     canExtFilterNumber.setMin(0)
@@ -932,6 +990,7 @@ def instantiateComponent(canComponent):
 
     #What to do when a NO-MATCH is detected on an extended message
     canNoMatchExtended = canComponent.createKeyValueSetSymbol("FILTERS_EXT_NOMATCH", None)
+    canNoMatchExtended.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:GFC")
     canNoMatchExtended.setLabel("Extended message No-Match disposition:")
     canNoMatchExtended.addKey("CAN_GFC_ANFE_RXF0", "0", "Move to RX FIFO 0")
     canNoMatchExtended.addKey("CAN_GFC_ANFE_RXF1", "1", "Move to RX FIFO 1")
@@ -942,18 +1001,21 @@ def instantiateComponent(canComponent):
 
     # Reject all extended IDs?
     canExtReject = canComponent.createBooleanSymbol("FILTERS_EXT_REJECT", None)
+    canExtReject.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:GFC")
     canExtReject.setLabel("Reject Extended Remote Frames")
     canExtReject.setDescription("Reject all remote frames with 29-bit extended IDs")
     canExtReject.setDefaultValue(False)
 
     #use timeout?
     canUseTimeout = canComponent.createBooleanSymbol("CAN_TIMEOUT", None)
+    canUseTimeout.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:IE")
     canUseTimeout.setLabel("Use Timeout Counter")
     canUseTimeout.setDescription("Enables Timeout Counter")
     canUseTimeout.setDefaultValue(False)
 
     #timout count
     canTimeoutCount = canComponent.createIntegerSymbol("TIMEOUT_COUNT", canUseTimeout)
+    canTimeoutCount.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TOCC")
     canTimeoutCount.setDependencies(hideMenu, ["CAN_TIMEOUT"])
     canTimeoutCount.setLabel("Timeout Countdown from: ")
     canTimeoutCount.setDefaultValue(40000)
@@ -964,6 +1026,7 @@ def instantiateComponent(canComponent):
 
     #timeout mode
     canTimeoutMode = canComponent.createKeyValueSetSymbol("TIMEOUT_SELECT", canUseTimeout)
+    canTimeoutMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TOCC")
     canTimeoutMode.setLabel("Timeout mode:")
     canTimeoutMode.addKey("CAN_TOCC_TOS_CONT", "0", "CONTINUOUS")
     canTimeoutMode.addKey("CAN_TOCC_TOS_TXEF", "1", "TX EVENT")
@@ -976,6 +1039,7 @@ def instantiateComponent(canComponent):
     canTimeoutMode.setDefaultValue(1)
 
     canTimestampEnable = canComponent.createBooleanSymbol("TIMESTAMP_ENABLE", None)
+    canTimestampEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TSCC")
     canTimestampEnable.setLabel("Timestamp Enable")
     canTimestampEnable.setDefaultValue(False)
 
@@ -984,6 +1048,7 @@ def instantiateComponent(canComponent):
     tssValgrpName = tssNode.getAttribute("values")
     tssValGrpNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="CAN"]/value-group@[name=\"' + tssValgrpName + '\"]')
     canTimestampMode = canComponent.createKeyValueSetSymbol("TIMESTAMP_MODE", canTimestampEnable)
+    canTimestampMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TSCC")
     canTimestampMode.setLabel("Timestamp mode")
     canTimestampMode.setDescription(tssNode.getAttribute("caption"))
     for value in tssValGrpNode.getChildren():
@@ -996,6 +1061,7 @@ def instantiateComponent(canComponent):
 
     #timestamp/timeout Counter Prescaler
     canTCP = canComponent.createIntegerSymbol("TIMESTAMP_PRESCALER", None)
+    canTCP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:TSCC")
     canTCP.setLabel("Timestamp/Timeout Counter Prescaler (TCP):")
     canTCP.setDescription("Configures Timestamp & Timeout counter prescaler in multiples of CAN bit times.")
     canTCP.setDefaultValue(0)
@@ -1003,6 +1069,7 @@ def instantiateComponent(canComponent):
     canTCP.setMax(15)
 
     canGenerateLegacyAPIs = canComponent.createBooleanSymbol("CAN_GENERATE_LEGACY_APIS", None)
+    canGenerateLegacyAPIs.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:can_u2003;register:%NOREGISTER%")
     canGenerateLegacyAPIs.setLabel("Generate Legacy APIs")
     canGenerateLegacyAPIs.setDescription("Generates Legacy APIs for backward compatibility. Legacy APIs will be deprecated in future")
     canGenerateLegacyAPIs.setDefaultValue(False)
@@ -1078,7 +1145,7 @@ def instantiateComponent(canComponent):
     if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
         global canfilesArray
         canIsNonSecure = Database.getSymbolValue("core", canComponent.getID().upper() + "_IS_NON_SECURE")
-        Database.setSymbolValue("core", InterruptVectorSecurity, canIsNonSecure) 
+        Database.setSymbolValue("core", InterruptVectorSecurity, canIsNonSecure)
         canfilesArray.append(canMasterHeaderFile)
         canfilesArray.append(canMainSourceFile)
         canfilesArray.append(canInstHeaderFile)

@@ -94,6 +94,24 @@ def UpdatePWMInterruptEnable(symbol, event):
                                             pwmInstanceName.getValue() + handlerSuffix, 0)
     Database.setSymbolValue("core", pwmInstanceName.getValue() + "_INTERRUPT_HANDLER_LOCK", interruptEnable, 0)
 
+def handleMessage(messageID, args):
+    component = str(pwmInstanceName.getValue()).lower()
+    dict = {}
+
+    if (messageID == "PWM_CONFIG_HW_IO"):
+        channel, enable = args['config']
+
+        if enable == True:
+            res = Database.setSymbolValue(component, "CH{}_EN".format(channel), enable)
+        else:
+            res = Database.clearSymbolValue(component, "CH{}_EN".format(channel))
+
+        if res == True:
+            dict = {"Result": "Success"}
+        else:
+            dict = {"Result": "Fail"}
+            
+    return dict
 
 ###################################################################################################
 ########################### Component   #################################
@@ -115,11 +133,13 @@ def instantiateComponent(pwmComponent):
 
         #clock enable
         pwmClockAEnable = pwmComponent.createBooleanSymbol("CLK" + clock + "_EN", pwmClockMenu)
+        pwmClockAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_MR")
         pwmClockAEnable.setLabel("Enable Clock ")
         pwmClockAEnable.setDefaultValue(False)
 
         #clock Prescaler
         pwmClockAPrescaler = pwmComponent.createKeyValueSetSymbol("CLK" + clock + "_PRES", pwmClockMenu)
+        pwmClockAPrescaler.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_MR")
         pwmClockAPrescaler.setLabel("Prescaler")
         setSymbolValueFromATDF(pwmClockAPrescaler, "PWM", "PWM_MR__PRE" + clock )
         pwmClockAPrescaler.setDisplayMode("Description")
@@ -129,6 +149,7 @@ def instantiateComponent(pwmComponent):
 
         #clock Divider
         pwmClockADivider = pwmComponent.createIntegerSymbol("CLK" + clock + "_DIV", pwmClockMenu)
+        pwmClockADivider.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_MR")
         pwmClockADivider.setLabel("Divider")
         pwmClockADivider.setMin(1)
         pwmClockADivider.setMax(255)
@@ -137,6 +158,7 @@ def instantiateComponent(pwmComponent):
 
         #clock Frequency
         pwmClockAFrequency = pwmComponent.createIntegerSymbol("CLK" + clock + "_FREQUENCY", pwmClockMenu)
+        pwmClockAFrequency.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_MR")
         pwmClockAFrequency.setLabel("Frequency")
         pwmClockAFrequency.setReadOnly(True)
         pwmClockAFrequency.setDefaultValue(0)
@@ -154,11 +176,13 @@ def instantiateComponent(pwmComponent):
 
         #Channel enable
         pwmChannelEnable = pwmComponent.createBooleanSymbol("CH" + str(channel) + "_EN", pwmChannelMenu)
+        pwmChannelEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_CMRx")
         pwmChannelEnable.setLabel("Enable")
         pwmChannelEnable.setDefaultValue(False)
 
         #Channel prescaler
         pwmChannelPrescaler = pwmComponent.createKeyValueSetSymbol("CH" + str(channel) + "_PRES", pwmChannelMenu)
+        pwmChannelPrescaler.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_CMR")
         pwmChannelPrescaler.setLabel("Prescaler")
         valueGroupName = ATDF.getNode('/avr-tools-device-file/modules/module@[name="PWM"]/register-group@[name="PWM_CH_NUM"]/register@[name="PWM_CMR"]/bitfield@[name="CPRE"]').getAttribute("values")
         setSymbolValueFromATDF(pwmChannelPrescaler, "PWM", valueGroupName)
@@ -169,6 +193,7 @@ def instantiateComponent(pwmComponent):
 
         #Channel frequency
         pwmChannelFrequency = pwmComponent.createIntegerSymbol("CH" + str(channel) + "_FREQUENCY", pwmChannelMenu)
+        pwmChannelFrequency.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_CMRx")
         pwmChannelFrequency.setLabel("Frequency")
         pwmChannelFrequency.setReadOnly(True)
         pwmChannelFrequency.setDefaultValue(0)
@@ -180,6 +205,7 @@ def instantiateComponent(pwmComponent):
 
         #Channel Alignment
         pwmChannelAlignment = pwmComponent.createKeyValueSetSymbol("CH" + str(channel) + "_CALG", pwmChannelMenu)
+        pwmChannelAlignment.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_CMR")
         pwmChannelAlignment.setLabel("Alignment")
         valueGroupName = ATDF.getNode('/avr-tools-device-file/modules/module@[name="PWM"]/register-group@[name="PWM_CH_NUM"]/register@[name="PWM_CMR"]/bitfield@[name="CALG"]').getAttribute("values")
         setSymbolValueFromATDF(pwmChannelAlignment, "PWM", valueGroupName)
@@ -190,6 +216,7 @@ def instantiateComponent(pwmComponent):
 
         #Channel Polarity
         pwmChannelPolarity = pwmComponent.createKeyValueSetSymbol("CH" + str(channel) + "_CPOL", pwmChannelMenu)
+        pwmChannelPolarity.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_CMR")
         pwmChannelPolarity.setLabel("Polarity")
         valueGroupName = ATDF.getNode('/avr-tools-device-file/modules/module@[name="PWM"]/register-group@[name="PWM_CH_NUM"]/register@[name="PWM_CMR"]/bitfield@[name="CPOL"]').getAttribute("values")
         setSymbolValueFromATDF(pwmChannelPolarity, "PWM", valueGroupName)
@@ -200,18 +227,21 @@ def instantiateComponent(pwmComponent):
 
         #Channel Interrupt
         pwmChannelInterrupt = pwmComponent.createBooleanSymbol("CH" + str(channel) + "_IER_CHID", pwmChannelMenu)
+        pwmChannelInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_IER")
         pwmChannelInterrupt.setLabel("Interrupt Enable")
         pwmChannelInterrupt.setDefaultValue(False)
         pwmChannelInterrupt.setDependencies(enableSymbol, ["CH" + str(channel) + "_EN"])
 
         #Channel Period
         pwmChannelPeriodCount = pwmComponent.createIntegerSymbol("CH" + str(channel) +"_CPRD", pwmChannelMenu)
+        pwmChannelPeriodCount.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_CPRD")
         pwmChannelPeriodCount.setLabel("Period Count")
         pwmChannelPeriodCount.setMin(1)
         pwmChannelPeriodCount.setDependencies(enableSymbol, ["CH" + str(channel) + "_EN"])
 
         #Channel Duty
         pwmChannelDutyCount = pwmComponent.createIntegerSymbol("CH" + str(channel) +"_CDTY", pwmChannelMenu)
+        pwmChannelDutyCount.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pwm_6044;register:PWM_CDTY")
         pwmChannelDutyCount.setLabel("Duty Cycle Count")
         pwmChannelDutyCount.setMin(1)
         pwmChannelDutyCount.setDependencies(enableSymbol, ["CH" + str(channel) + "_EN"])

@@ -56,7 +56,7 @@
 </#if>
 
 <#if TMR_INTERRUPT_MODE == true>
-volatile static TMR_TIMER_OBJECT ${TMR_INSTANCE_NAME?lower_case}Obj;
+static volatile TMR_TIMER_OBJECT ${TMR_INSTANCE_NAME?lower_case}Obj;
 </#if>
 
 
@@ -68,7 +68,11 @@ void ${TMR_INSTANCE_NAME}_Initialize(void)
     /*
     SIDL = ${TIMER_SIDL}
     SYNC = ${TIMER_SYNC}
+    <#if TIMER_SRC_SEL == "1">
+    TGATE = 0
+    <#else>
     TGATE = ${TIMER_TGATE}
+    </#if>
     TCKPS =${TIMER_PRE_SCALER}
     T32   = ${TIMER_32BIT_MODE_SEL}
     TCS = ${TIMER_SRC_SEL}

@@ -32,14 +32,14 @@ void data_abort_irq_handler(void);
 void prefetch_abort_irq_handler(void);
 
 <#if ADVANCED_EXCEPTION>
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.6 deviated 30 times.  Deviation record ID -  H3_MISRAC_2012_R_21_6_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.6 deviated 30 times.  Deviation record ID -  H3_MISRAC_2023_R_21_6_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
     <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
     </#if>
-#pragma coverity compliance block deviate:30 "MISRA C-2012 Rule 21.6" "H3_MISRAC_2012_R_21_6_DR_1"
+#pragma coverity compliance block deviate:30 "MISRA C-2023 Rule 21.6" "H3_MISRAC_2023_R_21_6_DR_1"
 </#if>
 
 #define READ_DFSR(x) asm("mrc p15, 0, %0, c5, c0, 0" : "=r"(x))
@@ -249,10 +249,10 @@ void __attribute((weak, noreturn)) prefetch_abort_irq_handler(void)
 <#if ADVANCED_EXCEPTION>
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.6"
     <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop
     </#if>
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 </#if>

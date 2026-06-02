@@ -134,7 +134,22 @@ def handleMessage(messageID, args):
             if args["isEnabled"] == True:
                 flexcomSym_UsartOperatingMode.setSelectedKey("RING_BUFFER")
 
+    elif (messageID == "FLEXCOM_CONFIG_HW_IO"):
+        mode, npcs, enable = args['config']
+        res = False
+        if mode == "USART":
+            res = flexcomSym_OperatingMode.setSelectedKey("USART", 2)
+        elif mode == "SPI":
+            res = flexcomSym_OperatingMode.setSelectedKey("SPI", 2)
+            res = Database.setSymbolValue(deviceNamespace, "FLEXCOM_SPI_EN_{}".format(npcs.upper()), enable)
+        elif mode == "I2C":
+            res = flexcomSym_OperatingMode.setSelectedKey("TWI", 2)
 
+        if res == True:
+            result_dict = {"Result": "Success"}
+        else:
+            result_dict = {"Result": "Fail"}
+        
     return result_dict
 
 def flexcomInterruptEnableDisableCallback( uartInterruptEnableDisable, event ):
@@ -382,6 +397,7 @@ def instantiateComponent(flexcomComponent):
 
     #Flexcom Mode - NO_COM, USART, SPI, TWI
     flexcomSym_OperatingMode = flexcomComponent.createKeyValueSetSymbol("FLEXCOM_MODE", None)
+    flexcomSym_OperatingMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:flexcom_11277;register:FLEX_MR")
     flexcomSym_OperatingMode.setLabel("FLEXCOM Operating Mode")
 
     flexcomSym_OperatingMode_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"FLEXCOM\"]/value-group@[name=\"FLEXCOM_MR__OPMODE\"]")

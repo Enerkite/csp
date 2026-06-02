@@ -73,14 +73,23 @@
  * this interface.
  */
 
-void ${I2C_INSTANCE_NAME}_Initialize(void);
-void ${I2C_INSTANCE_NAME}_CallbackRegister(I2C_SLAVE_CALLBACK callback, uintptr_t contextHandle);
-bool ${I2C_INSTANCE_NAME}_IsBusy(void);
-uint8_t ${I2C_INSTANCE_NAME}_ReadByte(void);
-void ${I2C_INSTANCE_NAME}_WriteByte(uint8_t wrByte);
-I2C_SLAVE_TRANSFER_DIR ${I2C_INSTANCE_NAME}_TransferDirGet(void);
-I2C_SLAVE_ACK_STATUS ${I2C_INSTANCE_NAME}_LastByteAckStatusGet(void);
-I2C_SLAVE_ERROR ${I2C_INSTANCE_NAME}_ErrorGet(void);
+<#assign I2C_API_PREFIX = I2C_INSTANCE_NAME + "_">
+<#if I2C_OPERATING_MODE == "Master and Slave">
+<#assign I2C_API_PREFIX = I2C_INSTANCE_NAME + "_Slave">
+</#if>
+
+void ${I2C_API_PREFIX}Initialize(void);
+void ${I2C_API_PREFIX}CallbackRegister(I2C_SLAVE_CALLBACK callback, uintptr_t contextHandle);
+bool ${I2C_API_PREFIX}IsBusy(void);
+uint8_t ${I2C_API_PREFIX}ReadByte(void);
+void ${I2C_API_PREFIX}WriteByte(uint8_t wrByte);
+I2C_SLAVE_TRANSFER_DIR ${I2C_API_PREFIX}TransferDirGet(void);
+I2C_SLAVE_ACK_STATUS ${I2C_API_PREFIX}LastByteAckStatusGet(void);
+I2C_SLAVE_ERROR ${I2C_API_PREFIX}ErrorGet(void);
+<#if I2C_SMEN == true>
+uint8_t ${I2C_API_PREFIX}CRCGet(void);
+</#if>
+
 
 
 // DOM-IGNORE-BEGIN

@@ -43,13 +43,8 @@
 #include "interrupts.h"
 </#if>
 
-<#assign EVSYS_REG_NAME = EVSYS_INSTANCE_NAME>
-<#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
-    <#assign EVSYS_REG_NAME = EVSYS_INSTANCE_NAME + "_SEC">
-</#if>
 
-
-<#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
+<#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true" && EVSYS_SEC_IMPLEMENTED == true>
 <#if INTERRUPT_ACTIVE>
 <#assign CONFIGURED_SYNC_CHANNEL = 0>
     <#list 0..NUM_SYNC_CHANNELS as i>
@@ -66,7 +61,7 @@
         </#if>
     </#list>
     <#if CONFIGURED_SYNC_CHANNEL != 0>
-        <#lt>volatile static EVSYS_OBJECT evsys[${CONFIGURED_SYNC_CHANNEL}];
+        <#lt>static volatile EVSYS_OBJECT evsys[${CONFIGURED_SYNC_CHANNEL}];
     </#if>
 </#if>
 <#else>
@@ -81,7 +76,7 @@
         </#if>
     </#list>
     <#if CONFIGURED_SYNC_CHANNEL != 0>
-        <#lt>volatile static EVSYS_OBJECT evsys[${CONFIGURED_SYNC_CHANNEL}];
+        <#lt>static volatile EVSYS_OBJECT evsys[${CONFIGURED_SYNC_CHANNEL}];
     </#if>
 </#if>
 </#if>
@@ -102,7 +97,7 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
     </#if>
     </#if>
 </#list>
-<#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
+<#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true" && EVSYS_SEC_IMPLEMENTED == true>
     <#if EVSYS_NONSEC_USER0 != '0'>
 
     <#if EVSYS_NONSEC_USER_REG == true>
@@ -150,14 +145,14 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
     </#if>
     </#if>
 </#list>
-    <#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
+    <#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true" && EVSYS_SEC_IMPLEMENTED == true>
     <#if EVSYS_NONSEC != "0">
     ${EVSYS_REG_NAME}_REGS->EVSYS_NONSECCHAN = 0x${EVSYS_NONSEC};
     </#if>
     </#if>
 }
 
-<#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
+<#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true" && EVSYS_SEC_IMPLEMENTED == true>
     <#list 0..EVSYS_CHANNEL_NUMBER as i>
     <#assign CHANNEL_ENABLE = "EVSYS_CHANNEL_" + i >
     <#assign EVSYS_NONSEC = "EVSYS_NONSEC_" + i >
@@ -215,7 +210,7 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
 </#if>
 
 <#if INTERRUPT_ACTIVE>
-    <#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
+    <#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true" && EVSYS_SEC_IMPLEMENTED == true>
         <#list 0..NUM_SYNC_CHANNELS as i>
             <#assign EVSYS_NONSEC = "EVSYS_NONSEC_" + i >
             <#if .vars[EVSYS_NONSEC]?has_content>
@@ -258,7 +253,7 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
         <#lt>   evsys[channel].context = context;
         <#lt>}
     </#if>
-    <#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true">
+    <#if __TRUSTZONE_ENABLED?? && __TRUSTZONE_ENABLED == "true" && EVSYS_SEC_IMPLEMENTED == true>
         <#list 0..NUM_SYNC_CHANNELS as x>
             <#assign INTERRUPT_MODE = "EVSYS_INTERRUPT_MODE" + x>
             <#if .vars[INTERRUPT_MODE]??>
@@ -266,7 +261,8 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
                     <#assign EVSYS_NONSEC = "EVSYS_NONSEC_" + x >
                     <#if .vars[EVSYS_NONSEC]?has_content>
                         <#if .vars[EVSYS_NONSEC] == "SECURE">
-                            <#lt>void __attribute__((used)) ${EVSYS_INSTANCE_NAME}_${x}_InterruptHandler( void )
+                            <#assign EVSYS_INT_HANDLER_NAME = "EVSYS_INT_HANDLER_NAME_" + x>
+                            <#lt>void __attribute__((used)) ${.vars[EVSYS_INT_HANDLER_NAME]}_InterruptHandler( void )
                             <#lt>{
                             <#lt>   volatile uint32_t status = ${EVSYS_REG_NAME}_REGS->CHANNEL[${x}].EVSYS_CHINTFLAG;
                             <#lt>   ${EVSYS_REG_NAME}_REGS->CHANNEL[${x}].EVSYS_CHINTFLAG = EVSYS_CHINTFLAG_Msk;
@@ -284,12 +280,13 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
     <#else>
         <#list 0..EVSYS_INT_LINES-1 as x>
             <#assign EVENT_SYSTEM_INT_NAME  = "EVSYS_INT_NAME_"  + x>
+            <#assign EVSYS_INT_HANDLER_NAME = "EVSYS_INT_HANDLER_NAME_" + x>
             <#assign res =.vars[EVENT_SYSTEM_INT_NAME]?matches(r"(\d+)")>
             <#assign res2 =.vars[EVENT_SYSTEM_INT_NAME]?matches(r"(\d+)_(\d+)")>
             <#if res>
                 <#assign INTERRUPT_MODE = "EVSYS_INTERRUPT_MODE" + (res?groups[1])?number>
                 <#if .vars[INTERRUPT_MODE]?? && (.vars[INTERRUPT_MODE] == true)>
-                    <#lt>void __attribute__((used)) ${EVSYS_INSTANCE_NAME}_${res?groups[1]}_InterruptHandler( void )
+                    <#lt>void __attribute__((used)) ${.vars[EVSYS_INT_HANDLER_NAME]}_InterruptHandler( void )
                     <#lt>{
                     <#lt>   volatile uint32_t status = ${EVSYS_REG_NAME}_REGS->CHANNEL[${res?groups[1]}].EVSYS_CHINTFLAG;
                     <#lt>   ${EVSYS_REG_NAME}_REGS->CHANNEL[${res?groups[1]}].EVSYS_CHINTFLAG = EVSYS_CHINTFLAG_Msk;
@@ -310,7 +307,7 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
                     </#if>
                 </#list>
                 <#if GENERATE_ISR == true>
-                    <#lt>void __attribute__((used)) ${EVSYS_INSTANCE_NAME}_${.vars[EVENT_SYSTEM_INT_NAME]}_InterruptHandler( void )
+                    <#lt>void __attribute__((used)) ${.vars[EVSYS_INT_HANDLER_NAME]}_InterruptHandler( void )
                     <#lt>{
                     <#lt>    uint8_t channel = 0;
 
@@ -332,7 +329,7 @@ void ${EVSYS_INSTANCE_NAME}_Initialize( void )
             <#elseif .vars[EVENT_SYSTEM_INT_NAME] == "OTHER">
                 <#if EVSYS_INTERRUPT_MODE_OTHER??>
                     <#if EVSYS_INTERRUPT_MODE_OTHER>
-                        <#lt>void __attribute__((used)) ${EVSYS_INSTANCE_NAME}_OTHER_InterruptHandler( void )
+                        <#lt>void __attribute__((used)) ${.vars[EVSYS_INT_HANDLER_NAME]}_InterruptHandler( void )
                         <#lt>{
                         <#lt>   uint8_t channel;
                         <#lt>   for(channel = 4; channel <= ${EVSYS_INTERRUPT_MAX_CHANNEL}U; channel++)

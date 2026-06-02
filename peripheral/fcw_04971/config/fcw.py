@@ -1,0 +1,300 @@
+"""*****************************************************************************
+* Copyright (C) 2019 Microchip Technology Inc. and its subsidiaries.
+*
+* Subject to your compliance with these terms, you may use Microchip software
+* and any derivatives exclusively with Microchip products. It is your
+* responsibility to comply with third party license terms applicable to your
+* use of third party software (including open source software) that may
+* accompany Microchip software.
+*
+* THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER
+* EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY IMPLIED
+* WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
+* PARTICULAR PURPOSE.
+*
+* IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE,
+* INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND
+* WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS
+* BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO THE
+* FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN
+* ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
+* THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
+*****************************************************************************"""
+
+global fcwInstanceName
+global fcwfilesArray
+fcwfilesArray = []
+
+def fcwSecurityUpdate(symbol, event):
+    global fcwfilesArray
+    global fcwInstanceName
+
+    if event["value"] == False:
+        fcwfilesArray[0].setSecurity("SECURE")
+        fcwfilesArray[1].setSecurity("SECURE")
+        fcwfilesArray[2].setOutputName("core.LIST_SYSTEM_SECURE_INIT_C_SYS_INITIALIZE_START")
+        fcwfilesArray[3].setOutputName("core.LIST_SYSTEM_DEFINITIONS_SECURE_H_INCLUDES")
+        Database.setSymbolValue("core", fcwInstanceName.getValue() + "_SET_NON_SECURE", False)
+
+    else:
+        fcwfilesArray[0].setSecurity("NON_SECURE")
+        fcwfilesArray[1].setSecurity("NON_SECURE")
+        fcwfilesArray[2].setOutputName("core.LIST_SYSTEM_INIT_C_SYS_INITIALIZE_START")
+        fcwfilesArray[3].setOutputName("core.LIST_SYSTEM_DEFINITIONS_H_INCLUDES")
+        Database.setSymbolValue("core", fcwInstanceName.getValue() + "_SET_NON_SECURE", True)
+
+def fcwSetMemoryDependency(symbol, event):
+    symbol.setVisible(event["value"])
+
+def setFCWInterruptData(status):
+
+    Database.setSymbolValue("core", fcwInterruptVector, status, 1)
+    Database.setSymbolValue("core", fcwInterruptHandlerLock, status, 1)
+
+    if status == True:
+        Database.setSymbolValue("core", fcwInterruptHandler, fcwInstanceName.getValue() + "_InterruptHandler", 1)
+    else:
+        Database.setSymbolValue("core", fcwInterruptHandler, "FCW_Handler", 1)
+
+def updateFCWInterruptData(symbol, event):
+
+    if event["id"] == "INTERRUPT_ENABLE":
+        setFCWInterruptData(event["value"])
+
+    if fcwInterruptEnable.getValue() == True and Database.getSymbolValue("core", fcwInterruptVectorUpdate) == True:
+        symbol.setVisible(True)
+    else:
+        symbol.setVisible(False)
+
+###################################################################################################
+########################################## Component  #############################################
+###################################################################################################
+
+def instantiateComponent(fcwComponent):
+
+    global fcwInstanceName
+    global fcwInterruptVector
+    global fcwInterruptHandlerLock
+    global fcwInterruptHandler
+    global fcwInterruptVectorUpdate
+    global fcwInterruptEnable
+    global fcwfilesArray
+
+    fcwInstanceName = fcwComponent.createStringSymbol("FCW_INSTANCE_NAME", None)
+    fcwInstanceName.setVisible(False)
+    fcwInstanceName.setDefaultValue(fcwComponent.getID().upper())
+    Log.writeInfoMessage("Running " + fcwInstanceName.getValue())
+
+    fcwFlashNode = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space/memory-segment@[name=\"FCR_PFM\"]")
+    if fcwFlashNode == None:
+        fcwFlashNode = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space/memory-segment@[name=\"FLASH_PFM\"]")
+
+    ##### Do not modify below symbol names as they are used by Memory Driver #####
+
+    flashStartAddress = fcwFlashNode.getAttribute("start")
+
+    #Flash Address
+    fcwSym_FLASH_ADDRESS = fcwComponent.createStringSymbol("FLASH_START_ADDRESS", None)
+    fcwSym_FLASH_ADDRESS.setVisible(False)
+    fcwSym_FLASH_ADDRESS.setDefaultValue(flashStartAddress)
+
+    #Flash size
+    fcwSym_FLASH_SIZE = fcwComponent.createStringSymbol("FLASH_SIZE", None)
+    fcwSym_FLASH_SIZE.setVisible(False)
+    fcwSym_FLASH_SIZE.setDefaultValue(fcwFlashNode.getAttribute("size"))
+
+    pageSize = "4096"
+    rowSize = "1024"
+    #Flash Row size
+    fcwSym_FLASH_PROGRAM_SIZE = fcwComponent.createStringSymbol("FLASH_PROGRAM_SIZE", None)
+    fcwSym_FLASH_PROGRAM_SIZE.setVisible(False)
+    fcwSym_FLASH_PROGRAM_SIZE.setDefaultValue(rowSize)
+
+    #Flash Page size
+    fcwSym_ERASE_SIZE = fcwComponent.createStringSymbol("FLASH_ERASE_SIZE", None)
+    fcwSym_ERASE_SIZE.setVisible(False)
+    fcwSym_ERASE_SIZE.setDefaultValue(pageSize)
+
+    ##### Do not modify below symbol names as they are used by Memory Driver #####
+
+    fcwSym_MemoryDriver = fcwComponent.createBooleanSymbol("DRV_MEMORY_CONNECTED", None)
+    fcwSym_MemoryDriver.setLabel("Memory Driver Connected")
+    fcwSym_MemoryDriver.setVisible(False)
+    fcwSym_MemoryDriver.setDefaultValue(False)
+
+    offsetStart = (int(fcwSym_FLASH_SIZE.getValue(),16) / 2)
+
+    fcwOffset = int(flashStartAddress,16) + offsetStart
+    fcwOffset = format(fcwOffset, 'x')
+
+    fcwSym_MemoryStartAddr = fcwComponent.createStringSymbol("START_ADDRESS", None)
+    fcwSym_MemoryStartAddr.setLabel("FCW Media Start Address")
+    fcwSym_MemoryStartAddr.setVisible(False)
+    fcwSym_MemoryStartAddr.setDefaultValue(fcwOffset)
+    fcwSym_MemoryStartAddr.setDependencies(fcwSetMemoryDependency, ["DRV_MEMORY_CONNECTED"])
+
+    memMediaSizeKB = (offsetStart / 1024)
+
+    fcwSym_MemoryMediaSize = fcwComponent.createIntegerSymbol("MEMORY_MEDIA_SIZE", None)
+    fcwSym_MemoryMediaSize.setLabel("FCW Media Size (KB)")
+    fcwSym_MemoryMediaSize.setVisible(False)
+    fcwSym_MemoryMediaSize.setDefaultValue(memMediaSizeKB)
+    fcwSym_MemoryMediaSize.setDependencies(fcwSetMemoryDependency, ["DRV_MEMORY_CONNECTED"])
+
+    fcwSym_MemoryEraseEnable = fcwComponent.createBooleanSymbol("ERASE_ENABLE", None)
+    fcwSym_MemoryEraseEnable.setLabel("FCW Erase Enable")
+    fcwSym_MemoryEraseEnable.setVisible(False)
+    fcwSym_MemoryEraseEnable.setDefaultValue(True)
+    fcwSym_MemoryEraseEnable.setReadOnly(True)
+
+    fcwSym_MemoryEraseBufferSize = fcwComponent.createIntegerSymbol("ERASE_BUFFER_SIZE", None)
+    fcwSym_MemoryEraseBufferSize.setLabel("FCW Erase Buffer Size")
+    fcwSym_MemoryEraseBufferSize.setVisible(False)
+    fcwSym_MemoryEraseBufferSize.setDefaultValue(int(fcwSym_ERASE_SIZE.getValue()))
+    fcwSym_MemoryEraseBufferSize.setDependencies(fcwSetMemoryDependency, ["DRV_MEMORY_CONNECTED", "ERASE_ENABLE"])
+
+    fcwSym_MemoryEraseComment = fcwComponent.createCommentSymbol("ERASE_COMMENT", None)
+    fcwSym_MemoryEraseComment.setVisible(False)
+    fcwSym_MemoryEraseComment.setLabel("*** Should be equal to Page Erase Size ***")
+    fcwSym_MemoryEraseComment.setDependencies(fcwSetMemoryDependency, ["DRV_MEMORY_CONNECTED", "ERASE_ENABLE"])
+
+    ################# Interrupt Settings ###########################
+
+    # Get register names, mask values, bit shifts based on vector number
+    fcwInterruptVector = "FCW_INTERRUPT_ENABLE"
+    fcwInterruptHandler = "FCW_INTERRUPT_HANDLER"
+    fcwInterruptHandlerLock = "FCW_INTERRUPT_HANDLER_LOCK"
+    fcwInterruptVectorUpdate = "FCW_INTERRUPT_ENABLE_UPDATE"
+
+    #Configures the library for interrupt mode operations
+    fcwInterruptEnable = fcwComponent.createBooleanSymbol("INTERRUPT_ENABLE", None)
+    fcwInterruptEnable.setLabel("Enable Interrupt?")
+    fcwInterruptEnable.setDefaultValue(False)
+
+    fcwInterruptComment = fcwComponent.createCommentSymbol("FCW_INTRRUPT_ENABLE_COMMENT", None)
+    fcwInterruptComment.setLabel("Warning!!! " + fcwInstanceName.getValue() + " Interrupt is Disabled in Interrupt Manager")
+    fcwInterruptComment.setVisible(False)
+    fcwInterruptComment.setDependencies(updateFCWInterruptData, ["INTERRUPT_ENABLE", "core." + fcwInterruptVectorUpdate])
+
+    setFCWInterruptData(False)
+
+    fcwSym_preProgramEnable = fcwComponent.createBooleanSymbol("FCW_PRE_PRGM_ENABLE", None)
+    fcwSym_preProgramEnable.setLabel("Enable Pre Program")
+    fcwSym_preProgramEnable.setDescription("Enabling Pre-Programing increases endurance of Flash but slows the write/erase operation a little")
+    fcwSym_preProgramEnable.setVisible(True)
+    fcwSym_preProgramEnable.setDefaultValue(True)
+
+    # Below create family-specific API needed by ftl file
+    writeApiName = fcwComponent.getID().upper() + "_RowWrite"
+    eraseApiName = fcwComponent.getID().upper() + "_PageErase"
+
+    fcwWriteApiName = fcwComponent.createStringSymbol("WRITE_API_NAME", None)
+    fcwWriteApiName.setVisible(False)
+    fcwWriteApiName.setReadOnly(True)
+    fcwWriteApiName.setDefaultValue(writeApiName)
+
+    fcwEraseApiName = fcwComponent.createStringSymbol("ERASE_API_NAME", None)
+    fcwEraseApiName.setVisible(False)
+    fcwEraseApiName.setReadOnly(True)
+    fcwEraseApiName.setDefaultValue(eraseApiName)
+    
+    # NVM USER row Address    
+    fcwBootCFG1aNode = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space/memory-segment@[name=\"FCR_CFM_BOOTCFG1A\"]")
+    if fcwBootCFG1aNode != None:
+        fcw_BootCFG1A_START_ADDRESS = fcwComponent.createStringSymbol("FLASH_USERROW_START_ADDRESS", None)
+        fcw_BootCFG1A_START_ADDRESS.setVisible(False)
+        fcw_BootCFG1A_START_ADDRESS.setDefaultValue(fcwBootCFG1aNode.getAttribute("start"))
+        
+        # NVM user row size
+        fcw_BootCFG1A_SIZE = fcwComponent.createStringSymbol("FLASH_USERROW_SIZE", None)
+        fcw_BootCFG1A_SIZE.setVisible(False)
+        fcw_BootCFG1A_SIZE.setDefaultValue(fcwBootCFG1aNode.getAttribute("size"))
+
+    fcwBootCFG1Node = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space/memory-segment@[name=\"FCR_CFM_BOOTCFG1\"]")
+    if fcwBootCFG1Node != None:
+        fcw_BootCFG1_START_ADDRESS = fcwComponent.createStringSymbol("FLASH_USERROW_START_ADDRESS_1", None)
+        fcw_BootCFG1_START_ADDRESS.setVisible(False)
+        fcw_BootCFG1_START_ADDRESS.setDefaultValue(fcwBootCFG1Node.getAttribute("start"))
+        
+        # NVM user row size
+        fcw_BootCFG1_SIZE = fcwComponent.createStringSymbol("FLASH_USERROW_SIZE_1", None)
+        fcw_BootCFG1_SIZE.setVisible(False)
+        fcw_BootCFG1_SIZE.setDefaultValue(fcwBootCFG1Node.getAttribute("size"))
+        
+    if fcwBootCFG1Node != None or fcwBootCFG1aNode != None:
+        fcwUserRowUnlockApiName = fcwComponent.createStringSymbol("USER_ROW_UNLOCK_API_NAME", None)
+        fcwUserRowUnlockApiName.setVisible(False)
+        fcwUserRowUnlockApiName.setReadOnly(True)
+        fcwUserRowUnlockApiName.setDefaultValue(fcwComponent.getID().upper() + "_BootConfig_WriteProtectDisable")
+        
+        fcwUserRowLockRestoreApiName = fcwComponent.createStringSymbol("USER_ROW_LOCK_RESTORE_API_NAME", None)
+        fcwUserRowLockRestoreApiName.setVisible(False)
+        fcwUserRowLockRestoreApiName.setReadOnly(True)
+        fcwUserRowLockRestoreApiName.setDefaultValue(fcwComponent.getID().upper() + "_BootConfig_WriteProtectRestore")
+        
+    fcwPFMRowUnlockApiName = fcwComponent.createStringSymbol("PFM_ROW_UNLOCK_API_NAME", None)
+    fcwPFMRowUnlockApiName.setVisible(False)
+    fcwPFMRowUnlockApiName.setReadOnly(True)
+    fcwPFMRowUnlockApiName.setDefaultValue(fcwComponent.getID().upper() + "_PFM_PageWriteProtectDisable")
+    
+    fcwPFMRowLockRestoreApiName = fcwComponent.createStringSymbol("PFM_ROW_LOCK_RESTORE_API_NAME", None)
+    fcwPFMRowLockRestoreApiName.setVisible(False)
+    fcwPFMRowLockRestoreApiName.setReadOnly(True)
+    fcwPFMRowLockRestoreApiName.setDefaultValue(fcwComponent.getID().upper() + "_PFM_PageWriteProtectRestore")
+        
+    # NVM user row Page size
+    fcw_USERROW_PROGRAM_SIZE = fcwComponent.createStringSymbol("FLASH_USERROW_PROGRAM_SIZE", None)
+    fcw_USERROW_PROGRAM_SIZE.setVisible(False)
+    fcw_USERROW_PROGRAM_SIZE.setDefaultValue(str(rowSize))
+
+    ###################################################################################################
+    ####################################### Code Generation  ##########################################
+    ###################################################################################################
+
+    configName = Variables.get("__CONFIGURATION_NAME")
+
+    fcwSym_HeaderFile = fcwComponent.createFileSymbol("FCW_HEADER", None)
+    fcwSym_HeaderFile.setSourcePath("../peripheral/fcw_04971/templates/plib_fcw.h.ftl")
+    fcwSym_HeaderFile.setOutputName("plib_"+fcwInstanceName.getValue().lower()+".h")
+    fcwSym_HeaderFile.setDestPath("/peripheral/fcw/")
+    fcwSym_HeaderFile.setProjectPath("config/" + configName + "/peripheral/fcw/")
+    fcwSym_HeaderFile.setType("HEADER")
+    fcwSym_HeaderFile.setMarkup(True)
+
+    fcwSym_SourceFile = fcwComponent.createFileSymbol("FCW_SOURCE", None)
+    fcwSym_SourceFile.setSourcePath("../peripheral/fcw_04971/templates/plib_fcw.c.ftl")
+    fcwSym_SourceFile.setOutputName("plib_"+fcwInstanceName.getValue().lower()+".c")
+    fcwSym_SourceFile.setDestPath("/peripheral/fcw/")
+    fcwSym_SourceFile.setProjectPath("config/" + configName + "/peripheral/fcw/")
+    fcwSym_SourceFile.setType("SOURCE")
+    fcwSym_SourceFile.setMarkup(True)
+
+    fcwSystemDefFile = fcwComponent.createFileSymbol("FCW_SYS_DEF", None)
+    fcwSystemDefFile.setSourcePath("../peripheral/fcw_04971/templates/system/definitions.h.ftl")
+    fcwSystemDefFile.setOutputName("core.LIST_SYSTEM_DEFINITIONS_H_INCLUDES")
+    fcwSystemDefFile.setType("STRING")
+    fcwSystemDefFile.setMarkup(True)
+
+    fcwSystemInitFile = fcwComponent.createFileSymbol("FCW_SYS_INIT", None)
+    fcwSystemInitFile.setSourcePath("../peripheral/fcw_04971/templates/system/initialization.c.ftl")
+    fcwSystemInitFile.setOutputName("core.LIST_SYSTEM_INIT_C_SYS_INITIALIZE_PERIPHERALS")
+    fcwSystemInitFile.setType("STRING")
+    fcwSystemInitFile.setMarkup(True)
+
+    if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
+        fcwIsNonSecure = Database.getSymbolValue("core", fcwInstanceName.getValue() + "_IS_NON_SECURE")
+        fcwSystemDefFile.setDependencies(fcwSecurityUpdate, ["core." + fcwInstanceName.getValue() + "_IS_NON_SECURE"])
+        
+        fcwfilesArray.append(fcwSym_SourceFile)
+        fcwfilesArray.append(fcwSym_HeaderFile)
+        fcwfilesArray.append(fcwSystemInitFile)
+        fcwfilesArray.append(fcwSystemDefFile)
+        
+        #Set interrupt security
+        Database.setSymbolValue("core", fcwInstanceName.getValue() + "_SET_NON_SECURE", fcwIsNonSecure)
+        
+        if fcwIsNonSecure == False:
+            fcwfilesArray[0].setSecurity("SECURE")
+            fcwfilesArray[1].setSecurity("SECURE")
+            fcwfilesArray[2].setOutputName("core.LIST_SYSTEM_SECURE_INIT_C_SYS_INITIALIZE_START")
+            fcwfilesArray[3].setOutputName("core.LIST_SYSTEM_DEFINITIONS_SECURE_H_INCLUDES")

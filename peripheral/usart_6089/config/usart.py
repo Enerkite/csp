@@ -177,12 +177,28 @@ def baudRateCalc(clk, baud, overSamp):
         brgVal = (clk / (8 * baud))
 
     return brgVal
+    
+# Calculates BRG - FP value
+def baudRateCalc_FP(clk, baud, overSamp):
+    
+    brgVal_FP = 0.0
+    
+    if (overSamp == 0):
+        brgVal_FP = float((clk / (16.0 * baud)))
+        brgVal_FP = (brgVal_FP - int(brgVal_FP)) * 8
+    else :
+        brgVal_FP = (clk % (8.0 * baud))
+        brgVal_FP = (brgVal_FP - int(brgVal_FP)) * 8
+       
+    brgVal_FP = int(brgVal_FP)
+    
+    return brgVal_FP    
 
 def baudRateTrigger(symbol, event):
 
     global usartInstanceName
 
-    if Database.getSymbolValue(usartInstanceName.getValue().lower(), "USART_MODE") == 0:
+    if Database.getSymbolValue(usartInstanceName.getValue().lower(), "USART_MODE") != 1:
 
         clk = Database.getSymbolValue(usartInstanceName.getValue().lower(), "USART_CLOCK_FREQ")
         baud = Database.getSymbolValue(usartInstanceName.getValue().lower(), "BAUD_RATE")
@@ -194,6 +210,20 @@ def baudRateTrigger(symbol, event):
         usartBaudComment.setVisible(brgVal < 1)
 
         symbol.setValue(brgVal, 2)
+        
+def baudRateFPTrigger(symbol, event):
+
+    global usartInstanceName
+
+    if Database.getSymbolValue(usartInstanceName.getValue().lower(), "USART_MODE") == 0:
+
+        clk = Database.getSymbolValue(usartInstanceName.getValue().lower(), "USART_CLOCK_FREQ")
+        baud = Database.getSymbolValue(usartInstanceName.getValue().lower(), "BAUD_RATE")
+        overSamp = Database.getSymbolValue(usartInstanceName.getValue().lower(), "USART_MR_OVER")
+
+        brgFpVal = baudRateCalc_FP(clk, baud, overSamp)
+        
+        symbol.setValue(brgFpVal, 2)
 
 def clockSourceFreq(symbol, event):
 
@@ -214,11 +244,14 @@ def updateRingBufferSymbolVisibility(symbol, event):
     uartMode = event["source"].getSymbolByID("USART_MODE").getSelectedKey()
     ringBufferMode = event["source"].getSymbolByID("USART_RING_BUFFER_MODE_ENABLE").getValue()
 
-    symbol.setVisible(uartMode == "USART" and ringBufferMode == True)
+    if ((uartMode == "USART" or  uartMode == "LIN_MASTER" or uartMode == "LIN_SLAVE") and ringBufferMode == True):
+        symbol.setVisible(True)
+    else:
+        symbol.setVisible(False)
 
 def updateUSARTSymVisibility(symbol, event):
-
-    symbol.setVisible( event["symbol"].getValue() == 0)
+    usartMode = event["source"].getSymbolByID("USART_MODE").getSelectedKey()
+    symbol.setVisible( usartMode == "USART" or usartMode == "LIN_MASTER" or usartMode == "LIN_SLAVE")
 
 def updateUSART_SPISymVisibility(symbol, event):
 
@@ -266,14 +299,19 @@ def USARTFileGeneration(symbol, event):
     ringBufferModeEnabled = event["source"].getSymbolByID("USART_RING_BUFFER_MODE_ENABLE").getValue()
     usartInterruptMode = event["source"].getSymbolByID("USART_INTERRUPT_MODE_ENABLE").getValue()
     usartMode = event["source"].getSymbolByID("USART_MODE").getValue()
-
+    usartLinOperatingMode = event["source"].getSymbolByID("USART_LIN_OPERATING_MODE").getSelectedKey()
+    
     if symbolID == "USART_HEADER":       # Common header file
         if usartMode == 0:
             filepath = "../peripheral/usart_6089/templates/plib_usart_common.h"
             outputName = "plib_usart_common.h"
-        else:
+        elif usartMode == 1:  #SPI 
             filepath = "../peripheral/usart_6089/templates/plib_usart_spi_common.h"
             outputName = "plib_usart_spi_common.h"
+        else:
+            filepath = "../peripheral/usart_6089/templates/plib_usart_lin_common.h"
+            outputName = "plib_usart_lin_common.h"
+        
     elif symbolID == "USART_HEADER1":      # Header file
         if usartMode == 0:
             if ringBufferModeEnabled == True and usartInterruptMode == True:
@@ -281,9 +319,17 @@ def USARTFileGeneration(symbol, event):
             else:
                 filepath = "../peripheral/usart_6089/templates/plib_usart.h.ftl"
             outputName = "plib_"+usartInstanceName.getValue().lower()+".h"
-        else:
+        elif usartMode == 1:  #SPI
             filepath = "../peripheral/usart_6089/templates/plib_usart_spi.h.ftl"
             outputName = "plib_"+usartInstanceName.getValue().lower()+"_spi.h"
+        else:
+            if usartLinOperatingMode != "RING_BUFFER":
+                filepath = "../peripheral/usart_6089/templates/plib_usart_lin.h.ftl"
+                outputName = "plib_"+usartInstanceName.getValue().lower()+"_lin.h"
+            else:
+                filepath = "../peripheral/usart_6089/templates/plib_usart_ring_buffer_lin.h.ftl"
+                outputName = "plib_"+usartInstanceName.getValue().lower()+"_lin.h"
+          
     elif symbolID == "USART_SOURCE1":    # Source file
         if usartMode == 0:
             if ringBufferModeEnabled == True and usartInterruptMode == True:
@@ -291,9 +337,16 @@ def USARTFileGeneration(symbol, event):
             else:
                 filepath = "../peripheral/usart_6089/templates/plib_usart.c.ftl"
             outputName = "plib_"+usartInstanceName.getValue().lower()+".c"
-        else:
+        elif usartMode == 1:  #SPI
             filepath = "../peripheral/usart_6089/templates/plib_usart_spi.c.ftl"
             outputName = "plib_"+usartInstanceName.getValue().lower()+"_spi.c"
+        else:
+            if usartLinOperatingMode != "RING_BUFFER":
+                filepath = "../peripheral/usart_6089/templates/plib_usart_lin.c.ftl"
+                outputName = "plib_"+usartInstanceName.getValue().lower()+"_lin.c"
+            else:
+                filepath = "../peripheral/usart_6089/templates/plib_usart_ring_buffer_lin.c.ftl"
+                outputName = "plib_"+usartInstanceName.getValue().lower()+"_lin.c"
 
     symbol.setSourcePath(filepath)
     symbol.setOutputName(outputName)
@@ -392,6 +445,14 @@ def updateOperatingMode (symbol, event):
                 rxDMASym.setValue(True)
     else:
         symbol.setVisible(event["value"] == 0)
+            
+def updateLinOperatingMode (symbol, event):
+    
+    usartMode = event["source"].getSymbolByID("USART_MODE").getSelectedKey()
+    if (usartMode == "LIN_MASTER" or usartMode == "LIN_SLAVE"):
+        symbol.setVisible(True)
+    else:
+        symbol.setVisible(False)
 ################################################################################
 #### Component ####
 ################################################################################
@@ -419,9 +480,12 @@ def instantiateComponent(usartComponent):
     spiCapabilityId = usartInstanceName.getValue() + "_SPI"
 
     usartSym_Mode = usartComponent.createKeyValueSetSymbol("USART_MODE", None)
+    usartSym_Mode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_Mode.setLabel("Mode")
     usartSym_Mode.addKey("USART", "0x0", "USART")
     usartSym_Mode.addKey("SPI_MASTER", "0xE", "SPI MASTER")
+    usartSym_Mode.addKey("LIN_MASTER", "0xA", "LIN MASTER")
+    usartSym_Mode.addKey("LIN_SLAVE", "0xB", "LIN SLAVE")
     usartSym_Mode.setDisplayMode("Description")
     usartSym_Mode.setOutputMode("Key")
     usartSym_Mode.setDefaultValue(0)
@@ -437,6 +501,7 @@ def instantiateComponent(usartComponent):
 # Depricated symbols ---------------------------------------------------------------------------------------------------
     usartInterrupt = usartComponent.createBooleanSymbol("USART_INTERRUPT_MODE", None)
     usartInterrupt.setLabel("Interrupt Mode")
+    usartInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_IER")
     usartInterrupt.setDefaultValue(True)
     usartInterrupt.setReadOnly(True)
     usartInterrupt.setVisible(False)
@@ -445,6 +510,7 @@ def instantiateComponent(usartComponent):
     #Enable Ring buffer?
     usartSym_RingBuffer_Enable = usartComponent.createBooleanSymbol("USART_RING_BUFFER_ENABLE", None)
     usartSym_RingBuffer_Enable.setLabel("Enable Ring Buffer ?")
+    usartSym_RingBuffer_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_RingBuffer_Enable.setDefaultValue(False)
     usartSym_RingBuffer_Enable.setVisible(False)
     usartSym_RingBuffer_Enable.setReadOnly(True)
@@ -453,12 +519,14 @@ def instantiateComponent(usartComponent):
     if usartIsPeripheralDMASupported.getValue() == True:
         usartRxDMAEnable = usartComponent.createBooleanSymbol("USE_USART_RX_DMA", None)
         usartRxDMAEnable.setLabel("Enable DMA for Receive")
+        usartRxDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_CR")
         usartRxDMAEnable.setVisible(False)
         usartRxDMAEnable.setReadOnly(True)
         usartRxDMAEnable.setDependencies(updateRxDMAMode, ["USE_USART_RX_DMA"])
 
         usartTxDMAEnable = usartComponent.createBooleanSymbol("USE_USART_TX_DMA", None)
         usartTxDMAEnable.setLabel("Enable DMA for Transmit")
+        usartTxDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_CR")
         usartTxDMAEnable.setVisible(False)
         usartTxDMAEnable.setReadOnly(True)
         usartTxDMAEnable.setDependencies(updateTxDMAMode, ["USE_USART_TX_DMA"])
@@ -466,6 +534,7 @@ def instantiateComponent(usartComponent):
 
     # Operating mode
     usartSym_OperatingMode = usartComponent.createKeyValueSetSymbol("USART_OPERATING_MODE", None)
+    usartSym_OperatingMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_OperatingMode.setLabel("Operating Mode")
     usartSym_OperatingMode.addKey("BLOCKING", "0", "Blocking mode")
     usartSym_OperatingMode.addKey("NON_BLOCKING", "1", "Non-blocking mode")
@@ -480,9 +549,21 @@ def instantiateComponent(usartComponent):
     usartSym_OperatingMode.setVisible((usartSym_Mode.getValue() == 0))
     usartSym_OperatingMode.setDependencies(updateOperatingMode, ["USART_MODE", "USART_OPERATING_MODE"])
 
+    # LIN Operating mode
+    usartLINSym_LinOperatingMode = usartComponent.createKeyValueSetSymbol("USART_LIN_OPERATING_MODE", None)
+    usartLINSym_LinOperatingMode.setLabel("Operating Mode")
+    usartLINSym_LinOperatingMode.addKey("BLOCKING", "0", "Blocking mode")
+    usartLINSym_LinOperatingMode.addKey("RING_BUFFER", "1", "Ring buffer mode")
+    usartLINSym_LinOperatingMode.setDefaultValue(1)
+    usartLINSym_LinOperatingMode.setDisplayMode("Description")
+    usartLINSym_LinOperatingMode.setOutputMode("Key")
+    usartLINSym_LinOperatingMode.setVisible(((usartSym_Mode.getValue() == 2) or (usartSym_Mode.getValue() == 3)))
+    usartLINSym_LinOperatingMode.setDependencies(updateLinOperatingMode, ["USART_MODE", "USART_OPERATING_MODE"])
+
     # Enable Interrupts?
     usartSymInterruptModeEnable = usartComponent.createBooleanSymbol("USART_INTERRUPT_MODE_ENABLE", None)
     usartSymInterruptModeEnable.setLabel("Enable Interrrupts ?")
+    usartSymInterruptModeEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_IER")
     usartSymInterruptModeEnable.setDefaultValue(True)
     usartSymInterruptModeEnable.setReadOnly(True)
     usartSymInterruptModeEnable.setVisible(False)
@@ -490,6 +571,7 @@ def instantiateComponent(usartComponent):
     # Enable Ring buffer?
     usartSym_RingBufferMode_Enable = usartComponent.createBooleanSymbol("USART_RING_BUFFER_MODE_ENABLE", None)
     usartSym_RingBufferMode_Enable.setLabel("Enable Ring Buffer ?")
+    usartSym_RingBufferMode_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_RingBufferMode_Enable.setDefaultValue(False)
     usartSym_RingBufferMode_Enable.setReadOnly(True)
     usartSym_RingBufferMode_Enable.setVisible(False)
@@ -497,11 +579,13 @@ def instantiateComponent(usartComponent):
     if usartIsPeripheralDMASupported.getValue() == True:
         usartReceiveDMAEnable = usartComponent.createBooleanSymbol("USE_USART_RECEIVE_DMA", None)
         usartReceiveDMAEnable.setLabel("Enable DMA for Receive")
+        usartReceiveDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_CR")
         usartReceiveDMAEnable.setVisible(False)
         usartReceiveDMAEnable.setReadOnly(True)
 
         usartTransmitDMAEnable = usartComponent.createBooleanSymbol("USE_USART_TRANSMIT_DMA", None)
         usartTransmitDMAEnable.setLabel("Enable DMA for Transmit")
+        usartTransmitDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_CR")
         usartTransmitDMAEnable.setVisible(False)
         usartTransmitDMAEnable.setReadOnly(True)
 
@@ -513,6 +597,7 @@ def instantiateComponent(usartComponent):
 
     # Ring buffer tx size
     usartSym_TXRingBuffer_Size = usartComponent.createIntegerSymbol("USART_TX_RING_BUFFER_SIZE", usartSym_RingBufferSizeConfig)
+    usartSym_TXRingBuffer_Size.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_TXRingBuffer_Size.setLabel("TX Ring Buffer Size")
     usartSym_TXRingBuffer_Size.setMin(2)
     usartSym_TXRingBuffer_Size.setMax(65535)
@@ -522,6 +607,7 @@ def instantiateComponent(usartComponent):
 
     # Ring buffer rx size
     usartSym_RXRingBuffer_Size = usartComponent.createIntegerSymbol("USART_RX_RING_BUFFER_SIZE", usartSym_RingBufferSizeConfig)
+    usartSym_RXRingBuffer_Size.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_RXRingBuffer_Size.setLabel("RX Ring Buffer Size")
     usartSym_RXRingBuffer_Size.setMin(2)
     usartSym_RXRingBuffer_Size.setMax(65535)
@@ -535,6 +621,7 @@ def instantiateComponent(usartComponent):
     usart_clock = node.getChildren()
 
     usartClkSrc = usartComponent.createKeyValueSetSymbol("USART_CLK_SRC", None)
+    usartClkSrc.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartClkSrc.setLabel("Select Clock Source")
 
     for clock in range(0, len(usart_clock)):
@@ -548,6 +635,7 @@ def instantiateComponent(usartComponent):
     usartClkSrc.setOutputMode("Key")
 
     usartClkValue = usartComponent.createIntegerSymbol("USART_CLOCK_FREQ", None)
+    usartClkValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_BRGR")
     usartClkValue.setLabel("Source Clock Frequency")
     usartClkValue.setReadOnly(True)
     usartClkValue.setDependencies(clockSourceFreq, ["USART_CLK_SRC", "core." + usartInstanceName.getValue() + "_CLOCK_FREQUENCY"])
@@ -560,6 +648,7 @@ def instantiateComponent(usartComponent):
 
     # Baud
     usartBaud = usartComponent.createIntegerSymbol("BAUD_RATE", None)
+    usartBaud.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_BRGR")
     usartBaud.setLabel("Baud Rate")
     usartBaud.setDefaultValue(115200)
     usartBaud.setDependencies(updateUSARTSymVisibility, ["USART_MODE"])
@@ -571,6 +660,7 @@ def instantiateComponent(usartComponent):
 
     # Over sampling
     usartSym_MR_OVER = usartComponent.createKeyValueSetSymbol("USART_MR_OVER", None)
+    usartSym_MR_OVER.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_MR_OVER.setLabel("OverSampling")
     usartSym_MR_OVER.addKey("0", "0", "16 Times")
     usartSym_MR_OVER.addKey("1", "1", "8 Times")
@@ -578,6 +668,12 @@ def instantiateComponent(usartComponent):
     usartSym_MR_OVER.setOutputMode("Key")
     usartSym_MR_OVER.setDefaultValue(0)
     usartSym_MR_OVER.setDependencies(updateUSARTSymVisibility, ["USART_MODE"])
+    
+    usartSym_UseFractionalBaud = usartComponent.createBooleanSymbol("USART_USE_FRACTIONAL_BAUD", None)
+    usartSym_UseFractionalBaud.setLabel("Use fractional baud?")
+    usartSym_UseFractionalBaud.setDefaultValue(False)
+    usartSym_UseFractionalBaud.setVisible(True)
+    usartSym_UseFractionalBaud.setDependencies(updateUSARTSymVisibility, ["USART_MODE"])
 
     brgVal = baudRateCalc(usartClkValue.getValue(), usartBaud.getValue(), usartSym_MR_OVER.getValue())
 
@@ -587,10 +683,16 @@ def instantiateComponent(usartComponent):
     usartBRGValue.setVisible(False)
     usartBRGValue.setDependencies(baudRateTrigger, ["BAUD_RATE", "USART_MR_OVER", "USART_CLOCK_FREQ", "USART_MODE"])
     usartBRGValue.setDefaultValue(brgVal)
+    
+    brgFpVal = baudRateCalc_FP(usartClkValue.getValue(), usartBaud.getValue(), usartSym_MR_OVER.getValue())
 
-
+    usartBRGFPValue = usartComponent.createIntegerSymbol("BRG_FP_VALUE", None)
+    usartBRGFPValue.setVisible(False)
+    usartBRGFPValue.setDependencies(baudRateFPTrigger, ["BAUD_RATE", "USART_MR_OVER", "USART_CLOCK_FREQ", "USART_MODE", "USART_USE_FRACTIONAL_BAUD"])
+    usartBRGFPValue.setDefaultValue(brgFpVal)
 
     usartSym_MR_CHRL = usartComponent.createKeyValueSetSymbol("USART_MR_CHRL", None)
+    usartSym_MR_CHRL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_MR_CHRL.setLabel("Data")
     usartSym_MR_CHRL.addKey("5_BIT", "0", "5 BIT")
     usartSym_MR_CHRL.addKey("6_BIT", "1", "6 BIT")
@@ -606,6 +708,7 @@ def instantiateComponent(usartComponent):
 
     usartSym_MR_MODE9 = usartComponent.createBooleanSymbol("USART_MR_MODE9", None)
     usartSym_MR_MODE9.setLabel("9 Bit Data Width")
+    usartSym_MR_MODE9.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_MR_MODE9.setVisible(False)
     usartSym_MR_MODE9.setDependencies(dataWidthLogic, ["USART_MR_CHRL"])
 
@@ -652,6 +755,7 @@ def instantiateComponent(usartComponent):
         parityList[id] = usartValGrp_MR_PAR.getChildren()[id].getAttribute("name")
 
     usartSym_MR_PAR = usartComponent.createComboSymbol("USART_MR_PAR", None, parityList)
+    usartSym_MR_PAR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_MR_PAR.setLabel("Parity")
     usartSym_MR_PAR.setDefaultValue("NO")
     usartSym_MR_PAR.setDependencies(updateUSARTSymVisibility, ["USART_MODE"])
@@ -687,6 +791,7 @@ def instantiateComponent(usartComponent):
     usartSym_MR_PAR_MULTIDROP_Mask.setVisible(False)
 
     usartSym_MR_NBSTOP = usartComponent.createKeyValueSetSymbol("USART_MR_NBSTOP", None)
+    usartSym_MR_NBSTOP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSym_MR_NBSTOP.setLabel("Stop")
     usartSym_MR_NBSTOP.addKey("1_BIT", "0", "1 BIT")
     usartSym_MR_NBSTOP.addKey("1_5_BIT", "2", "1.5 BIT")
@@ -739,6 +844,7 @@ def instantiateComponent(usartComponent):
 
     usartSPISym_Interrupt = usartComponent.createBooleanSymbol("USART_SPI_INTERRUPT_MODE", None)
     usartSPISym_Interrupt.setLabel("Interrupt Mode")
+    usartSPISym_Interrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:%NOREGISTER%")
     usartSPISym_Interrupt.setDefaultValue(True)
     usartSPISym_Interrupt.setVisible(False)
     usartSPISym_Interrupt.setDependencies(updateUSART_SPISymVisibility, ["USART_MODE"])
@@ -746,12 +852,14 @@ def instantiateComponent(usartComponent):
     # Add DMA support if Peripheral DMA Controller (PDC) exist in the UART register group
     if usartIsPeripheralDMASupported.getValue() == True:
         usartSPISym_TxRxDMAEnable = usartComponent.createBooleanSymbol("USE_USART_SPI_DMA", usartSPISym_Interrupt)
+        usartSPISym_TxRxDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_CR")
         usartSPISym_TxRxDMAEnable.setLabel("Enable DMA for Transmit and Receive")
         usartSPISym_TxRxDMAEnable.setVisible(True)
         usartSPISym_TxRxDMAEnable.setDependencies(updateUSART_SPIDMAConfigurationVisbleProperty, ["USART_SPI_INTERRUPT_MODE"])
 
     usartSPISym_baudRate = usartComponent.createIntegerSymbol("USART_SPI_BAUD_RATE", None)
     usartSPISym_baudRate.setLabel("Baud Rate in Hz")
+    usartSPISym_baudRate.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_BRGR")
     usartSPISym_baudRate.setDefaultValue(defaultbaudRate)
     usartSPISym_baudRate.setMin(1)
     usartSPISym_baudRate.setVisible(False)
@@ -768,6 +876,7 @@ def instantiateComponent(usartComponent):
 
     usartSPISym_CS = usartComponent.createKeyValueSetSymbol("USART_SPI_CHIP_SELECT", None)
     usartSPISym_CS.setLabel("Peripheral Chip Select")
+    usartSPISym_CS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_CR")
     usartSPISym_CS.addKey("NSS", "0", "NSS")
     usartSPISym_CS.addKey("GPIO", "1", "GPIO")
     usartSPISym_CS.setDisplayMode("Description")
@@ -778,6 +887,7 @@ def instantiateComponent(usartComponent):
 
     usartSPISym_BitsPerTransfer = usartComponent.createKeyValueSetSymbol("USART_SPI_BITS_PER_TRANSFER", None)
     usartSPISym_BitsPerTransfer.setLabel("Bits Per Transfer")
+    usartSPISym_BitsPerTransfer.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSPISym_BitsPerTransfer.addKey("8-bits", "3", "8 bits for transfer")
     usartSPISym_BitsPerTransfer.setDisplayMode("Description")
     usartSPISym_BitsPerTransfer.setOutputMode("Key")
@@ -787,6 +897,7 @@ def instantiateComponent(usartComponent):
 
     usartSPISym_DummyData = usartComponent.createHexSymbol("USART_SPI_DUMMY_DATA", None)
     usartSPISym_DummyData.setLabel("Dummy Data")
+    usartSPISym_DummyData.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_THR")
     usartSPISym_DummyData.setDescription("Dummy Data to be written during SPI Read")
     usartSPISym_DummyData.setDefaultValue(0xFF)
     usartSPISym_DummyData.setMin(0x0)
@@ -795,6 +906,7 @@ def instantiateComponent(usartComponent):
 
     usartSPISym_CPOL = usartComponent.createKeyValueSetSymbol("USART_SPI_CLOCK_POLARITY", None)
     usartSPISym_CPOL.setLabel("Clock Polarity")
+    usartSPISym_CPOL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSPISym_CPOL.addKey("IDLE_LOW", "0x0", "Clock is low when inactive (COPL = 0)")
     usartSPISym_CPOL.addKey("IDLE_HIGH", "0x1", "Clock is high when inactive (COPL = 1)")
     usartSPISym_CPOL.setOutputMode("Value")
@@ -805,6 +917,7 @@ def instantiateComponent(usartComponent):
 
     usartSPISym_CPHA = usartComponent.createKeyValueSetSymbol("USART_SPI_CLOCK_PHASE", None)
     usartSPISym_CPHA.setLabel("Clock Phase")
+    usartSPISym_CPHA.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:usart_6089;register:US_MR")
     usartSPISym_CPHA.addKey("VALID_FOLLOWING_EDGE", "0x0", "Data is captured on the following edge of SPCK (CPHA = 0)")
     usartSPISym_CPHA.addKey("VALID_LEADING_EDGE", "0x1", "Data is captured on the leading edge of SPCK (CPHA = 1)")
     usartSPISym_CPHA.setOutputMode("Value")
@@ -850,6 +963,7 @@ def instantiateComponent(usartComponent):
     usartSym_DataBits.setVisible(False)
     usartSym_DataBits.setDependencies(updateUSARTDataBits, ["USART_MR_CHRL"])
 
+    execfile(Variables.get("__CORE_DIR") + "/../peripheral/usart_6089/config/usart_lin.py")
     ############################################################################
     #### Dependency ####
     ############################################################################
@@ -887,7 +1001,7 @@ def instantiateComponent(usartComponent):
     usartHeaderFile.setProjectPath("config/" + configName + "/peripheral/usart/")
     usartHeaderFile.setType("HEADER")
     usartHeaderFile.setOverwrite(True)
-    usartHeaderFile.setDependencies(USARTFileGeneration, ["USART_MODE"])
+    usartHeaderFile.setDependencies(USARTFileGeneration, ["USART_RING_BUFFER_MODE_ENABLE", "USART_MODE", "USART_LIN_OPERATING_MODE"])
 
     usartHeader1File = usartComponent.createFileSymbol("USART_HEADER1", None)
     usartHeader1File.setSourcePath("../peripheral/usart_6089/templates/plib_usart.h.ftl")
@@ -897,7 +1011,7 @@ def instantiateComponent(usartComponent):
     usartHeader1File.setType("HEADER")
     usartHeader1File.setOverwrite(True)
     usartHeader1File.setMarkup(True)
-    usartHeader1File.setDependencies(USARTFileGeneration, ["USART_RING_BUFFER_MODE_ENABLE", "USART_MODE", "USART_INTERRUPT_MODE_ENABLE"])
+    usartHeader1File.setDependencies(USARTFileGeneration, ["USART_RING_BUFFER_MODE_ENABLE", "USART_MODE", "USART_INTERRUPT_MODE_ENABLE", "USART_LIN_OPERATING_MODE"])
 
     usartSource1File = usartComponent.createFileSymbol("USART_SOURCE1", None)
     usartSource1File.setSourcePath("../peripheral/usart_6089/templates/plib_usart.c.ftl")
@@ -907,7 +1021,7 @@ def instantiateComponent(usartComponent):
     usartSource1File.setType("SOURCE")
     usartSource1File.setOverwrite(True)
     usartSource1File.setMarkup(True)
-    usartSource1File.setDependencies(USARTFileGeneration, ["USART_RING_BUFFER_MODE_ENABLE", "USART_MODE", "USART_INTERRUPT_MODE_ENABLE"])
+    usartSource1File.setDependencies(USARTFileGeneration, ["USART_RING_BUFFER_MODE_ENABLE", "USART_MODE", "USART_INTERRUPT_MODE_ENABLE", "USART_LIN_OPERATING_MODE"])
 
     usartSystemInitFile = usartComponent.createFileSymbol("USART_INIT", None)
     usartSystemInitFile.setType("STRING")

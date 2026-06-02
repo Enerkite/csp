@@ -58,16 +58,27 @@ if (ATDF.getNode('/avr-tools-device-file/modules/module@[name="DSCTRL"]') != Non
     deepSleepSymExist = powerComponent.createBooleanSymbol("DEEP_SLEEP_MODE_EXIST", deepSleepSymMenu)
     deepSleepSymExist.setVisible(False)
     deepSleepSymExist.setDefaultValue(True)
+    
+    extremeDeepSleepSymExist = powerComponent.createBooleanSymbol("EXTREME_DEEP_SLEEP_MODE_EXIST", deepSleepSymMenu)
+    extremeDeepSleepSymExist.setVisible(False)
+    extremeDeepNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DSCON\"]/register-group@[name=\"DSCON\"]/register@[name=\"DSXSEMA1\"]")
+    if extremeDeepNode != None:
+        extremeDeepSleepSymExist.setDefaultValue(True)
+    else:
+        extremeDeepSleepSymExist.setDefaultValue(False)
 
     deepSleepSym_RTCDIS = powerComponent.createBooleanSymbol("DS_RTCC_ENABLE", deepSleepSymMenu)
+    deepSleepSym_RTCDIS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:power;register:%NOREGISTER%")
     deepSleepSym_RTCDIS.setLabel("Enable Power to RTCC during Deep Sleep")
     deepSleepSym_RTCDIS.setDefaultValue(True)
 
     deepSleepSym_RTCCWDIS = powerComponent.createBooleanSymbol("DS_RTCC_WAKEUP_DISABLE", deepSleepSymMenu)
+    deepSleepSym_RTCCWDIS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:power;register:%NOREGISTER%")
     deepSleepSym_RTCCWDIS.setLabel("Enable Deep Sleep Wakeup from RTCC")
     deepSleepSym_RTCCWDIS.setDefaultValue(True)
 
     deepSleepSym_DSGPREN = powerComponent.createBooleanSymbol("DS_EXTENDED_REG_ENABLE", deepSleepSymMenu)
+    deepSleepSym_DSGPREN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:power;register:%NOREGISTER%")
     deepSleepSym_DSGPREN.setLabel("Enable Extended Semaphore Register")
     deepSleepSym_DSGPREN.setDefaultValue(False)
 
@@ -75,8 +86,20 @@ if (ATDF.getNode('/avr-tools-device-file/modules/module@[name="DSCTRL"]') != Non
     deepSleepSym_DSCON_RegValue.setDefaultValue(0x00000000)
     deepSleepSym_DSCON_RegValue.setVisible(False)
     deepSleepSym_DSCON_RegValue.setDependencies(updateDSCON, ["DS_EXTENDED_REG_ENABLE", "DS_RTCC_WAKEUP_DISABLE", "DS_RTCC_ENABLE"])
+    
+    dsconDSWSRC_RegName = powerComponent.createStringSymbol("DSCON_DSWSRC_REG_NAME", deepSleepSymMenu)
+    dsconDSWSRC_RegName.setReadOnly(True)
+    dsconDSWSRC_RegName.setVisible(False)
 
     dswakeRegister = ATDF.getNode('/avr-tools-device-file/modules/module@[name="DSCON"]/register-group@[name="DSCON"]/register@[name="DSWAKE"]')
+    
+    # For PIC32CX-BZ6, the register name is changed to DSWSRC
+    if dswakeRegister == None:
+        dswakeRegister = ATDF.getNode('/avr-tools-device-file/modules/module@[name="DSCON"]/register-group@[name="DSCON"]/register@[name="DSWSRC"]')
+        
+        dsconDSWSRC_RegName.setDefaultValue("DSWSRC")
+    else:
+        dsconDSWSRC_RegName.setDefaultValue("DSWAKE")
 
     deepSleepSym_ResetCount = powerComponent.createIntegerSymbol("DS_WAKEUP_CAUSE_COUNT", deepSleepSymMenu)
     deepSleepSym_ResetCount.setDefaultValue(len(dswakeRegister.getChildren()))
@@ -84,11 +107,15 @@ if (ATDF.getNode('/avr-tools-device-file/modules/module@[name="DSCTRL"]') != Non
 
     for id in range(len(dswakeRegister.getChildren())):
         deepSleepSym_Cause = powerComponent.createKeyValueSetSymbol("DS_WAKEUP_CAUSE_" + str(id), deepSleepSymMenu)
+        deepSleepSym_Cause.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:power;register:%NOREGISTER%")
         deepSleepSym_Cause.setLabel(str(dswakeRegister.getChildren()[id].getAttribute("name")))
         deepSleepSym_Cause.addKey(dswakeRegister.getChildren()[id].getAttribute("name"), str(id), dswakeRegister.getChildren()[id].getAttribute("caption"))
         deepSleepSym_Cause.setOutputMode("Key")
         deepSleepSym_Cause.setDisplayMode("Description")
         deepSleepSym_Cause.setVisible(False)
+        
+    deepSleepSym_FuseEnComment = powerComponent.createCommentSymbol("DEEP_SLEEP_MODE_FUSE_ENABLE_COMMENT", None)
+    deepSleepSym_FuseEnComment.setLabel("** Ensure Deep sleep related fuses are configured under Device & Project Configuration > Fuse Settings **")
 
 ###################################################################################################
 ####################################### Code Generation  ##########################################

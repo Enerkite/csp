@@ -28,7 +28,7 @@
 </#if>
 
 <#if (CKGR_MOR_MOSCXTEN && CLOCK_FAILURE_DETECT) || ((SUPC_MR_OSCBYPASS == false) && (SUPC_CR_MDXTALSEL == "1") && SLCK_CLOCK_FREQUENCY_MONITORING_ENABLE == true)>
-volatile static PMC_CALLBACK_OBJECT PMC_CallbackObj;
+static volatile PMC_CALLBACK_OBJECT PMC_CallbackObj;
 
 </#if>
 
@@ -291,7 +291,7 @@ static void CLK_USBClockInitialize ( void )
 
 
     /* Enable Full-Speed USB Clock Output */
-    PMC_REGS->PMC_SCER = 0 <#if PMC_SCER_UDP>| PMC_SCER_UDP_Msk</#if> <#if PMC_SCER_UHP> | PMC_SCER_UHP_Msk</#if>;
+    PMC_REGS->PMC_SCER = 0U <#if PMC_SCER_UDP>| PMC_SCER_UDP_Msk</#if> <#if PMC_SCER_UHP> | PMC_SCER_UHP_Msk</#if>;
 }
 </#if>
 
@@ -330,11 +330,43 @@ static void CLK_ProgrammableClockInitialize(void)
 </#if>
 
 
+__attribute__((ramfunc)) static void CLK_IntRegTrimmedCodeSet(void)
+{
+    uint8_t trimmed_code;
+
+    EFC_REGS->EEFC_FCR = EEFC_FCR_FCMD_STUI | EEFC_FCR_FKEY_PASSWD;
+
+    while ((EFC_REGS->EEFC_FSR & EEFC_FSR_FRDY_Msk) == EEFC_FSR_FRDY_Msk)
+    {
+        // Wait for the flash ready falls
+    }
+
+    trimmed_code = (*((uint8_t *)(IFLASH_ADDR + 64U)) & 0xFU);
+
+    EFC_REGS->EEFC_FCR = EEFC_FCR_FCMD_SPUI | EEFC_FCR_FKEY_PASSWD;
+
+    while ((EFC_REGS->EEFC_FSR & EEFC_FSR_FRDY_Msk) == 0U)
+    {
+        // Wait for the flash ready
+    }
+
+    SUPC_REGS->SUPC_PWMR = (SUPC_REGS->SUPC_PWMR &
+                            ~(SUPC_PWMR_ECPWR0_Msk |
+                            SUPC_PWMR_ECPWR1_Msk |
+                            SUPC_PWMR_ECPWR2_Msk |
+                            SUPC_PWMR_ECPWR3_Msk )) |
+                            ((uint32_t)trimmed_code << SUPC_PWMR_ECPWR0_Pos) |
+                            SUPC_PWMR_ECPWRS_Msk |
+                            SUPC_PWMR_KEY_PASSWD;
+}
+
 /*********************************************************************************
 Clock Initialize
 *********************************************************************************/
 void CLOCK_Initialize( void )
 {
+    CLK_IntRegTrimmedCodeSet();
+
 <#if SUPC_CR_MDXTALSEL != "0">
     /* Initialize Slow Clock */
     CLK_SlowClockInitialize();

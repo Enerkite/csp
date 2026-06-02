@@ -80,7 +80,7 @@
 <#assign TCC_MCEI = "TCC_EVCTRL_MCEI_" + i>
 <#assign TCC_INT_MC = "TCC_INTENSET_MC_" + i>
 <#-- Dead Time -->
-<#if TCC_IS_DEAD_TIME == 1 && i < TCC_NUM_OUTPUTS/2>
+<#if TCC_IS_DEAD_TIME gte 1 && i < TCC_NUM_OUTPUTS/2>
     <#assign TCC_DT_ENABLE = "TCC_"+i+"_WEXCTRL_DTIEN">
     <#if .vars[TCC_DT_ENABLE] == true>
         <#if TCC_WEXCTRL_DT_VAL != "">
@@ -111,25 +111,41 @@
         <#else>
             <#assign TCC_WAVE_VAL = "TCC_WAVE_CICCEN"+i+"_Msk">
         </#if>
-    </#if> 
+    </#if>
 </#if> <#-- circular buffer End -->
 <#-- polarity -->
 <#if (TCC_WAVE_WAVEGEN == "DSBOTTOM") || (TCC_WAVE_WAVEGEN == "DSBOTH") || (TCC_WAVE_WAVEGEN == "DSTOP") >
     <#if .vars[TCC_POLARITY] == "1">
         <#if TCC_WAVE_VAL != "">
-            <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+            <#if (TCC_WAVE_DUALSLOPE??) && (TCC_WAVE_DUALSLOPE == true)>
+                <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_DUALSLOPE_POL"+i+"_Msk">
+            <#else>
+                <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+            </#if>
         <#else>
-            <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+            <#if (TCC_WAVE_DUALSLOPE??) && (TCC_WAVE_DUALSLOPE == true)>
+                <#assign TCC_WAVE_VAL = "TCC_WAVE_DUALSLOPE_POL"+i+"_Msk">
+            <#else>
+                <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+            </#if>
         </#if>
     </#if>
 <#elseif (TCC_WAVE_WAVEGEN == "NPWM")>
 <#if .vars[TCC_POLARITY_NPWM] == "1">
     <#if TCC_WAVE_VAL != "">
-        <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+        <#if (TCC_WAVE_SINGLESLOPE??) && (TCC_WAVE_SINGLESLOPE == true)>
+            <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_SINGLESLOPE_POL"+i+"_Msk">
+        <#else>
+            <#assign TCC_WAVE_VAL = TCC_WAVE_VAL + " | TCC_WAVE_POL"+i+"_Msk">
+        </#if>
     <#else>
-        <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+        <#if (TCC_WAVE_SINGLESLOPE??) && (TCC_WAVE_SINGLESLOPE == true)>
+            <#assign TCC_WAVE_VAL = "TCC_WAVE_SINGLESLOPE_POL"+i+"_Msk">
+        <#else>
+            <#assign TCC_WAVE_VAL = "TCC_WAVE_POL"+i+"_Msk">
+        </#if>
     </#if>
-   
+
 </#if>
 </#if>
 <#-- polarity end -->
@@ -191,13 +207,13 @@
 <#list 0..(TCC_NUM_OUTPUTS-1) as i>
 <#assign CH_NUM = i>
 <#assign TCC_INVEN = "TCC_DRVCTRL_INVEN" + i>
-<#if .vars[TCC_INVEN] == true> 
+<#if .vars[TCC_INVEN] == true>
     <#if TCC_DRVCTRL_INVEN != "">
         <#assign TCC_DRVCTRL_INVEN = TCC_DRVCTRL_INVEN + "\n\t\t | TCC_DRVCTRL_INVEN"+i+"_Msk">
     <#else>
         <#assign TCC_DRVCTRL_INVEN = "TCC_DRVCTRL_INVEN" + i + "_Msk">
     </#if>
-</#if>    
+</#if>
 </#list>
 
 <#-- Pattern Generation -->
@@ -286,7 +302,7 @@
 
 <#if TCC_INTERRUPT == true>
     <#lt>/* Object to hold callback function and context */
-    <#lt>volatile static TCC_CALLBACK_OBJECT ${TCC_INSTANCE_NAME}_CallbackObj;
+    <#lt>static volatile TCC_CALLBACK_OBJECT ${TCC_INSTANCE_NAME}_CallbackObj;
 </#if>
 
 /* Initialize TCC module */
@@ -294,16 +310,16 @@ void ${TCC_INSTANCE_NAME}_PWMInitialize(void)
 {
     /* Reset TCC */
     ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLA = TCC_CTRLA_SWRST_Msk;
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_SWRST_Msk) != 0U)
+    while((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_SWRST_Msk) == TCC_SYNCBUSY_SWRST_Msk)
     {
         /* Wait for sync */
     }
     /* Clock prescaler */
 <#if TCC_SLAVE_MODE == true>
-    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLA = TCC_CTRLA_MSYNC_Msk | TCC_CTRLA_PRESCALER_${TCC_CTRLA_PRESCALER} 
+    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLA = TCC_CTRLA_MSYNC_Msk | TCC_CTRLA_PRESCALER_${TCC_CTRLA_PRESCALER}
                             | TCC_CTRLA_PRESCSYNC_${TCC_CTRLA_PRESCYNC} ${(TCC_CTRLA_RUNSTDBY == true)?then('| (TCC_CTRLA_RUNSTDBY_Msk)', '')};
 <#else>
-    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLA = TCC_CTRLA_PRESCALER_${TCC_CTRLA_PRESCALER} 
+    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLA = TCC_CTRLA_PRESCALER_${TCC_CTRLA_PRESCALER}
                             | TCC_CTRLA_PRESCSYNC_${TCC_CTRLA_PRESCYNC} ${(TCC_CTRLA_RUNSTDBY == true)?then('| (TCC_CTRLA_RUNSTDBY_Msk)', '')};
 </#if>
 <#if TCC_CTRLB_DIR?has_content && TCC_SLAVE_MODE == false>
@@ -312,7 +328,7 @@ void ${TCC_INSTANCE_NAME}_PWMInitialize(void)
 <#if TCC_IS_OTM == 1>
     ${TCC_INSTANCE_NAME}_REGS->TCC_WEXCTRL = TCC_WEXCTRL_OTMX(${TCC_WEXCTRL_OTMX}UL);
 </#if>
-<#if TCC_WEXCTRL_DT_VAL?has_content && TCC_IS_DEAD_TIME == 1>
+<#if TCC_WEXCTRL_DT_VAL?has_content && TCC_IS_DEAD_TIME gte 1>
     /* Dead time configurations */
     ${TCC_INSTANCE_NAME}_REGS->TCC_WEXCTRL |= ${TCC_WEXCTRL_DT_VAL};
 </#if>
@@ -327,7 +343,7 @@ void ${TCC_INSTANCE_NAME}_PWMInitialize(void)
     </#if>
     <#if TCC_WAVE_RAMP == "RAMP2A">
     ${TCC_INSTANCE_NAME}_REGS->TCC_WAVE |= TCC_WAVE_CICCEN0_Msk;
-    </#if>    
+    </#if>
 </#if>
 
     /* Configure duty cycle values */
@@ -345,7 +361,7 @@ void ${TCC_INSTANCE_NAME}_PWMInitialize(void)
 </#if>
 <#if TCC_DRVCTRL_INVEN?has_content>
     ${TCC_INSTANCE_NAME}_REGS->TCC_DRVCTRL = ${TCC_DRVCTRL_INVEN};
-</#if>    
+</#if>
 
 <#if TCC_EVCTRL_EVACT0 == "FAULT" || TCC_EVCTRL_EVACT1 == "FAULT">
     ${TCC_INSTANCE_NAME}_REGS->TCC_DRVCTRL |= TCC_DRVCTRL_FILTERVAL0(${TCC_DRVCTRL_FILTERVAL}UL)
@@ -370,7 +386,7 @@ void ${TCC_INSTANCE_NAME}_PWMInitialize(void)
 void ${TCC_INSTANCE_NAME}_PWMStart(void)
 {
     ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLA |= TCC_CTRLA_ENABLE_Msk;
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_ENABLE_Msk) != 0U)
+    while((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_ENABLE_Msk) == TCC_SYNCBUSY_ENABLE_Msk)
     {
         /* Wait for sync */
     }
@@ -380,7 +396,7 @@ void ${TCC_INSTANCE_NAME}_PWMStart(void)
 void ${TCC_INSTANCE_NAME}_PWMStop (void)
 {
     ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLA &= ~TCC_CTRLA_ENABLE_Msk;
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_ENABLE_Msk) != 0U)
+    while((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_ENABLE_Msk) == TCC_SYNCBUSY_ENABLE_Msk)
     {
         /* Wait for sync */
     }
@@ -395,7 +411,7 @@ bool ${TCC_INSTANCE_NAME}_PWM24bitPeriodSet (uint32_t period)
     {
         ${TCC_INSTANCE_NAME}_REGS->TCC_${TCC_PBUF_REG_NAME} = period & 0xFFFFFFU;
         status = true;
-    }    
+    }
     return status;
 }
 
@@ -407,7 +423,7 @@ bool ${TCC_INSTANCE_NAME}_PWM16bitPeriodSet (uint16_t period)
     {
         ${TCC_INSTANCE_NAME}_REGS->TCC_${TCC_PBUF_REG_NAME} = period;
         status = true;
-    }    
+    }
     return status;
 }
 <#elseif TCC_SIZE == 32>
@@ -418,7 +434,7 @@ bool ${TCC_INSTANCE_NAME}_PWM32bitPeriodSet (uint32_t period)
     {
         ${TCC_INSTANCE_NAME}_REGS->TCC_${TCC_PBUF_REG_NAME} = period;
         status = true;
-    }    
+    }
     return status;
 }
 </#if>
@@ -427,7 +443,7 @@ bool ${TCC_INSTANCE_NAME}_PWM32bitPeriodSet (uint32_t period)
 <#if TCC_SIZE == 24>
 uint32_t ${TCC_INSTANCE_NAME}_PWM24bitPeriodGet (void)
 {
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_PER_Msk) != 0U)
+    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_PER_Msk) == TCC_SYNCBUSY_PER_Msk)
     {
         /* Wait for sync */
     }
@@ -436,7 +452,7 @@ uint32_t ${TCC_INSTANCE_NAME}_PWM24bitPeriodGet (void)
 <#elseif TCC_SIZE == 16>
 uint16_t ${TCC_INSTANCE_NAME}_PWM16bitPeriodGet (void)
 {
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_PER_Msk) != 0U)
+    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_PER_Msk) == TCC_SYNCBUSY_PER_Msk)
     {
         /* Wait for sync */
     }
@@ -445,7 +461,7 @@ uint16_t ${TCC_INSTANCE_NAME}_PWM16bitPeriodGet (void)
 <#elseif TCC_SIZE == 32>
 uint32_t ${TCC_INSTANCE_NAME}_PWM32bitPeriodGet (void)
 {
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_PER_Msk) != 0U)
+    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_PER_Msk) == TCC_SYNCBUSY_PER_Msk)
     {
         /* Wait for sync */
     }
@@ -453,7 +469,7 @@ uint32_t ${TCC_INSTANCE_NAME}_PWM32bitPeriodGet (void)
 }
 </#if>
 
-<#if TCC_IS_DEAD_TIME == 1>
+<#if TCC_IS_DEAD_TIME gte 1>
 /* Configure dead time */
 void ${TCC_INSTANCE_NAME}_PWMDeadTimeSet (uint8_t deadtime_high, uint8_t deadtime_low)
 {
@@ -470,8 +486,8 @@ bool ${TCC_INSTANCE_NAME}_PWMPatternSet(uint8_t pattern_enable, uint8_t pattern_
     {
         ${TCC_INSTANCE_NAME}_REGS->TCC_${TCC_PATBUF_REG_NAME} = (uint16_t)(pattern_enable | ((uint32_t)pattern_output << 8U));
         status = true;
-    }   
-    return status; 
+    }
+    return status;
 }
 
 </#if>
@@ -502,7 +518,7 @@ uint32_t ${TCC_INSTANCE_NAME}_PWM24bitCounterGet( void )
 void ${TCC_INSTANCE_NAME}_PWM24bitCounterSet (uint32_t countVal)
 {
     ${TCC_INSTANCE_NAME}_REGS->TCC_COUNT = countVal & 0xFFFFFFU;
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_COUNT_Msk) != 0U)
+    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_COUNT_Msk) == TCC_SYNCBUSY_COUNT_Msk)
     {
         /* Wait for sync */
     }
@@ -532,7 +548,7 @@ uint16_t ${TCC_INSTANCE_NAME}_PWM16bitCounterGet( void )
 void ${TCC_INSTANCE_NAME}_PWM16bitCounterSet (uint16_t countVal)
 {
     ${TCC_INSTANCE_NAME}_REGS->TCC_COUNT = countVal;
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_COUNT_Msk) != 0U)
+    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_COUNT_Msk) == TCC_SYNCBUSY_COUNT_Msk)
     {
         /* Wait for sync */
     }
@@ -562,7 +578,7 @@ uint32_t ${TCC_INSTANCE_NAME}_PWM32bitCounterGet( void )
 void ${TCC_INSTANCE_NAME}_PWM32bitCounterSet (uint32_t countVal)
 {
     ${TCC_INSTANCE_NAME}_REGS->TCC_COUNT = countVal;
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_COUNT_Msk) != 0U)
+    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_COUNT_Msk) == TCC_SYNCBUSY_COUNT_Msk)
     {
         /* Wait for sync */
     }
@@ -572,8 +588,8 @@ void ${TCC_INSTANCE_NAME}_PWM32bitCounterSet (uint32_t countVal)
 /* Enable forced synchronous update */
 void ${TCC_INSTANCE_NAME}_PWMForceUpdate(void)
 {
-    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLBSET |= (uint8_t)TCC_CTRLBCLR_CMD_UPDATE;
-    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_CTRLB_Msk) != 0U)
+    ${TCC_INSTANCE_NAME}_REGS->TCC_CTRLBSET |= (uint8_t)TCC_CTRLBSET_CMD_UPDATE;
+    while ((${TCC_INSTANCE_NAME}_REGS->TCC_SYNCBUSY & TCC_SYNCBUSY_CTRLB_Msk) == TCC_SYNCBUSY_CTRLB_Msk)
     {
         /* Wait for sync */
     }
@@ -602,12 +618,12 @@ void ${TCC_INSTANCE_NAME}_PWMPeriodInterruptDisable(void)
     <#if TCC_NUM_INT_LINES != 0>
         <#if TCC_INTENSET_OVF == true || TCC_INTENSET_FAULT0 == true || TCC_INTENSET_FAULT1 == true>
             <#lt>/* Interrupt Handler */
-            <#lt>void __attribute__((used)) ${TCC_INSTANCE_NAME}_OTHER_InterruptHandler(void)
+            <#lt>void __attribute__((used)) ${TCC_INSTANCE_NAME}_${TCC_OTHER_INT_HANDLER_NAME}_InterruptHandler(void)
             <#lt>{
             <#lt>    uint32_t status;
             <#lt>    /* Additional local variable to prevent MISRA C violations (Rule 13.x) */
             <#lt>    uintptr_t context;
-            <#lt>    context = ${TCC_INSTANCE_NAME}_CallbackObj.context;            
+            <#lt>    context = ${TCC_INSTANCE_NAME}_CallbackObj.context;
             <#lt>    status = (${TCC_INSTANCE_NAME}_REGS->TCC_INTFLAG & 0xFFFFU);
             <#lt>    /* Clear interrupt flags */
             <#lt>    ${TCC_INSTANCE_NAME}_REGS->TCC_INTFLAG = 0xFFFFU;
@@ -629,7 +645,7 @@ void ${TCC_INSTANCE_NAME}_PWMPeriodInterruptDisable(void)
                 <#lt>    uint32_t status;
                 <#lt>    /* Additional local variable to prevent MISRA C violations (Rule 13.x) */
                 <#lt>    uintptr_t context;
-                <#lt>    context = ${TCC_INSTANCE_NAME}_CallbackObj.context;                
+                <#lt>    context = ${TCC_INSTANCE_NAME}_CallbackObj.context;
                 <#lt>    status = TCC_INTFLAG_MC${i}_Msk;
                 <#lt>    /* Clear interrupt flags */
                 <#lt>    ${TCC_INSTANCE_NAME}_REGS->TCC_INTFLAG = TCC_INTFLAG_MC${i}_Msk;
@@ -650,7 +666,7 @@ void ${TCC_INSTANCE_NAME}_PWMPeriodInterruptDisable(void)
         <#lt>    uint32_t status;
         <#lt>    /* Additional local variable to prevent MISRA C violations (Rule 13.x) */
         <#lt>    uintptr_t context;
-        <#lt>    context = ${TCC_INSTANCE_NAME}_CallbackObj.context;        
+        <#lt>    context = ${TCC_INSTANCE_NAME}_CallbackObj.context;
         <#lt>    status = ${TCC_INSTANCE_NAME}_REGS->TCC_INTFLAG;
         <#lt>    /* Clear interrupt flags */
         <#lt>    ${TCC_INSTANCE_NAME}_REGS->TCC_INTFLAG = TCC_INTFLAG_Msk;

@@ -31,7 +31,7 @@ global tcNumInterruptLines
 
 global tcTimerUnit
 tcTimerUnit = { "millisecond" : 1000000,
-                "microsecond" : 1000, 
+                "microsecond" : 1000,
                 "nanosecond"  : 1,
                 }
 
@@ -96,6 +96,88 @@ tcSym_CH_IntEnComment = []
 tcSym_CH_ClkEnComment = []
 
 global sysTimeComponentId
+global dvrtComponentId
+global dvrtPlibMode
+global i2cbbComponentId
+
+def dvrtPLIBModeConfig(channelID, plibMode):
+    global dvrtTickRateMs
+
+    if dvrtComponentId.getValue() != "":
+        #Enable channel
+        tcSym_CH_Enable[channelID].setValue(True)
+        tcSym_SYS_TIME_CONNECTED[channelID].setValue(True)
+
+        if plibMode == "DVRT_PLIB_MODE_PERIOD":
+            #Enable Period Interrupt
+            tcSym_CH_IER_CPCS[channelID].setValue(True)
+            #Show Time Period and Set it
+            tcSym_CH_TimerPeriod[channelID].setValue(dvrtTickRateMs.getValue())
+            tcSym_CH_TimerPeriod[channelID].setVisible(True)
+
+        if(channelID==0):
+            #Disable channel
+            tcSym_CH_Enable[1].setValue(False)
+            tcSym_CH_Enable[2].setValue(False)
+            #Show Time Period and clear it
+            tcSym_CH_TimerPeriod[1].setValue(0.0)
+            tcSym_CH_TimerPeriod[2].setValue(0.0)
+            tcSym_CH_TimerPeriod[1].setVisible(True)
+            tcSym_CH_TimerPeriod[2].setVisible(True)
+            #Disable Period Interrupt
+            tcSym_CH_IER_CPCS[1].setValue(False)
+            tcSym_CH_IER_CPCS[2].setValue(False)
+            #Disable Compare Interrupt
+            tcSym_CH_IER_CPAS[1].setValue(False)
+            tcSym_CH_IER_CPAS[2].setValue(False)
+            #Hide Compare Interrupt Option
+            tcSym_CH_IER_CPAS[1].setVisible(False)
+            tcSym_CH_IER_CPAS[2].setVisible(False)
+            #----
+            tcSym_SYS_TIME_CONNECTED[1].setValue(False)
+            tcSym_SYS_TIME_CONNECTED[2].setValue(False)
+        elif (channelID == 1):
+            #Disable channel
+            tcSym_CH_Enable[0].setValue(False)
+            tcSym_CH_Enable[2].setValue(False)
+            #Show Time Period and clear it
+            tcSym_CH_TimerPeriod[0].setValue(0.0)
+            tcSym_CH_TimerPeriod[2].setValue(0.0)
+            tcSym_CH_TimerPeriod[0].setVisible(True)
+            tcSym_CH_TimerPeriod[2].setVisible(True)
+            #Disable Period Interrupt
+            tcSym_CH_IER_CPCS[0].setValue(False)
+            tcSym_CH_IER_CPCS[2].setValue(False)
+            #Disable Compare Interrupt
+            tcSym_CH_IER_CPAS[0].setValue(False)
+            tcSym_CH_IER_CPAS[2].setValue(False)
+            #Hide Compare Interrupt Option
+            tcSym_CH_IER_CPAS[0].setVisible(False)
+            tcSym_CH_IER_CPAS[2].setVisible(False)
+            #----
+            tcSym_SYS_TIME_CONNECTED[0].setValue(False)
+            tcSym_SYS_TIME_CONNECTED[2].setValue(False)
+        elif (channelID == 2):
+            #Disable channel
+            tcSym_CH_Enable[0].setValue(False)
+            tcSym_CH_Enable[1].setValue(False)
+            #Show Time Period and clear it
+            tcSym_CH_TimerPeriod[0].setValue(0.0)
+            tcSym_CH_TimerPeriod[1].setValue(0.0)
+            tcSym_CH_TimerPeriod[0].setVisible(True)
+            tcSym_CH_TimerPeriod[1].setVisible(True)
+            #Disable Period Interrupt
+            tcSym_CH_IER_CPCS[0].setValue(False)
+            tcSym_CH_IER_CPCS[1].setValue(False)
+            #Disable Compare Interrupt
+            tcSym_CH_IER_CPAS[0].setValue(False)
+            tcSym_CH_IER_CPAS[1].setValue(False)
+            #Hide Compare Interrupt Option
+            tcSym_CH_IER_CPAS[0].setVisible(False)
+            tcSym_CH_IER_CPAS[1].setVisible(False)
+            #----
+            tcSym_SYS_TIME_CONNECTED[0].setValue(False)
+            tcSym_SYS_TIME_CONNECTED[1].setValue(False)
 
 def sysTimePLIBModeConfig(channelID, plibMode):
     global sysTimeTickRateMs
@@ -194,10 +276,13 @@ def calcAchievableFreq(channelID):
     global tcSym_CH_TimerPeriodCount
     global sysTimePlibMode
     global sysTimeChannel_Sym
+    global dvrtComponentId
 
     dummy_dict = dict()
     tc_channel = sysTimeChannel_Sym.getSelectedKey()
     sysTimeChannelID = int(tc_channel[3])
+    dvrt_channel_sel = dvrtChannel_Sym.getSelectedKey()
+    dvrtChannelID = int(dvrt_channel_sel[3])
 
     tickRateDict = {"tick_rate_hz": 0}
     if (sysTimeChannelID == channelID) and (sysTimeComponentId.getValue() != "") and (sysTimePlibMode.getValue() == "SYS_TIME_PLIB_MODE_PERIOD"):
@@ -215,16 +300,36 @@ def calcAchievableFreq(channelID):
         else:
             dummy_dict = Database.sendMessage(sysTimeComponentId.getValue(), "SYS_TIME_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
 
+    elif (dvrtChannelID == channelID) and (dvrtComponentId.getValue() != ""):
+        source_clk_freq = Database.getSymbolValue("core",tcInstanceName.getValue()+"_CH"+str(channelID)+"_CLOCK_FREQUENCY")
+        if source_clk_freq != 0:
+            #Read the calculated timer count to achieve the set Time Period and Calculate the actual tick rate
+            achievableTickRateHz = float(1.0/source_clk_freq) * float(tcSym_CH_TimerPeriodCount[channelID].getValue())
+            if achievableTickRateHz != 0:
+                achievableTickRateHz = (1.0/achievableTickRateHz) * 100000.0
+                tickRateDict["tick_rate_hz"] = long(achievableTickRateHz)
+                dummy_dict = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
+            else:
+                dummy_dict = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
+        else:
+            dummy_dict = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_ACHIEVABLE_TICK_RATE_HZ", tickRateDict)
+
 def handleMessage(messageID, args):
     global sysTimeComponentId
     global sysTimeChannel_Sym
     global sysTimePlibMode
     global sysTimeTickRateMs
+    global dvrtTickRateMs
+    global dvrtComponentId
+    global dvrtChannel_Sym
+    global dvrtPlibMode
+    global i2cbbComponentId
+    global tcSym_CH_Enable
 
     dummy_dict = dict()
     sysTimePLIBConfig = dict()
-
-    print "handleMessage - " + str(messageID)
+    dvrtPLIBConfig = dict()
+    dvrt_tick_ms = {"dvrt_tick_ms" : 0.0}
 
     if (messageID == "SYS_TIME_PUBLISH_CAPABILITIES"):
         sysTimeComponentId.setValue(args["ID"])
@@ -259,6 +364,35 @@ def handleMessage(messageID, args):
         Database.setSymbolValue(component, "TC_BMR_POSEN", "POSITION")
         Database.setSymbolValue(component, "TC_CH0_RESET", 2)
 
+    if (messageID == "DVRT_PUBLISH_CAPABILITIES"):
+        dvrtComponentId.setValue(args["ID"])
+        opemode_Dict = {"plib_mode": "PERIOD_MODE"}
+        dvrtPLIBConfig = Database.sendMessage(dvrtComponentId.getValue(), "DVRT_PLIB_CAPABILITY", opemode_Dict)
+        dvrtChannel_Sym.setSelectedKey("_CH0",1)
+        dvrtChannel_Sym.setVisible(True)
+        tc_channel = dvrtChannel_Sym.getSelectedKey()
+        channelID = int(tc_channel[3])
+        dvrtPlibMode.setValue(dvrtPLIBConfig["TIMER_MODE"])
+        dvrtPLIBModeConfig(channelID, dvrtPlibMode.getValue())
+        if dvrtPLIBConfig["TIMER_MODE"] == "DVRT_PLIB_MODE_PERIOD":
+            dvrtTickRateMs.setValue(dvrtPLIBConfig["dvrt_tick_millisec"])
+            tcSym_CH_TimerPeriod[channelID].setValue(dvrtTickRateMs.getValue())
+
+    if (messageID == "DVRT_TICK_RATE_CHANGED"):
+        tc_channel = dvrtChannel_Sym.getSelectedKey()
+        channelID = int(tc_channel[3])
+        #Set the Time Period (Milli Sec)
+        dvrtTickRateMs.setValue(args["dvrt_tick_ms"])
+        tcSym_CH_TimerPeriod[channelID].setValue(dvrtTickRateMs.getValue())
+        
+    if (messageID == "TIMER_FREQ_GET"):
+        i2cbbComponentId.setValue(args["ID"])
+        channelID = args["timer_ch"]
+        source_clk_freq = Database.getSymbolValue("core", tcInstanceName.getValue()+"_CH"+channelID+"_CLOCK_FREQUENCY")
+        dummy_dict["TIMER_FREQ"] = source_clk_freq
+        channelID_temp = int(channelID)
+        tcSym_CH_Enable[channelID_temp].setValue(True)
+        
     return dummy_dict
 
 ###################################################################################################
@@ -678,6 +812,7 @@ def tcPeriodCalc(tcSym_CH_ComparePeriodLocal, event):
         tcSym_CH_ComparePeriod[channelID].setLabel("**** Waveform Period is " + str(time_us) + " uS****")
 
 def tcPeriodCountCalc(symbol, event):
+    global i2cbbComponentId
     global tcSym_CH_CMR_TCCLKS
     global tcSym_CH_ComparePeriodCount
     global tcSym_CH_OperatingMode
@@ -706,6 +841,13 @@ def tcPeriodCountCalc(symbol, event):
             tcSym_CH_TimerPeriodComment[channelID].setLabel("****Period Count is " + str(time_period) + "****")
         tcSym_CH_TimerPeriodCount[channelID].setValue(int(time_period), 2)
     calcAchievableFreq(channelID)
+    #Read the input clock frequency of the timer instance
+    source_clk_freq = Database.getSymbolValue("core", tcInstanceName.getValue()+"_CH"+str(channelID)+"_CLOCK_FREQUENCY")
+    tcFrequencyDict = {"ID" : "","CHANNEL_ID" : "", "frequency" : ""}
+    tcFrequencyDict["ID"] = tcInstanceName.getValue()
+    tcFrequencyDict["CHANNEL_ID"] = channelID
+    tcFrequencyDict["frequency"] = source_clk_freq
+    Database.sendMessage(i2cbbComponentId.getValue(), "TIMER_FREQUENCY", tcFrequencyDict)
 
 def tcPeriodMaxVal(symbol, event):
     id = symbol.getID()
@@ -839,6 +981,7 @@ def tcClockSymbols(tcComponent, channelID, menu):
     #this symbol combines two bit-fields CMR_TCCLKS and EMR_NODIVCLK
     global tcSym_CH_CMR_TCCLKS
     tcSym_CH_CMR_TCCLKS[channelID] = tcComponent.createKeyValueSetSymbol("TC"+str(channelID)+"_CMR_TCCLKS", menu)
+    tcSym_CH_CMR_TCCLKS[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
     tcSym_CH_CMR_TCCLKS[channelID].setLabel("Select Clock Source")
     tc_clock = []
     tc = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"TC\"]/instance@[name=\""+tcInstanceName.getValue()+"\"]/parameters")
@@ -858,6 +1001,7 @@ def tcClockSymbols(tcComponent, channelID, menu):
 
     #PCK7 and also enable clock PCK6 or PCK7
     tcSym_CH_PCK7[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_PCK7", menu)
+    tcSym_CH_PCK7[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:%NOREGISTER%")
     tcSym_CH_PCK7[channelID].setLabel("PCK7")
     tcSym_CH_PCK7[channelID].setVisible(False)
     tcSym_CH_PCK7[channelID].setDefaultValue(False)
@@ -866,6 +1010,7 @@ def tcClockSymbols(tcComponent, channelID, menu):
     #external clock frequency
     global tcSym_CH_EXT_CLOCK
     tcSym_CH_EXT_CLOCK[channelID] = tcComponent.createIntegerSymbol("TC"+str(channelID)+"_EXT_CLOCK", menu)
+    tcSym_CH_EXT_CLOCK[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
     tcSym_CH_EXT_CLOCK[channelID].setLabel("External Clock Frequency (Hz)")
     tcSym_CH_EXT_CLOCK[channelID].setVisible(False)
     tcSym_CH_EXT_CLOCK[channelID].setDefaultValue(10000000)
@@ -874,6 +1019,7 @@ def tcClockSymbols(tcComponent, channelID, menu):
 
     #Save clock frequency
     tcSym_CH_CLOCK_FREQ[channelID] = tcComponent.createIntegerSymbol("TC"+str(channelID)+"_CLOCK_FREQ", menu)
+    tcSym_CH_CLOCK_FREQ[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
     tcSym_CH_CLOCK_FREQ[channelID].setLabel("Clock Frequency (Hz)")
     tcSym_CH_CLOCK_FREQ[channelID].setVisible(False)
     tcSym_CH_CLOCK_FREQ[channelID].setDefaultValue(Database.getSymbolValue("core", tcInstanceName.getValue()+"_CH"+str(channelID)+"_CLOCK_FREQUENCY"))
@@ -911,7 +1057,8 @@ def onAttachmentConnected(source, target):
 def onAttachmentDisconnected(source, target):
     global sysTimeChannel_Sym
     global sysTimeComponentId
-
+    global i2cbbComponentId
+    
     localComponent = source["component"]
     remoteComponent = target["component"]
     remoteID = remoteComponent.getID()
@@ -937,6 +1084,54 @@ def onAttachmentDisconnected(source, target):
     if (remoteID == "pmsm_foc"):
         component = str(tcInstanceName.getValue()).lower()
         Database.setSymbolValue(component, "TC_ENABLE_QEI", False)
+
+    if (remoteID == "dvrt"):
+        dvrtChannel_Sym.setVisible(False)
+        dvrtComponentId.setValue("")
+        tc_channel = dvrtChannel_Sym.getSelectedKey()
+        channelID = int(tc_channel[3])
+        #Show Time Period and clear it
+        tcSym_CH_TimerPeriod[channelID].clearValue()
+        tcSym_CH_TimerPeriod[channelID].setVisible(True)
+        #Enable the period interrupt
+        tcSym_CH_IER_CPCS[channelID].setValue(True)
+        
+    if (remoteID == "i2c_bb"):
+        i2cbbComponentId.setValue("")
+
+def dvrt_ChannelSelection(symbol,event):
+    global timerStartApiName_Sym
+    global timeStopApiName_Sym
+    global periodSetApiName_Sym
+    global callbackApiName_Sym
+    global irqEnumName_Sym
+    global tcInstanceName
+    global tcNumInterruptLines
+    global dvrtPlibMode
+
+    symObj=event["symbol"]
+    tc_channel = symObj.getSelectedKey()
+
+    channelID = int(tc_channel[3])
+
+    dvrtPLIBModeConfig(channelID, dvrtPlibMode.getValue())
+
+    timerStartApiName = tcInstanceName.getValue() + str(tc_channel) + "_TimerStart"
+    timeStopApiName = tcInstanceName.getValue() + str(tc_channel) + "_TimerStop "
+    callbackApiName = tcInstanceName.getValue() + str(tc_channel) + "_TimerCallbackRegister"
+    periodSetApiName = tcInstanceName.getValue() + str(tc_channel) + "_TimerPeriodSet"
+
+    # if there are no per channel interrupts, tie the IRQn to the instance interrupt
+    if int(tcNumInterruptLines) == 1 :
+        irqEnumName = tcInstanceName.getValue() + "_IRQn"
+    else:
+        irqEnumName = tcInstanceName.getValue() + str(tc_channel) + "_IRQn"
+
+    timerStartApiName_Sym.setValue(timerStartApiName,2)
+    timeStopApiName_Sym.setValue(timeStopApiName,2)
+    callbackApiName_Sym.setValue(callbackApiName,2)
+    irqEnumName_Sym.setValue(irqEnumName,2)
+    periodSetApiName_Sym.setValue(periodSetApiName,2)
 
 def sysTime_ChannelSelection(symbol,event):
     global timerStartApiName_Sym
@@ -981,7 +1176,39 @@ def sysTime_ChannelSelection(symbol,event):
     irqEnumName_Sym.setValue(irqEnumName,2)
     periodSetApiName_Sym.setValue(periodSetApiName,2)
 
+def i2cbb_ChannelSelection(symbol,event):
+    global i2cbbComponentId
+    global timerStartApiName_Sym
+    global timeStopApiName_Sym
+    global compareSetApiName_Sym
+    global periodSetApiName_Sym
+    global counterApiName_Sym
+    global frequencyGetApiName_Sym
+    global callbackApiName_Sym
+    global irqEnumName_Sym
+    global tcNumInterruptLines
+    
+    if i2cbbComponentId != "":
+        timerStartApiName = tcInstanceName.getValue() + "_CH0" + "_TimerStart"
+        timerStopApiName = tcInstanceName.getValue() + "_CH0" + "_TimerStop "
+        counterGetApiName = tcInstanceName.getValue() + "_CH0" +  "_TimerCounterGet"
+        frequencyGetApiName = tcInstanceName.getValue() + "_CH0" + "_TimerFrequencyGet"
+        callbackApiName = tcInstanceName.getValue() + "_CH0" + "_TimerCallbackRegister"
+        periodSetApiName = tcInstanceName.getValue() + "_CH0" + "_TimerPeriodSet"
 
+        timerStartApiName_Sym.setValue(timerStartApiName,2)
+        timeStopApiName_Sym.setValue(timerStopApiName,2)
+        periodSetApiName_Sym.setValue(periodSetApiName,2)
+        counterApiName_Sym.setValue(counterGetApiName,2)
+        frequencyGetApiName_Sym.setValue(frequencyGetApiName,2)
+        callbackApiName_Sym.setValue(callbackApiName,2)
+        
+        if int(tcNumInterruptLines) == 1 :
+            irqEnumName = tcInstanceName.getValue() + "_IRQn"
+        else:
+            irqEnumName = tcInstanceName.getValue() + "_CH0" + "_IRQn"
+
+        irqEnumName_Sym.setValue(irqEnumName,2)
 ###################################################################################################
 ########################### Instantiation   #################################
 ###################################################################################################
@@ -1002,11 +1229,16 @@ def instantiateComponent(tcComponent):
     global sysTimeComponentId
     global sysTimePlibMode
     global sysTimeTickRateMs
+    global dvrtTickRateMs
+    global dvrtComponentId
+    global dvrtChannel_Sym
+    global dvrtPlibMode
+    global i2cbbComponentId
 
     tcInstanceName = tcComponent.createStringSymbol("TC_INSTANCE_NAME", None)
     tcInstanceName.setVisible(False)
     tcInstanceName.setDefaultValue(tcComponent.getID().upper())
-    print("Running " + tcInstanceName.getValue())
+    Log.writeInfoMessage("Running " + tcInstanceName.getValue())
 
     global tcSym_QDEC_PRESENT
     tcSym_QDEC_PRESENT = tcComponent.createBooleanSymbol("TC_QDEC_PRESENT", None)
@@ -1080,6 +1312,7 @@ def instantiateComponent(tcComponent):
 
     sysTimeChannel_Sym = tcComponent.createKeyValueSetSymbol("SYS_TIME_TC_CHANNEL", None)
     sysTimeChannel_Sym.setLabel("Select TC Channel for Time System Service")
+    sysTimeChannel_Sym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CCRx")
     sysTimeChannel_Sym.addKey("_CH0", "0", "Channel 0")
     sysTimeChannel_Sym.addKey("_CH1", "1", "Channel 1")
     sysTimeChannel_Sym.addKey("_CH2", "2", "Channel 2")
@@ -1092,23 +1325,66 @@ def instantiateComponent(tcComponent):
     sysTimeTrigger_Sym.setVisible(False)
     sysTimeTrigger_Sym.setDependencies(sysTime_ChannelSelection, ["SYS_TIME_TC_CHANNEL"])
 
+    dvrtChannel_Sym = tcComponent.createKeyValueSetSymbol("DVRT_TC_CHANNEL", None)
+    dvrtChannel_Sym.setLabel("Select TC Channel for DVRT")
+    dvrtChannel_Sym.addKey("_CH0", "0", "Channel 0")
+    dvrtChannel_Sym.addKey("_CH1", "1", "Channel 1")
+    dvrtChannel_Sym.addKey("_CH2", "2", "Channel 2")
+    dvrtChannel_Sym.setOutputMode("Key")
+    dvrtChannel_Sym.setDisplayMode("Description")
+    dvrtChannel_Sym.setDefaultValue(0)
+    dvrtChannel_Sym.setVisible(False)
+
+    dvrtTrigger_Sym = tcComponent.createBooleanSymbol("DVRT_ID", None)
+    dvrtTrigger_Sym.setVisible(False)
+    dvrtTrigger_Sym.setDependencies(dvrt_ChannelSelection, ["DVRT_TC_CHANNEL"])
+    
+#------------------------------------------------------------
+# Common Symbols needed for I2C_BB usage
+#------------------------------------------------------------    
+    
+    i2cbbComponentId = tcComponent.createStringSymbol("I2C_BB_COMPONENT_ID", None)
+    i2cbbComponentId.setLabel("Component id")
+    i2cbbComponentId.setVisible(False)
+    i2cbbComponentId.setDefaultValue("")
+    
+    i2cbbTimeTrigger_Sym = tcComponent.createBooleanSymbol("i2cbb_TIME", None)
+    i2cbbTimeTrigger_Sym.setVisible(False)
+    i2cbbTimeTrigger_Sym.setDependencies(i2cbb_ChannelSelection, ["I2C_BB_COMPONENT_ID"])
+    
 #------------------------------------------------------------
 # Common Symbols needed for SYS_TIME usage
 #------------------------------------------------------------
 
     sysTimePlibMode = tcComponent.createStringSymbol("SYS_TIME_PLIB_OPERATION_MODE", None)
     sysTimePlibMode.setLabel("SysTime PLIB Operation Mode")
+    sysTimePlibMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CCR")
     sysTimePlibMode.setVisible(False)
     sysTimePlibMode.setDefaultValue("")
 
     sysTimeComponentId = tcComponent.createStringSymbol("SYS_TIME_COMPONENT_ID", None)
     sysTimeComponentId.setLabel("Component id")
+    sysTimeComponentId.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CCR")
     sysTimeComponentId.setVisible(False)
     sysTimeComponentId.setDefaultValue("")
 
     sysTimeTickRateMs = tcComponent.createFloatSymbol("SYS_TIME_TICK_RATE_MS", None)
     sysTimeTickRateMs.setDefaultValue(1)
     sysTimeTickRateMs.setVisible(False)
+
+    dvrtPlibMode = tcComponent.createStringSymbol("DVRT_PLIB_OPERATION_MODE", None)
+    dvrtPlibMode.setLabel("dvrt PLIB Operation Mode")
+    dvrtPlibMode.setVisible(False)
+    dvrtPlibMode.setDefaultValue("")
+
+    dvrtComponentId = tcComponent.createStringSymbol("DVRT_COMPONENT_ID", None)
+    dvrtComponentId.setLabel("dvrt Component id")
+    dvrtComponentId.setVisible(False)
+    dvrtComponentId.setDefaultValue("")
+
+    dvrtTickRateMs = tcComponent.createFloatSymbol("DVRT_TICK_RATE_MS", None)
+    dvrtTickRateMs.setDefaultValue(1)
+    dvrtTickRateMs.setVisible(False)
 
     timerWidth_Sym = tcComponent.createIntegerSymbol("TIMER_WIDTH", None)
     timerWidth_Sym.setVisible(False)
@@ -1120,13 +1396,13 @@ def instantiateComponent(tcComponent):
     timerPeriodMax_Sym = tcComponent.createStringSymbol("TIMER_PERIOD_MAX", None)
     timerPeriodMax_Sym.setVisible(False)
     timerPeriodMax_Sym.setDefaultValue(str(tcCounterMaxValue))
-
+    
     timerStartApiName_Sym = tcComponent.createStringSymbol("TIMER_START_API_NAME", None)
     timerStartApiName_Sym.setVisible(False)
 
     timeStopApiName_Sym = tcComponent.createStringSymbol("TIMER_STOP_API_NAME", None)
     timeStopApiName_Sym.setVisible(False)
-
+    
     compareSetApiName_Sym = tcComponent.createStringSymbol("COMPARE_SET_API_NAME", None)
     compareSetApiName_Sym.setVisible(False)
 
@@ -1141,9 +1417,10 @@ def instantiateComponent(tcComponent):
 
     callbackApiName_Sym = tcComponent.createStringSymbol("CALLBACK_API_NAME", None)
     callbackApiName_Sym.setVisible(False)
-
+        
     irqEnumName_Sym = tcComponent.createStringSymbol("IRQ_ENUM_NAME", None)
     irqEnumName_Sym.setVisible(False)
+
 #------------------------------------------------------------
 
     #----------------- motor control APIs ---------------------------------
@@ -1177,6 +1454,7 @@ def instantiateComponent(tcComponent):
         #channel enable
         global tcSym_CH_EnableQEI
         tcSym_CH_EnableQEI = tcComponent.createBooleanSymbol("TC_ENABLE_QEI", None)
+        tcSym_CH_EnableQEI.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_BMR")
         tcSym_CH_EnableQEI.setLabel("Enable Quadrature Encoder Mode")
         tcSym_CH_EnableQEI.setDefaultValue(False)
         #Quadrature interface is not available if channel 0 and channel 1 pins are not available
@@ -1211,11 +1489,13 @@ def instantiateComponent(tcComponent):
 
         # Swap PhA and PhB
         tcSym_CH_QEI_BMR_SWAP = tcComponent.createBooleanSymbol("TC_BMR_SWAP", tcQuadratureMenu)
+        tcSym_CH_QEI_BMR_SWAP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_BMR")
         tcSym_CH_QEI_BMR_SWAP.setLabel("Swap Phase A and Phase B Signals")
         tcSym_CH_QEI_BMR_SWAP.setDefaultValue(False)
 
         # Filter value
         tcSym_CH_BMR_MAXFILT = tcComponent.createIntegerSymbol("TC_BMR_MAXFILT", tcQuadratureMenu)
+        tcSym_CH_BMR_MAXFILT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_BMR")
         tcSym_CH_BMR_MAXFILT.setLabel("Select Input Signal Filter Count")
         tcSym_CH_BMR_MAXFILT.setDefaultValue(2)
         tcSym_CH_BMR_MAXFILT.setMin(0)
@@ -1224,6 +1504,7 @@ def instantiateComponent(tcComponent):
         # Index pulse
         global tcSym_CH_QEI_INDEX_PULSE
         tcSym_CH_QEI_INDEX_PULSE = tcComponent.createBooleanSymbol("TC_INDEX_PULSE", tcQuadratureMenu)
+        tcSym_CH_QEI_INDEX_PULSE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_QEI_INDEX_PULSE.setLabel("Is Index Pulse used for Revolution Counter?")
         tcSym_CH_QEI_INDEX_PULSE.setDefaultValue(False)
         tcSym_CH_QEI_INDEX_PULSE.setVisible(True)
@@ -1231,6 +1512,7 @@ def instantiateComponent(tcComponent):
         #Mode
         global tcSym_CH_BMR_POSEN
         tcSym_CH_BMR_POSEN = tcComponent.createComboSymbol("TC_BMR_POSEN", tcQuadratureMenu, ["POSITION", "SPEED"])
+        tcSym_CH_BMR_POSEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_BMR")
         tcSym_CH_BMR_POSEN.setLabel("Select Mode")
         tcSym_CH_BMR_POSEN.setDefaultValue("POSITION")
 
@@ -1242,6 +1524,7 @@ def instantiateComponent(tcComponent):
         tcPositionMenu.setDependencies(tcQuadraturePositionVisible, ["TC_BMR_POSEN"])
 
         tcSym_CH0_RESET = tcComponent.createKeyValueSetSymbol("TC_CH0_RESET", tcPositionMenu)
+        tcSym_CH0_RESET.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH0_RESET.setLabel("Select Position Counter Reset Mode")
         tcSym_CH0_RESET.addKey("CPCTRG", "0", "Reset on Rc Compare Match")
         tcSym_CH0_RESET.addKey("ABETRG", "1", "Reset on External Event (Index Pulse)")
@@ -1252,6 +1535,7 @@ def instantiateComponent(tcComponent):
 
         #Num pulses
         tcSym_CH_QEI_NUM_PULSES = tcComponent.createLongSymbol("TC_QEI_NUM_PULSES", tcPositionMenu)
+        tcSym_CH_QEI_NUM_PULSES.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RC")
         tcSym_CH_QEI_NUM_PULSES.setLabel("Number of Quadrature Pulses per Revolution")
         tcSym_CH_QEI_NUM_PULSES.setDefaultValue(1024)
         tcSym_CH_QEI_NUM_PULSES.setMin(0)
@@ -1263,6 +1547,7 @@ def instantiateComponent(tcComponent):
         #Position reset interrupt
         global tcSym_CH_QEI_IER_CPCS
         tcSym_CH_QEI_IER_CPCS = tcComponent.createBooleanSymbol("TC_QEI_IER_CPCS", tcPositionMenu)
+        tcSym_CH_QEI_IER_CPCS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:%NOREGISTER%")
         tcSym_CH_QEI_IER_CPCS.setLabel("Enable Period Interrupt")
         tcSym_CH_QEI_IER_CPCS.setDefaultValue(False)
         tcSym_CH_QEI_IER_CPCS.setVisible(False)
@@ -1277,6 +1562,7 @@ def instantiateComponent(tcComponent):
         #channel enable for speed channel 2. Dummy symbol
         tcSym_CH3_Enable = tcComponent.createBooleanSymbol("TC3_ENABLE", None)
         tcSym_CH3_Enable.setLabel("Enable")
+        tcSym_CH3_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:%NOREGISTER%")
         tcSym_CH3_Enable.setVisible(False)
         tcSym_CH3_Enable.setDefaultValue(True)
 
@@ -1286,6 +1572,7 @@ def instantiateComponent(tcComponent):
         # CH2 time period
         global tcSym_CH_QEI_CH2PERIOD
         tcSym_CH_QEI_CH2PERIOD = tcComponent.createLongSymbol("TC_QEI_PERIOD", tcSpeedMenu)
+        tcSym_CH_QEI_CH2PERIOD.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RC")
         tcSym_CH_QEI_CH2PERIOD.setLabel("Select Speed Time Base")
         tcSym_CH_QEI_CH2PERIOD.setDefaultValue(15015)
         tcSym_CH_QEI_CH2PERIOD.setMin(0)
@@ -1305,6 +1592,7 @@ def instantiateComponent(tcComponent):
         # enable index interrupt
         global tcSym_CH_QIER_IDX
         tcSym_CH_QIER_IDX = tcComponent.createBooleanSymbol("TC_QIER_IDX", tcQuadratureMenu)
+        tcSym_CH_QIER_IDX.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_QIER")
         tcSym_CH_QIER_IDX.setLabel("Enable Index Interrupt")
         tcSym_CH_QIER_IDX.setDefaultValue(False)
         tcSym_CH_QIER_IDX.setDependencies(tcQuadratureIndexPulse, ["TC_INDEX_PULSE"])
@@ -1312,6 +1600,7 @@ def instantiateComponent(tcComponent):
         # enable quadrature error interrupt
         global tcSym_CH_QIER_QERR
         tcSym_CH_QIER_QERR = tcComponent.createBooleanSymbol("TC_QIER_QERR", tcQuadratureMenu)
+        tcSym_CH_QIER_QERR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_QIER")
         tcSym_CH_QIER_QERR.setLabel("Enable Quadrature Error Interrupt")
         tcSym_CH_QIER_QERR.setDefaultValue(False)
 
@@ -1325,6 +1614,7 @@ def instantiateComponent(tcComponent):
     global tcSym_CH_PCK_CLKSRC
     tcSym_CH_PCK_CLKSRC = tcComponent.createComboSymbol("TC_PCK_CLKSRC", None, ["PCK6", "PCK7"])
     tcSym_CH_PCK_CLKSRC.setLabel("Select PCK Clock Source")
+    tcSym_CH_PCK_CLKSRC.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:%NOREGISTER%")
     tcSym_CH_PCK_CLKSRC.setDefaultValue("PCK6")
     tcSym_CH_PCK_CLKSRC.setVisible(False)
 
@@ -1339,6 +1629,7 @@ def instantiateComponent(tcComponent):
         #channel enable
         tcSym_CH_Enable.append(channelID)
         tcSym_CH_Enable[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_ENABLE", tcChannelMenu[channelID])
+        tcSym_CH_Enable[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CCRx")
         tcSym_CH_Enable[channelID].setLabel("Enable")
         tcSym_CH_Enable[channelID].setDefaultValue(False)
 
@@ -1402,6 +1693,7 @@ def instantiateComponent(tcComponent):
         #operating mode
         tcSym_CH_OperatingMode.append(channelID)
         tcSym_CH_OperatingMode[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_OPERATING_MODE", tcSym_CH_Enable[channelID], tcModeValues)
+        tcSym_CH_OperatingMode[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_OperatingMode[channelID].setLabel("Operating Mode")
         tcSym_CH_OperatingMode[channelID].setDefaultValue("TIMER")
 
@@ -1416,8 +1708,9 @@ def instantiateComponent(tcComponent):
         tcSym_TimerUnit.append(channelID)
         timerUnit = ["millisecond", "microsecond", "nanosecond"]
         tcSym_TimerUnit[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_TIMER_UNIT", tcTimerMenu[channelID], timerUnit)
+        tcSym_TimerUnit[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RC")
         tcSym_TimerUnit[channelID].setLabel("Timer Period Unit")
-        tcSym_TimerUnit[channelID].setDefaultValue("millisecond")    
+        tcSym_TimerUnit[channelID].setDefaultValue("millisecond")
 
         if (Database.getSymbolValue("core", tcInstanceName.getValue()+"_CH"+str(channelID)+"_CLOCK_FREQUENCY") != 0):
             max =  (tcCounterMaxValue+1) * 1000.0 / int((Database.getSymbolValue("core", tcInstanceName.getValue()+"_CH"+str(channelID)+"_CLOCK_FREQUENCY") ))
@@ -1427,6 +1720,7 @@ def instantiateComponent(tcComponent):
         global tcSym_CH_TimerPeriod
         tcSym_CH_TimerPeriod.append(channelID)
         tcSym_CH_TimerPeriod[channelID] = tcComponent.createFloatSymbol("TC"+str(channelID)+"_TIMER_PERIOD_MS", tcTimerMenu[channelID])
+        tcSym_CH_TimerPeriod[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RC")
         tcSym_CH_TimerPeriod[channelID].setLabel("Time")
         tcSym_CH_TimerPeriod[channelID].setDefaultValue(0.4)
         tcSym_CH_TimerPeriod[channelID].setMin(0.0)
@@ -1445,6 +1739,7 @@ def instantiateComponent(tcComponent):
 
         tcSym_CH_TimerPeriodCount.append(channelID)
         tcSym_CH_TimerPeriodCount[channelID] = tcComponent.createLongSymbol("TC"+str(channelID)+"_TIMER_PERIOD_COUNT", tcSym_CH_TimerPeriod[channelID])
+        tcSym_CH_TimerPeriodCount[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RC")
         tcSym_CH_TimerPeriodCount[channelID].setLabel("Timer Period")
         tcSym_CH_TimerPeriodCount[channelID].setVisible(True)
         tcSym_CH_TimerPeriodCount[channelID].setReadOnly(True)
@@ -1457,18 +1752,21 @@ def instantiateComponent(tcComponent):
         #one-shot timer
         tcSym_CH_CMR_CPCSTOP.append(channelID)
         tcSym_CH_CMR_CPCSTOP[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_CMR_CPCSTOP", tcTimerMenu[channelID])
+        tcSym_CH_CMR_CPCSTOP[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_CPCSTOP[channelID].setLabel("Enable One Shot Mode")
         tcSym_CH_CMR_CPCSTOP[channelID].setDefaultValue(False)
 
         #period interrupt
         tcSym_CH_IER_CPCS.append(channelID)
         tcSym_CH_IER_CPCS[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_IER_CPCS", tcTimerMenu[channelID])
+        tcSym_CH_IER_CPCS[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_IER")
         tcSym_CH_IER_CPCS[channelID].setLabel("Enable Period Interrupt")
         tcSym_CH_IER_CPCS[channelID].setDefaultValue(True)
 
         #compare interrupt
         tcSym_CH_IER_CPAS.append(channelID)
         tcSym_CH_IER_CPAS[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_IER_CPAS", tcTimerMenu[channelID])
+        tcSym_CH_IER_CPAS[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:%NOREGISTER%")
         tcSym_CH_IER_CPAS[channelID].setLabel("Enable Compare Interrupt")
         tcSym_CH_IER_CPAS[channelID].setDefaultValue(False)
         tcSym_CH_IER_CPAS[channelID].setVisible(False)
@@ -1484,6 +1782,7 @@ def instantiateComponent(tcComponent):
         #one-shot timer
         tcSym_CH_CAPTURE_CMR_LDBSTOP.append(channelID)
         tcSym_CH_CAPTURE_CMR_LDBSTOP[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_CAPTURE_CMR_LDBSTOP", tcCaptureMenu[channelID])
+        tcSym_CH_CAPTURE_CMR_LDBSTOP[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CAPTURE_CMR_LDBSTOP[channelID].setLabel("Enable One Shot Mode")
         tcSym_CH_CAPTURE_CMR_LDBSTOP[channelID].setDefaultValue(False)
 
@@ -1497,6 +1796,7 @@ def instantiateComponent(tcComponent):
             loadEdgeA.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_LDRA.append(channelID)
         tcSym_CH_CMR_LDRA[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_LDRA", tcCaptureMenu[channelID], loadEdgeA)
+        tcSym_CH_CMR_LDRA[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_LDRA[channelID].setLabel("Select TIOA Input Edge for Capture A")
         tcSym_CH_CMR_LDRA[channelID].setDefaultValue(loadEdgeA[1])
 
@@ -1509,6 +1809,7 @@ def instantiateComponent(tcComponent):
             loadEdgeB.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_LDRB.append(channelID)
         tcSym_CH_CMR_LDRB[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_LDRB", tcCaptureMenu[channelID], loadEdgeB)
+        tcSym_CH_CMR_LDRB[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_LDRB[channelID].setLabel("Select TIOA Input Edge for Capture B")
         tcSym_CH_CMR_LDRB[channelID].setDefaultValue(loadEdgeB[2])
 
@@ -1516,6 +1817,7 @@ def instantiateComponent(tcComponent):
         global tcSym_CH_CAPTURE_EXT_RESET
         tcSym_CH_CAPTURE_EXT_RESET.append(channelID)
         tcSym_CH_CAPTURE_EXT_RESET[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_CAPTURE_EXT_RESET", tcCaptureMenu[channelID])
+        tcSym_CH_CAPTURE_EXT_RESET[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CAPTURE_EXT_RESET[channelID].setLabel("Reset Timer on External Event")
         tcSym_CH_CAPTURE_EXT_RESET[channelID].setDefaultValue(True)
 
@@ -1524,6 +1826,7 @@ def instantiateComponent(tcComponent):
         tcValGroup_ABETRG = ["TIOA", "TIOB"]
         tcSym_CH_CMR_ABETRG.append(channelID)
         tcSym_CH_CMR_ABETRG[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_ABETRG", tcSym_CH_CAPTURE_EXT_RESET[channelID], tcValGroup_ABETRG)
+        tcSym_CH_CMR_ABETRG[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_ABETRG[channelID].setLabel("Select External Event Input")
         tcSym_CH_CMR_ABETRG[channelID].setDefaultValue("TIOA")
 
@@ -1536,6 +1839,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_ETRGEDG.append(channelID)
         tcSym_CH_CMR_ETRGEDG[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_ETRGEDG", tcSym_CH_CAPTURE_EXT_RESET[channelID], comboOptions)
+        tcSym_CH_CMR_ETRGEDG[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_ETRGEDG[channelID].setLabel("Select External Event Edge")
         tcSym_CH_CMR_ETRGEDG[channelID].setDefaultValue(comboOptions[2])
 
@@ -1554,18 +1858,21 @@ def instantiateComponent(tcComponent):
         #capture A interrupt
         tcSym_CH_CAPTURE_IER_LDRAS.append(channelID)
         tcSym_CH_CAPTURE_IER_LDRAS[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_CAPTURE_IER_LDRAS", tcCaptureMenu[channelID])
+        tcSym_CH_CAPTURE_IER_LDRAS[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_IER")
         tcSym_CH_CAPTURE_IER_LDRAS[channelID].setLabel("Enable Capture A Interrupt")
         tcSym_CH_CAPTURE_IER_LDRAS[channelID].setDefaultValue(True)
 
         #capture B interrupt
         tcSym_CH_CAPTURE_IER_LDRBS.append(channelID)
         tcSym_CH_CAPTURE_IER_LDRBS[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_CAPTURE_IER_LDRBS", tcCaptureMenu[channelID])
+        tcSym_CH_CAPTURE_IER_LDRBS[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_IER")
         tcSym_CH_CAPTURE_IER_LDRBS[channelID].setLabel("Enable Capture B Interrupt")
         tcSym_CH_CAPTURE_IER_LDRBS[channelID].setDefaultValue(False)
 
         #counter overflow interrupt
         tcSym_CH_CAPTURE_IER_COVFS.append(channelID)
         tcSym_CH_CAPTURE_IER_COVFS[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_CAPTURE_IER_COVFS", tcCaptureMenu[channelID])
+        tcSym_CH_CAPTURE_IER_COVFS[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_IER")
         tcSym_CH_CAPTURE_IER_COVFS[channelID].setLabel("Enable Counter Overflow Interrupt")
         tcSym_CH_CAPTURE_IER_COVFS[channelID].setDefaultValue(False)
 
@@ -1580,6 +1887,7 @@ def instantiateComponent(tcComponent):
         #waveform type
         tcSym_CH_CMR_WAVSEL.append(channelID)
         tcSym_CH_CMR_WAVSEL[channelID] = tcComponent.createKeyValueSetSymbol("TC"+str(channelID)+"_CMR_WAVSEL", tcCompareMenu[channelID])
+        tcSym_CH_CMR_WAVSEL[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_WAVSEL[channelID].setLabel("Select Waveform Mode")
         tcSym_CH_CMR_WAVSEL[channelID].addKey("UP_RC", "0", "UP Count Mode")
         tcSym_CH_CMR_WAVSEL[channelID].addKey("UPDOWN_RC", "0", "UP and DOWN Count Mode")
@@ -1590,6 +1898,7 @@ def instantiateComponent(tcComponent):
         #one-shot timer
         tcSym_CH_COMPARE_CMR_CPCSTOP.append(channelID)
         tcSym_CH_COMPARE_CMR_CPCSTOP[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_COMPARE_CMR_CPCSTOP", tcCompareMenu[channelID])
+        tcSym_CH_COMPARE_CMR_CPCSTOP[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_COMPARE_CMR_CPCSTOP[channelID].setLabel("Enable One Shot Mode")
         tcSym_CH_COMPARE_CMR_CPCSTOP[channelID].setDefaultValue(False)
 
@@ -1597,6 +1906,7 @@ def instantiateComponent(tcComponent):
         global tcSym_CH_ComparePeriodCount
         tcSym_CH_ComparePeriodCount.append(channelID)
         tcSym_CH_ComparePeriodCount[channelID] = tcComponent.createLongSymbol("TC"+str(channelID)+"_COMPARE_PERIOD_COUNT", tcCompareMenu[channelID])
+        tcSym_CH_ComparePeriodCount[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RC")
         tcSym_CH_ComparePeriodCount[channelID].setLabel("Period Value")
         tcSym_CH_ComparePeriodCount[channelID].setDefaultValue(10000)
         tcSym_CH_ComparePeriodCount[channelID].setMin(0)
@@ -1623,6 +1933,7 @@ def instantiateComponent(tcComponent):
         #external reset signal
         tcSym_CH_CMR_EEVT.append(channelID)
         tcSym_CH_CMR_EEVT[channelID] = tcComponent.createKeyValueSetSymbol("TC"+str(channelID)+"_CMR_EEVT", tcEventMenu[channelID])
+        tcSym_CH_CMR_EEVT[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_EEVT[channelID].setLabel("Select External Event Input")
         childrenNodes = []
         tc = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"TC\"]/value-group@[name=\"TC_CMR0__EEVT\"]")
@@ -1642,6 +1953,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMP_CMR_ETRGEDG.append(channelID)
         tcSym_CH_CMP_CMR_ETRGEDG[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMP_CMR_ETRGEDG", tcEventMenu[channelID], comboOptions)
+        tcSym_CH_CMP_CMR_ETRGEDG[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMP_CMR_ETRGEDG[channelID].setLabel("Select External Event Edge")
         tcSym_CH_CMP_CMR_ETRGEDG[channelID].setDefaultValue(comboOptions[0])
 
@@ -1654,6 +1966,7 @@ def instantiateComponent(tcComponent):
         global tcSym_CH_CompareA
         tcSym_CH_CompareA.append(channelID)
         tcSym_CH_CompareA[channelID] = tcComponent.createLongSymbol("TC"+str(channelID)+"_COMPARE_A", tcCompareAMenu[channelID])
+        tcSym_CH_CompareA[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RA")
         tcSym_CH_CompareA[channelID].setLabel("Compare Value")
         tcSym_CH_CompareA[channelID].setDefaultValue(5000)
         tcSym_CH_CompareA[channelID].setMin(0)
@@ -1669,6 +1982,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_ACPA.append(channelID)
         tcSym_CH_CMR_ACPA[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_ACPA", tcCompareAMenu[channelID], comboOptions)
+        tcSym_CH_CMR_ACPA[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_ACPA[channelID].setLabel("Action on Compare Match A")
         tcSym_CH_CMR_ACPA[channelID].setDefaultValue(comboOptions[1])
 
@@ -1681,6 +1995,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_ACPC.append(channelID)
         tcSym_CH_CMR_ACPC[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_ACPC", tcCompareAMenu[channelID], comboOptions)
+        tcSym_CH_CMR_ACPC[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_ACPC[channelID].setLabel("Action on Compare Match C")
         tcSym_CH_CMR_ACPC[channelID].setDefaultValue(comboOptions[2])
 
@@ -1693,6 +2008,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_AEEVT.append(channelID)
         tcSym_CH_CMR_AEEVT[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_AEEVT", tcCompareAMenu[channelID], comboOptions)
+        tcSym_CH_CMR_AEEVT[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_AEEVT[channelID].setLabel("Action on External Event")
         tcSym_CH_CMR_AEEVT[channelID].setDefaultValue(comboOptions[2])
         tcSym_CH_CMR_AEEVT[channelID].setDependencies(tcActionExtEvtVisible, ["TC"+str(channelID)+"_CMP_CMR_ETRGEDG"])
@@ -1708,6 +2024,7 @@ def instantiateComponent(tcComponent):
         global tcSym_CH_CompareB
         tcSym_CH_CompareB.append(channelID)
         tcSym_CH_CompareB[channelID] = tcComponent.createLongSymbol("TC"+str(channelID)+"_COMPARE_B", tcCompareBMenu[channelID])
+        tcSym_CH_CompareB[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_RB")
         tcSym_CH_CompareB[channelID].setLabel("Compare Value")
         tcSym_CH_CompareB[channelID].setDefaultValue(3000)
         tcSym_CH_CompareB[channelID].setMin(0)
@@ -1723,6 +2040,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_BCPB.append(channelID)
         tcSym_CH_CMR_BCPB[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_BCPB", tcCompareBMenu[channelID], comboOptions)
+        tcSym_CH_CMR_BCPB[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_BCPB[channelID].setLabel("Action on Compare Match B")
         tcSym_CH_CMR_BCPB[channelID].setDefaultValue(comboOptions[1])
 
@@ -1735,6 +2053,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_BCPC.append(channelID)
         tcSym_CH_CMR_BCPC[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_BCPC", tcCompareBMenu[channelID], comboOptions)
+        tcSym_CH_CMR_BCPC[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_BCPC[channelID].setLabel("Action on Compare Match C")
         tcSym_CH_CMR_BCPC[channelID].setDefaultValue(comboOptions[2])
 
@@ -1747,6 +2066,7 @@ def instantiateComponent(tcComponent):
             comboOptions.append(childrenNodes[param].getAttribute("name"))
         tcSym_CH_CMR_BEEVT.append(channelID)
         tcSym_CH_CMR_BEEVT[channelID] = tcComponent.createComboSymbol("TC"+str(channelID)+"_CMR_BEEVT", tcCompareBMenu[channelID], comboOptions)
+        tcSym_CH_CMR_BEEVT[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_CMR")
         tcSym_CH_CMR_BEEVT[channelID].setLabel("Action on External Event")
         tcSym_CH_CMR_BEEVT[channelID].setDefaultValue(comboOptions[2])
         tcSym_CH_CMR_BEEVT[channelID].setDependencies(tcActionExtEvtVisible, ["TC"+str(channelID)+"_CMP_CMR_ETRGEDG"])
@@ -1755,6 +2075,7 @@ def instantiateComponent(tcComponent):
         #period interrupt
         tcSym_CH_COMPARE_IER_CPCS.append(channelID)
         tcSym_CH_COMPARE_IER_CPCS[channelID] = tcComponent.createBooleanSymbol("TC"+str(channelID)+"_COMPARE_IER_CPCS", tcCompareMenu[channelID])
+        tcSym_CH_COMPARE_IER_CPCS[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:tc_6082;register:TC_IER")
         tcSym_CH_COMPARE_IER_CPCS[channelID].setLabel("Enable Period Interrupt")
         tcSym_CH_COMPARE_IER_CPCS[channelID].setDefaultValue(True)
 

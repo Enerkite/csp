@@ -42,6 +42,16 @@
 *******************************************************************************/
 // DOM-IGNORE-END
 
+<#if I2CS_ADDR_MODE_PREFIX>
+    <#if I2CS_TENBITEN_SUPPORT!false>
+        <#assign ADDR_MACRO = "SERCOM_I2CS_ADDR_TENBIT_ADDR">
+    <#else>
+        <#assign ADDR_MACRO = "SERCOM_I2CS_ADDR_SEVENBIT_ADDR">
+    </#if>
+<#else>
+    <#assign ADDR_MACRO = "SERCOM_I2CS_ADDR_ADDR">
+</#if>
+
 
 // *****************************************************************************
 // *****************************************************************************
@@ -60,7 +70,7 @@
 // *****************************************************************************
 // *****************************************************************************
 <#if I2CS_INTERRUPT_MODE = true>
-volatile static SERCOM_I2C_SLAVE_OBJ ${SERCOM_INSTANCE_NAME?lower_case}I2CSObj;
+static volatile SERCOM_I2C_SLAVE_OBJ ${SERCOM_INSTANCE_NAME?lower_case}I2CSObj;
 </#if>
 // *****************************************************************************
 // *****************************************************************************
@@ -103,7 +113,7 @@ void ${SERCOM_INSTANCE_NAME}_I2C_Initialize(void)
     </#if>
      /* Set Operation Mode to I2C Slave */
     <@compress single_line=true>${SERCOM_INSTANCE_NAME}_REGS->I2CS.SERCOM_CTRLA =
-    SERCOM_I2CS_CTRLA_MODE_I2C_SLAVE |
+    SERCOM_I2CS_CTRLA_MODE_${I2C_SLAVE_MODE} |
     SERCOM_I2CS_CTRLA_SDAHOLD_${I2CS_SDAHOLD_TIME}
     ${I2CS_RUNSTDBY?then(' | SERCOM_I2CS_CTRLA_RUNSTDBY_Msk', '')}
     <#if I2CS_LOWTOUT_SUPPORT??>${I2CS_LOWTOUT_SUPPORT?then(' | SERCOM_I2CS_CTRLA_LOWTOUTEN_Msk', '')}</#if>
@@ -132,7 +142,7 @@ void ${SERCOM_INSTANCE_NAME}_I2C_Initialize(void)
     </#if>
 
     /* Set the slave address */
-    ${SERCOM_INSTANCE_NAME}_REGS->I2CS.SERCOM_ADDR = SERCOM_I2CS_ADDR_ADDR(0x${I2CS_SLAVE_ADDDRESS}UL) <#if I2CS_TENBITEN_SUPPORT??>${I2CS_TENBITEN_SUPPORT?then(' | SERCOM_I2CS_ADDR_TENBITEN_Msk', '')}</#if>;
+    ${SERCOM_INSTANCE_NAME}_REGS->I2CS.SERCOM_ADDR = ${ADDR_MACRO}(0x${I2CS_SLAVE_ADDDRESS}UL) <#if I2CS_TENBITEN_SUPPORT??>${I2CS_TENBITEN_SUPPORT?then(' | SERCOM_I2CS_ADDR_TENBITEN_Msk', '')}</#if>;
 
     <#if I2CS_SMEN == true>
     /* Enable Smart Mode */

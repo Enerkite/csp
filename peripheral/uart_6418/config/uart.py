@@ -304,6 +304,7 @@ def instantiateComponent(uartComponent):
 # Depricated symbols ---------------------------------------------------------------------------------------------------
     uartInterrupt = uartComponent.createBooleanSymbol("USART_INTERRUPT_MODE", None)
     uartInterrupt.setLabel("Interrupt Mode")
+    uartInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_IER")
     uartInterrupt.setDefaultValue(True)
     uartInterrupt.setReadOnly(True)
     uartInterrupt.setVisible(False)
@@ -312,6 +313,7 @@ def instantiateComponent(uartComponent):
     #Enable Ring buffer?
     uartSym_RingBuffer_Enable = uartComponent.createBooleanSymbol("UART_RING_BUFFER_ENABLE", None)
     uartSym_RingBuffer_Enable.setLabel("Enable Ring Buffer ?")
+    uartSym_RingBuffer_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartSym_RingBuffer_Enable.setDefaultValue(False)
     uartSym_RingBuffer_Enable.setVisible(False)
     uartSym_RingBuffer_Enable.setReadOnly(True)
@@ -320,12 +322,14 @@ def instantiateComponent(uartComponent):
     if uartIsPeripheralDMASupported.getValue() == True:
         uartRxDMAEnable = uartComponent.createBooleanSymbol("USE_UART_RX_DMA", None)
         uartRxDMAEnable.setLabel("Enable DMA for Receive")
+        uartRxDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_CR")
         uartRxDMAEnable.setVisible(False)
         uartRxDMAEnable.setReadOnly(True)
         uartRxDMAEnable.setDependencies(updateRxDMAMode, ["USE_UART_RX_DMA"])
 
         uartTxDMAEnable = uartComponent.createBooleanSymbol("USE_UART_TX_DMA", None)
         uartTxDMAEnable.setLabel("Enable DMA for Transmit")
+        uartTxDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_CR")
         uartTxDMAEnable.setVisible(False)
         uartTxDMAEnable.setReadOnly(True)
         uartTxDMAEnable.setDependencies(updateTxDMAMode, ["USE_UART_TX_DMA"])
@@ -333,6 +337,7 @@ def instantiateComponent(uartComponent):
 
         # Operating Mode
     uartSym_OperatingMode = uartComponent.createKeyValueSetSymbol("UART_OPERATING_MODE", None)
+    uartSym_OperatingMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartSym_OperatingMode.setLabel("Operating Mode")
     uartSym_OperatingMode.addKey("BLOCKING", "0", "Blocking mode")
     uartSym_OperatingMode.addKey("NON_BLOCKING", "1", "Non-blocking mode")
@@ -350,6 +355,7 @@ def instantiateComponent(uartComponent):
     # Enable Interrupts?
     uartSymInterruptModeEnable = uartComponent.createBooleanSymbol("UART_INTERRUPT_MODE_ENABLE", None)
     uartSymInterruptModeEnable.setLabel("Enable Interrrupts ?")
+    uartSymInterruptModeEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_IER")
     uartSymInterruptModeEnable.setDefaultValue(True)
     uartSymInterruptModeEnable.setReadOnly(True)
     uartSymInterruptModeEnable.setVisible(False)
@@ -357,6 +363,7 @@ def instantiateComponent(uartComponent):
     #Enable Ring buffer?
     uartSym_RingBufferMode_Enable = uartComponent.createBooleanSymbol("UART_RING_BUFFER_MODE_ENABLE", None)
     uartSym_RingBufferMode_Enable.setLabel("Enable Ring Buffer ?")
+    uartSym_RingBufferMode_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartSym_RingBufferMode_Enable.setDefaultValue(False)
     uartSym_RingBufferMode_Enable.setReadOnly(True)
     uartSym_RingBufferMode_Enable.setVisible(False)
@@ -365,11 +372,13 @@ def instantiateComponent(uartComponent):
     if uartIsPeripheralDMASupported.getValue() == True:
         uartReceiveDMAEnable = uartComponent.createBooleanSymbol("USE_UART_RECEIVE_DMA", None)
         uartReceiveDMAEnable.setLabel("Enable DMA for Receive")
+        uartReceiveDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_PTCR")
         uartReceiveDMAEnable.setVisible(False)
         uartReceiveDMAEnable.setReadOnly(True)
 
         uartTransmitDMAEnable = uartComponent.createBooleanSymbol("USE_UART_TRANSMIT_DMA", None)
         uartTransmitDMAEnable.setLabel("Enable DMA for Transmit")
+        uartTransmitDMAEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_PTCR")
         uartTransmitDMAEnable.setVisible(False)
         uartTransmitDMAEnable.setReadOnly(True)
 
@@ -379,6 +388,7 @@ def instantiateComponent(uartComponent):
     uartSym_RingBufferSizeConfig.setDependencies(updateSymbolVisibility, ["UART_RING_BUFFER_MODE_ENABLE"])
 
     uartSym_TXRingBuffer_Size = uartComponent.createIntegerSymbol("UART_TX_RING_BUFFER_SIZE", uartSym_RingBufferSizeConfig)
+    uartSym_TXRingBuffer_Size.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_PTCR")
     uartSym_TXRingBuffer_Size.setLabel("TX Ring Buffer Size")
     uartSym_TXRingBuffer_Size.setMin(2)
     uartSym_TXRingBuffer_Size.setMax(65535)
@@ -387,6 +397,7 @@ def instantiateComponent(uartComponent):
     uartSym_TXRingBuffer_Size.setDependencies(updateSymbolVisibility, ["UART_RING_BUFFER_MODE_ENABLE"])
 
     uartSym_RXRingBuffer_Size = uartComponent.createIntegerSymbol("UART_RX_RING_BUFFER_SIZE", uartSym_RingBufferSizeConfig)
+    uartSym_RXRingBuffer_Size.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_PTCR")
     uartSym_RXRingBuffer_Size.setLabel("RX Ring Buffer Size")
     uartSym_RXRingBuffer_Size.setMin(2)
     uartSym_RXRingBuffer_Size.setMax(65535)
@@ -399,7 +410,12 @@ def instantiateComponent(uartComponent):
     node = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"UART\"]/instance@[name=\"" + uartInstanceName.getValue() + "\"]/parameters")
     uart_clock = node.getChildren()
 
+    # Enable UART clock
+    Database.clearSymbolValue("core", uartInstanceName.getValue() + "_CLOCK_ENABLE")
+    Database.setSymbolValue("core", uartInstanceName.getValue() + "_CLOCK_ENABLE", True, 2)
+
     uartClkSrc = uartComponent.createKeyValueSetSymbol("UART_CLK_SRC", None)
+    uartClkSrc.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartClkSrc.setLabel("Select Clock Source")
 
     for clock in range(0, len(uart_clock)):
@@ -414,6 +430,7 @@ def instantiateComponent(uartComponent):
     uartClkSrc.setVisible(uartClkSrc.getKeyCount() > 0)
 
     uartClkValue = uartComponent.createIntegerSymbol("UART_CLOCK_FREQ", None)
+    uartClkValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartClkValue.setLabel("Clock Frequency")
     uartClkValue.setReadOnly(True)
     uartClkValue.setDependencies(clockSourceFreq, ["UART_CLK_SRC", "core." + uartInstanceName.getValue() + "_CLOCK_FREQUENCY"])
@@ -426,6 +443,7 @@ def instantiateComponent(uartComponent):
 
     # Baud
     uartBaud = uartComponent.createIntegerSymbol("BAUD_RATE", None)
+    uartBaud.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_BRGR")
     uartBaud.setLabel("Baud Rate")
     uartBaud.setDefaultValue(115200)
 
@@ -441,6 +459,7 @@ def instantiateComponent(uartComponent):
     uartBRGValue.setDefaultValue(brgVal)
 
     uartDataWidth = uartComponent.createComboSymbol("UART_MR_DATA_WIDTH", None, ["8 BIT"])
+    uartDataWidth.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartDataWidth.setLabel("Data")
     uartDataWidth.setDefaultValue("8_BIT")
     uartDataWidth.setReadOnly(True)
@@ -457,6 +476,7 @@ def instantiateComponent(uartComponent):
         parityList[id] = uartValGrp_MR_PAR.getChildren()[id].getAttribute("name")
 
     uartSym_MR_PAR = uartComponent.createComboSymbol("UART_MR_PAR", None, parityList)
+    uartSym_MR_PAR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartSym_MR_PAR.setLabel("Parity")
     uartSym_MR_PAR.setDefaultValue("NO")
 
@@ -496,6 +516,7 @@ def instantiateComponent(uartComponent):
     uartSym_MR_PAR_NO_Mask.setVisible(False)
 
     uartStopBit = uartComponent.createComboSymbol("UART_MR_STOP_BITS", None, ["1 BIT"])
+    uartStopBit.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartStopBit.setLabel("Stop")
     uartStopBit.setDefaultValue("1_BIT")
     uartStopBit.setReadOnly(True)
@@ -506,6 +527,7 @@ def instantiateComponent(uartComponent):
     uartStopBit_1_Mask.setVisible(False)
 
     uartSym_MR_FILTER = uartComponent.createBooleanSymbol("UART_MR_FILTER", None)
+    uartSym_MR_FILTER.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:uart_6418;register:UART_MR")
     uartSym_MR_FILTER.setLabel("Receiver Digital Filter")
     uartSym_MR_FILTER.setDefaultValue(False)
 
@@ -538,9 +560,7 @@ def instantiateComponent(uartComponent):
     interruptHandlerLock = uartInstanceName.getValue() + "_INTERRUPT_HANDLER_LOCK"
     interruptVectorUpdate = uartInstanceName.getValue() + "_INTERRUPT_ENABLE_UPDATE"
 
-    # Initial settings for CLK and NVIC
-    Database.clearSymbolValue("core", uartInstanceName.getValue() + "_CLOCK_ENABLE")
-    Database.setSymbolValue("core", uartInstanceName.getValue() + "_CLOCK_ENABLE", True, 2)
+    # Initial settings for NVIC
     Database.clearSymbolValue("core", interruptVector)
     Database.setSymbolValue("core", interruptVector, True, 2)
     Database.clearSymbolValue("core", interruptHandler)

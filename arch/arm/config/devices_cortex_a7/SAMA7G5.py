@@ -34,27 +34,27 @@ def updateLinkerScript(symbol, event):
     memory_loc  = event['source'].getSymbolByID("EXECUTION_MEMORY")
     if compiler_choice.getSelectedKey() == "XC32":
         if memory_loc.getValue()  == "DDR":
-            symbol.setSourcePath("arm/templates/xc32/cortex_a/SAMA7G5/ddram.ld.ftl")
+            symbol.setSourcePath("arm/templates/xc32/cortex_a/SAMA7/ddram.ld.ftl")
             symbol.setOutputName("ddr.ld")
         else:
-            symbol.setSourcePath("arm/templates/xc32/cortex_a/SAMA7G5/sram.ld.ftl")
+            symbol.setSourcePath("arm/templates/xc32/cortex_a/SAMA7/sram.ld.ftl")
             symbol.setOutputName("sram.ld")
     else:
         if memory_loc.getValue() == "DDR":
-            symbol.setSourcePath("arm/templates/iar/cortex_a/SAMA7G5/ddr.icf.ftl")
+            symbol.setSourcePath("arm/templates/iar/cortex_a/SAMA7/ddr.icf.ftl")
             symbol.setOutputName("ddr.icf")
         else:
-            symbol.setSourcePath("arm/templates/iar/cortex_a/SAMA7G5/sram.icf.ftl")
+            symbol.setSourcePath("arm/templates/iar/cortex_a/SAMA7/sram.icf.ftl")
             symbol.setOutputName("sram.icf")
 
 
 def updateStartupFile(symbol, event):
     compiler_choice = event['source'].getSymbolByID("COMPILER_CHOICE")
     if compiler_choice.getSelectedKey() == "XC32":
-        symbol.setSourcePath("arm/templates/xc32/cortex_a/SAMA7G5/cstartup.S.ftl")
+        symbol.setSourcePath("arm/templates/xc32/cortex_a/SAMA7/cstartup.S.ftl")
         symbol.setOutputName("cstartup.S")
     else:
-        symbol.setSourcePath("arm/templates/iar/cortex_a/SAMA7G5/cstartup.s.ftl")
+        symbol.setSourcePath("arm/templates/iar/cortex_a/SAMA7/cstartup.s.ftl")
         symbol.setOutputName("cstartup.s")
 
 
@@ -91,8 +91,8 @@ def updateSRAMCoherency(symbol, event):
     else:
         seg_symbol.clearValue()
 
-    
-print ("Loading System Services for " + Variables.get("__PROCESSOR"))
+
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 deviceFamily = coreComponent.createStringSymbol("DeviceFamily", devCfgMenu)
 deviceFamily.setLabel("Device Family")
@@ -160,13 +160,13 @@ ddr_size = int(ddr_node.getAttribute("size"), 0)
 #Set 16MB as non-cacheable region and rest as cacheable region
 non_cacheable_size = 16 * pow(2, 20)
 
-if processor.endswith("1G"):
+if processor[:11].endswith("1G"):
     # 1 Gbit memory
     ddr_size = (1 * pow(2,30)) / 8
-elif processor.endswith("2G"):
+elif processor[:11].endswith("2G"):
     # 2 Gbit memory
     ddr_size = (2 * pow(2,30)) / 8
-elif processor.endswith("4G"):
+elif processor[:11].endswith("4G"):
     # 4 Gbit memory
     ddr_size = (4 * pow(2,30)) / 8
     #increase the non cacheable region to 32 MB
@@ -238,6 +238,9 @@ cacheAlign.setDefaultValue(64)
 # load dwdt
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/dwdt_44149/config/dwdt.py")
 
+#load MMU with default 1:1 mapping so we can use cache
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/mmu_v7a/config/mmu.py")
+
 # load clock manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_a7g5/config/clk.py")
 coreComponent.addPlugin("../peripheral/clk_sam_a7g5/plugin/clk_sam_a7g5.jar")
@@ -246,14 +249,8 @@ coreComponent.addPlugin("../peripheral/clk_sam_a7g5/plugin/clk_sam_a7g5.jar")
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/gic/config/gic.py")
 coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "INTERRUPT_GIC_MANAGER", {"plugin_name": "Interrupt Configuration", "main_html_path": "csp/plugins/configurators/interrupt_configurators/gic_interrupt_configuration/build/index.html"})
 
-#load MMU with default 1:1 mapping so we can use cache
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/mmu_v7a/config/mmu.py")
-
-#load Matrix -- default all peripherals to non-secure
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/matrix_6342/config/matrix.py")
-
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11264/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11264/plugin/pio_11264.jar")
 
 # load generic timer peripheral
@@ -273,7 +270,7 @@ coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar",
 compiler_choice = deviceFamily.getComponent().getSymbolByID("COMPILER_CHOICE")
 if compiler_choice.getSelectedKey() == "XC32":
     armSysStartSourceFile = coreComponent.createFileSymbol("STARTUP_C", None)
-    armSysStartSourceFile.setSourcePath("arm/templates/xc32/cortex_a/SAMA7G5/cstartup.S.ftl")
+    armSysStartSourceFile.setSourcePath("arm/templates/xc32/cortex_a/SAMA7/cstartup.S.ftl")
     armSysStartSourceFile.setOutputName("cstartup.S")
     armSysStartSourceFile.setMarkup(True)
     armSysStartSourceFile.setOverwrite(True)
@@ -283,7 +280,7 @@ if compiler_choice.getSelectedKey() == "XC32":
     armSysStartSourceFile.setDependencies(updateStartupFile, ["COMPILER_CHOICE"])
 
     linkerFile = coreComponent.createFileSymbol("LINKER_SCRIPT", None)
-    linkerFile.setSourcePath("arm/templates/xc32/cortex_a/SAMA7G5/ddram.ld.ftl")
+    linkerFile.setSourcePath("arm/templates/xc32/cortex_a/SAMA7/ddram.ld.ftl")
     linkerFile.setOutputName("ddr.ld")
     linkerFile.setMarkup(True)
     linkerFile.setOverwrite(True)
@@ -294,7 +291,7 @@ if compiler_choice.getSelectedKey() == "XC32":
 
 elif compiler_choice.getSelectedKey() == "IAR":
     armSysStartSourceFile = coreComponent.createFileSymbol("STARTUP_C", None)
-    armSysStartSourceFile.setSourcePath("arm/templates/iar/cortex_a/SAMA7G5/cstartup.s.ftl")
+    armSysStartSourceFile.setSourcePath("arm/templates/iar/cortex_a/SAMA7/cstartup.s.ftl")
     armSysStartSourceFile.setOutputName("cstartup.s")
     armSysStartSourceFile.setMarkup(True)
     armSysStartSourceFile.setOverwrite(True)
@@ -304,7 +301,7 @@ elif compiler_choice.getSelectedKey() == "IAR":
     armSysStartSourceFile.setDependencies(updateStartupFile, ["COMPILER_CHOICE"])
 
     linkerFile = coreComponent.createFileSymbol("LINKER_SCRIPT", None)
-    linkerFile.setSourcePath("arm/templates/iar/cortex_a/SAMA7G5/ddr.icf.ftl")
+    linkerFile.setSourcePath("arm/templates/iar/cortex_a/SAMA7/ddr.icf.ftl")
     linkerFile.setOutputName("ddr.icf")
     linkerFile.setMarkup(True)
     linkerFile.setOverwrite(True)
@@ -322,3 +319,9 @@ faultSourceFile.setOverwrite(True)
 faultSourceFile.setDestPath("")
 faultSourceFile.setProjectPath("config/" + configName + "/")
 faultSourceFile.setType("SOURCE")
+
+xc32MPUARMCompilerFlag = coreComponent.createSettingSymbol("XC32_MPU_ARM_FLAG", None)
+xc32MPUARMCompilerFlag.setCategory("C32")
+xc32MPUARMCompilerFlag.setKey("appendMe")
+xc32MPUARMCompilerFlag.setValue("-marm")
+xc32MPUARMCompilerFlag.setAppend(True, " ")

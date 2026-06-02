@@ -55,12 +55,12 @@
 
 <#if ADCHS_INTERRUPT == true>
     <#lt>/* Object to hold callback function and context */
-    <#lt>volatile static ADCHS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_CallbackObj[${ADCHS_NUM_SIGNALS - 1}];
+    <#lt>static volatile ADCHS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_CallbackObj[${ADCHS_NUM_SIGNALS - 1}];
 </#if>
 
 <#if ADCCON2__EOSIEN == true>
     <#lt>/* Object to hold callback function and context for end of scan interrupt*/
-    <#lt>volatile static ADCHS_EOS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_EOSCallbackObj;
+    <#lt>static volatile ADCHS_EOS_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_EOSCallbackObj;
 </#if>
 
 <#compress> <#-- To remove unwanted new lines -->
@@ -75,7 +75,7 @@
 </#list>
 
 <#if ADCHS_MAX_FILTER_NUM gt 0>
-volatile static ADCHS_DF_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${ADCHS_MAX_FILTER_NUM}];
+static volatile ADCHS_DF_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${ADCHS_MAX_FILTER_NUM}];
 </#if>
 
 <#assign ADCHS_MAX_COMPARATOR_NUM = 0>
@@ -89,7 +89,7 @@ volatile static ADCHS_DF_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DFCallbackObj[${
 </#list>
 
 <#if ADCHS_MAX_COMPARATOR_NUM gt 0>
-volatile static ADCHS_DC_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DCCallbackObj[${ADCHS_MAX_COMPARATOR_NUM}];
+static volatile ADCHS_DC_CALLBACK_OBJECT ${ADCHS_INSTANCE_NAME}_DCCallbackObj[${ADCHS_MAX_COMPARATOR_NUM}];
 </#if>
 </#compress>
 
@@ -174,7 +174,7 @@ void ${ADCHS_INSTANCE_NAME}_Initialize(void)
     <#if .vars[ADCHS_CH_ENABLE] == true>
     /* ADC ${i} */
     ${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCANCON |= ADCHS_ADCANCON_ANEN${i}_Msk;      // Enable the clock to analog bias
-    while(((${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCANCON & ADCHS_ADCANCON_WKRDY${i}_Msk) == 0U) // Wait until ADC is ready
+    while((${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCANCON & ADCHS_ADCANCON_WKRDY${i}_Msk) == 0U) // Wait until ADC is ready
     {
         /* Nothing to do */
     }
@@ -326,7 +326,7 @@ void ${ADCHS_INSTANCE_NAME}_Comparator${i}CallbackRegister(ADCHS_DC_CALLBACK cal
 <#else>
 bool ${ADCHS_INSTANCE_NAME}_Comparator${i}StatusGet(void)
 {
-    return (ADCHS_REGS->ADCHS_ADCCMPCON${i} & ADCHS_ADCCMPCON${i}_DCMPED_Msk);
+    return ((ADCHS_REGS->ADCHS_ADCCMPCON${i} & ADCHS_ADCCMPCON${i}_DCMPED_Msk) != 0U);
 }
 </#if>
 
@@ -351,7 +351,7 @@ void ${ADCHS_INSTANCE_NAME}_Filter${i}CallbackRegister(ADCHS_DF_CALLBACK callbac
 <#else>
 bool ${ADCHS_INSTANCE_NAME}_Filter${i}IsReady(void)
 {
-    return ADCHS_REGS->ADCHS_ADCFLTR${i} & ADCHS_ADCFLTR${i}_AFIF_Msk;
+    return ((ADCHS_REGS->ADCHS_ADCFLTR${i} & ADCHS_ADCFLTR${i}_AFIF_Msk) != 0U);
 }
 </#if>
 </#if>
@@ -386,20 +386,8 @@ void __attribute__((used)) ADCHS_InterruptHandler( void )
     <#if ADCHS_MAX_COMPARATOR_NUM gt 0>
     ADCHS_CHANNEL_NUM channelId;
     </#if>
-    
-    uintptr_t context;
 
-    <#if ADCCON2__EOSIEN == true>
-    if (((${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2 & ADCHS_ADCCON2_EOSIEN_Msk) != 0U) &&
-        (((${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2 & ADCHS_ADCCON2_EOSRDY_Msk))!= 0U))
-    {
-        if (${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn != NULL)
-        {
-            context = ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.context;
-            ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn(context);
-        }
-    }
-    </#if>
+    uintptr_t context;
 
     <#if ADCHS_INTERRUPT == true>
     /* Check pending events and call callback if registered */
@@ -444,3 +432,22 @@ void __attribute__((used)) ADCHS_InterruptHandler( void )
     </#list>
 }
 </#if>
+
+<#if ADCCON2__EOSIEN == true>
+void __attribute__((used)) ${ADCHS_INSTANCE_NAME}_EOS_InterruptHandler(void)
+{
+    uint32_t status = ${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2;
+
+    /* Clear EOS Ready flag */
+    ${ADCHS_INSTANCE_NAME}_REGS->ADCHS_ADCCON2 &= ~ADCHS_ADCCON2_EOSRDY_Msk;
+
+    if (${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn != NULL)
+    {
+        uintptr_t context = ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.context;
+        ${ADCHS_INSTANCE_NAME}_EOSCallbackObj.callback_fn(context);
+    }
+
+    (void)status;
+}
+</#if>
+

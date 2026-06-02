@@ -14,7 +14,7 @@
 
 //DOM-IGNORE-BEGIN
 /*******************************************************************************
-* Copyright (C) 2018 Microchip Technology Inc. and its subsidiaries.
+* Copyright (C) 2025 Microchip Technology Inc. and its subsidiaries.
 *
 * Subject to your compliance with these terms, you may use Microchip software
 * and any derivatives exclusively with Microchip products. It is your
@@ -71,21 +71,24 @@ extern "C" {
 
 /* Device Information */
 <#if DEVICE_NAME??>
-#define DEVICE_NAME			 "${DEVICE_NAME?string}"
+#define DEVICE_NAME          "${DEVICE_NAME?string}"
 </#if>
 <#if CoreArchitecture??>
-#define DEVICE_ARCH			 "${CoreArchitecture?string}"
+#define DEVICE_ARCH          "${CoreArchitecture?string}"
 </#if>
 <#if PRODUCT_FAMILY??>
-#define DEVICE_FAMILY		 "${PRODUCT_FAMILY?string}"
+#define DEVICE_FAMILY        "${PRODUCT_FAMILY?string}"
 </#if>
 <#if CoreSeries??>
-#define DEVICE_SERIES		 "${CoreSeries?string}"
+#define DEVICE_SERIES        "${CoreSeries?string}"
 </#if>
 
 <#if CPU_CLOCK_FREQUENCY??>
 /* CPU clock frequency */
-#define CPU_CLOCK_FREQUENCY ${CPU_CLOCK_FREQUENCY}
+#define CPU_CLOCK_FREQUENCY ${CPU_CLOCK_FREQUENCY}U
+<#elseif clkGen1OutFrequency??>
+/* CPU clock frequency */
+#define CPU_CLOCK_FREQUENCY ${clkGen1OutFrequency}
 </#if>
 
 // *****************************************************************************

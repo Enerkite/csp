@@ -92,11 +92,11 @@
 #define CAN_MSG_SRR_MASK            (0x20000000U)
 
 <#if CAN_INTERRUPT_MODE == true>
-volatile static CAN_OBJ ${CAN_INSTANCE_NAME?lower_case}Obj;
-volatile static CAN_RX_MSG ${CAN_INSTANCE_NAME?lower_case}RxMsg[CAN_NUM_OF_FIFO][CAN_FIFO_MESSAGE_BUFFER_MAX];
-volatile static CAN_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}CallbackObj[CAN_NUM_OF_FIFO];
-volatile static CAN_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}ErrorCallbackObj;
-volatile static uint32_t ${CAN_INSTANCE_NAME?lower_case}MsgIndex[CAN_NUM_OF_FIFO];
+static volatile CAN_OBJ ${CAN_INSTANCE_NAME?lower_case}Obj;
+static volatile CAN_RX_MSG ${CAN_INSTANCE_NAME?lower_case}RxMsg[CAN_NUM_OF_FIFO][CAN_FIFO_MESSAGE_BUFFER_MAX];
+static volatile CAN_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}CallbackObj[CAN_NUM_OF_FIFO];
+static volatile CAN_CALLBACK_OBJ ${CAN_INSTANCE_NAME?lower_case}ErrorCallbackObj;
+static volatile uint32_t ${CAN_INSTANCE_NAME?lower_case}MsgIndex[CAN_NUM_OF_FIFO];
 </#if>
 static CAN_TX_RX_MSG_BUFFER __attribute__((coherent, aligned(32))) can_message_buffer[CAN_MESSAGE_RAM_CONFIG_SIZE];
 
@@ -113,15 +113,15 @@ static inline void ${CAN_INSTANCE_NAME}_ZeroInitialize(volatile void* pData, siz
 }
 
 <#assign COUNT_11_6_DEVIATION = 3>
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 11.6 deviated ${COUNT_11_6_DEVIATION} times. Deviation record ID -  H3_MISRAC_2012_R_11_6_DR_1 */
-/* MISRA C-2012 Rule 5.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2012_R_5_1_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 11.6 deviated ${COUNT_11_6_DEVIATION} times. Deviation record ID -  H3_MISRAC_2023_R_11_6_DR_1 */
+/* MISRA C-2023 Rule 5.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2023_R_5_1_DR_1 */
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma coverity compliance block \
-(deviate:${COUNT_11_6_DEVIATION} "MISRA C-2012 Rule 11.6" "H3_MISRAC_2012_R_11_6_DR_1") \
-(deviate:1 "MISRA C-2012 Rule 5.1" "H3_MISRAC_2012_R_5_1_DR_1")
+(deviate:${COUNT_11_6_DEVIATION} "MISRA C-2023 Rule 11.6" "H3_MISRAC_2023_R_11_6_DR_1") \
+(deviate:1 "MISRA C-2023 Rule 5.1" "H3_MISRAC_2023_R_5_1_DR_1")
 </#if>
 // *****************************************************************************
 // *****************************************************************************
@@ -1110,8 +1110,8 @@ void __attribute__((used)) ${CAN_INSTANCE_NAME}_InterruptHandler(void)
 }
 </#if>
 <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 11.6"
-#pragma coverity compliance end_block "MISRA C-2012 Rule 5.1"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 11.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 5.1"
 #pragma GCC diagnostic pop
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */

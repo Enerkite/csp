@@ -207,9 +207,16 @@ for key in memoryFuseMaxValue.keys():
         size = val * memoryGranularity[key]
         if key == "IDAU_DS" and size > maxDataflashSize.getValue():
             break
+        if (key in ["IDAU_AS", "IDAU_ANSC", "IDAU_BS", "IDAU_BNSC", "IDAU_BOOTPROT"]) and size > maxFlashSize.getValue():
+            break
+        if key == "IDAU_RS" and size > maxRamSize.getValue():
+            break
         sizeString = str(size) + " Bytes"
         asSizeSymbol.addKey(sizeString, str(hex(int(size))), '{:,}'.format(size) + " Bytes")
-    asSizeSymbol.setDefaultValue(memoryFuseMaxValue[key][1])
+    if memoryFuseMaxValue[key][1] < asSizeSymbol.getKeyCount():
+        asSizeSymbol.setDefaultValue(memoryFuseMaxValue[key][1])
+    else:
+        asSizeSymbol.setDefaultValue(asSizeSymbol.getKeyCount() - 1)
     asSizeSymbol.setOutputMode("Key")
     asSizeSymbol.setDisplayMode("Description")
     memoryfusedependencyList.append(str(key) + "_SIZE")

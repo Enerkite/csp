@@ -61,7 +61,7 @@
 
 static CACHE_ALIGN SDMMC_ADMA_DESCR ${SDMMC_INSTANCE_NAME?lower_case}DmaDescrTable[(${SDMMC_INSTANCE_NAME}_DMA_DESC_TABLE_SIZE_CACHE_ALIGN/8U)];
 
-volatile static SDMMC_OBJECT ${SDMMC_INSTANCE_NAME?lower_case}Obj;
+static volatile SDMMC_OBJECT ${SDMMC_INSTANCE_NAME?lower_case}Obj;
 
 static void ${SDMMC_INSTANCE_NAME}_VariablesInit ( void )
 {
@@ -71,7 +71,7 @@ static void ${SDMMC_INSTANCE_NAME}_VariablesInit ( void )
     ${SDMMC_INSTANCE_NAME?lower_case}Obj.callback = NULL;
 }
 
-static void ${SDMMC_INSTANCE_NAME}_TransferModeSet ( uint32_t opcode )
+static void ${SDMMC_INSTANCE_NAME}_TransferModeSet ( uint32_t opcode, SDMMC_DataTransferFlags transferFlags )
 {
     uint16_t transferMode = 0U;
 
@@ -102,7 +102,17 @@ static void ${SDMMC_INSTANCE_NAME}_TransferModeSet ( uint32_t opcode )
             /* Write multiple blocks of data to the device. */
             transferMode = (SDMMC_TMR_DMAEN_ENABLE | SDMMC_TMR_MSBSEL_Msk | SDMMC_TMR_BCEN_Msk);
             break;
-
+        case SDMMC_CMD_IO_RW_EXT:
+            if (transferFlags.transferType == SDMMC_DATA_TRANSFER_TYPE_SDIO_BLOCK)
+            {
+                transferMode = SDMMC_TMR_MSBSEL_Msk | SDMMC_TMR_BCEN_Msk;
+            }
+            if (transferFlags.transferDir == SDMMC_DATA_TRANSFER_DIR_READ)
+            {
+                transferMode |= SDMMC_TMR_DTDSEL_Msk;
+            }
+            transferMode |= SDMMC_TMR_DMAEN_ENABLE;
+            break;
         default: /* Do Nothing */
             break;
     }
@@ -503,6 +513,15 @@ void ${SDMMC_INSTANCE_NAME}_CommandSend (
     ${SDMMC_INSTANCE_NAME?lower_case}Obj.isDataInProgress = false;
     ${SDMMC_INSTANCE_NAME?lower_case}Obj.errorStatus = 0U;
 
+    /* For R1B response, only TRFC interrupt is enabled. However, peripheral will set both CMDC and TRFC bits in the NISTR status register.
+     * Now, when interrupt occurs, TRFC bit is set first and after sometime the CMDC bit is set. As a result, in the interrupt handler, only
+     * the TRFC bit is cleared, leaving the CMDC bit set, which does not get cleared because the corresponding interrupt is not enabled for
+     * R1B responses. Enabling both TRFC and CMDC interrupts for R1B may lead to interrupt handler being called twice since these two bits
+     * are set (and hence cleared) at slightly different times. Hence, clearing it before submitting a new command seems to be the best option.
+     */
+
+     ${SDMMC_INSTANCE_NAME}_REGS->SDMMC_NISTR = (SDMMC_NISTR_CMDC_Msk | SDMMC_NISTR_TRFC_Msk);
+
 <#if SDCARD_EMMCEN == false && SDCARD_SDCDEN == true>
     /* Keep the card insertion and removal interrupts enabled */
     normalIntSigEnable = (SDMMC_NISIER_CINS_Msk | SDMMC_NISIER_CREM_Msk);
@@ -547,7 +566,7 @@ void ${SDMMC_INSTANCE_NAME}_CommandSend (
     if (transferFlags.isDataPresent == true)
     {
         ${SDMMC_INSTANCE_NAME?lower_case}Obj.isDataInProgress = true;
-        ${SDMMC_INSTANCE_NAME}_TransferModeSet(opCode);
+        ${SDMMC_INSTANCE_NAME}_TransferModeSet(opCode, transferFlags);
         /* Enable data transfer complete and DMA interrupt */
         normalIntSigEnable |= (SDMMC_NISIER_TRFC_Msk | SDMMC_NISIER_DMAINT_Msk);
     }

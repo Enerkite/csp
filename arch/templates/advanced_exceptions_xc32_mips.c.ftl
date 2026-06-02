@@ -109,16 +109,16 @@ typedef struct XCPT_FRAME_tag  // access to all major registers from the instruc
 
 } XCPT_FRAME;
 
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.2 deviated ${DEVIATION_COUNT} times. Deviation record ID -  H3_MISRAC_2012_R_21_2_DR_4 */
-/* MISRA C-2012 Rule 21.6 deviated 1 time. Deviation record ID -  H3_MISRAC_2012_R_21_6_DR_2 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.2 deviated ${DEVIATION_COUNT} times. Deviation record ID -  H3_MISRAC_2023_R_21_2_DR_4 */
+/* MISRA C-2023 Rule 21.6 deviated 1 time. Deviation record ID -  H3_MISRAC_2023_R_21_6_DR_2 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma coverity compliance block\
- (deviate:${DEVIATION_COUNT} "MISRA C-2012 Rule 21.2" "H3_MISRAC_2012_R_21_2_DR_4")\
- (deviate:1 "MISRA C-2012 Rule 21.6" "H3_MISRAC_2012_R_21_6_DR_2")
+ (deviate:${DEVIATION_COUNT} "MISRA C-2023 Rule 21.2" "H3_MISRAC_2023_R_21_2_DR_4")\
+ (deviate:1 "MISRA C-2023 Rule 21.6" "H3_MISRAC_2023_R_21_6_DR_2")
 </#if>
 void _general_exception_handler(XCPT_FRAME* const pXFrame);
 void _bootstrap_exception_handler(void);
@@ -262,7 +262,7 @@ void  __attribute__((noreturn)) _simple_tlb_refill_exception_handler(void)
 </#if>
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2" "MISRA C-2012 Rule 21.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2" "MISRA C-2023 Rule 21.6"
 #pragma GCC diagnostic pop
 </#if>
 /*******************************************************************************

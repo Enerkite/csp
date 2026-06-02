@@ -69,7 +69,7 @@ typedef struct
 
 } FREQM_OBJECT;
 
-volatile static FREQM_OBJECT ${FREQM_INSTANCE_NAME?lower_case}Obj;
+static volatile FREQM_OBJECT ${FREQM_INSTANCE_NAME?lower_case}Obj;
 </#if>
 
 // *****************************************************************************
@@ -144,6 +144,7 @@ static uint64_t ${FREQM_INSTANCE_NAME}_Mul32x32(uint32_t r0, uint32_t r1)
     return (r0 * (uint64_t)r1);
 }
 
+<#if FREQM_IP_VERSION == "v1">
 uint32_t ${FREQM_INSTANCE_NAME}_FrequencyGet(void)
 {
     uint64_t result = 0U;
@@ -154,6 +155,18 @@ uint32_t ${FREQM_INSTANCE_NAME}_FrequencyGet(void)
 
     return (uint32_t)result;
 }
+<#else>
+uint32_t ${FREQM_INSTANCE_NAME}_FrequencyGet(void)
+{
+    uint64_t result = 0U;
+
+    result = ${FREQM_INSTANCE_NAME}_Mul32x32((${FREQM_INSTANCE_NAME}_REGS->FREQM_VALUE + 1UL), ${FREQM_REF_CLOCK_FREQUENCY}UL);
+
+    result = result/(${FREQM_REF_CLK_CYCLES}UL + 1UL);
+
+    return (uint32_t)result;
+}
+</#if>
 
 <#if FREQM_INTERRUPT_MODE == true>
 void ${FREQM_INSTANCE_NAME}_CallbackRegister(FREQM_CALLBACK freqmCallback, uintptr_t context)
@@ -166,7 +179,7 @@ void ${FREQM_INSTANCE_NAME}_CallbackRegister(FREQM_CALLBACK freqmCallback, uintp
 void __attribute__((used)) ${FREQM_INSTANCE_NAME}_InterruptHandler(void)
 {
     uintptr_t context_var;
-	
+
     ${FREQM_INSTANCE_NAME}_REGS->FREQM_INTFLAG = (uint8_t)FREQM_INTFLAG_DONE_Msk;
 
     if(${FREQM_INSTANCE_NAME?lower_case}Obj.callback != NULL)

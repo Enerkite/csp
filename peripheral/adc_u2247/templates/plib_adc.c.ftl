@@ -175,7 +175,7 @@
 // *****************************************************************************
 // *****************************************************************************
 <#if ADC_INTENSET_RESRDY = true || (ADC_CTRLC_WINMODE != "0" && ADC_INTENSET_WINMON = true)>
-volatile static ADC_CALLBACK_OBJ ${ADC_INSTANCE_NAME}_CallbackObject;
+static volatile ADC_CALLBACK_OBJ ${ADC_INSTANCE_NAME}_CallbackObject;
 </#if>
 
 <#if ADC_LOAD_CALIB? has_content>
@@ -237,10 +237,14 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLB = (uint8_t)ADC_CTRLB_PRESCALER_${ADC_CTRLB_PRESCALER};
 </#if>
     /* Sampling length */
+    <#if ADC_SAMPCTRL_SAMPLEN == 1>
+    ${ADC_INSTANCE_NAME}_REGS->ADC_SAMPCTRL = (uint8_t)ADC_SAMPCTRL_SAMPLEN(${ADC_SAMPCTRL_SAMPLEN - 1}UL) | ADC_SAMPCTRL_OFFCOMP_Msk;
+    <#else>
     ${ADC_INSTANCE_NAME}_REGS->ADC_SAMPCTRL = (uint8_t)ADC_SAMPCTRL_SAMPLEN(${ADC_SAMPCTRL_SAMPLEN - 1}UL);
+    </#if>
 
     /* Reference */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_REFCTRL = (uint8_t)ADC_REFCTRL_REFSEL_${ADC_REFCTRL_REFSEL};
+    ${ADC_INSTANCE_NAME}_REGS->ADC_REFCTRL = (uint8_t)ADC_REFCTRL_REFSEL_${ADC_REFCTRL_REFSEL} | ADC_REFCTRL_REFCOMP_Msk;
 
 <#if ADC_SEQCTRL_VAL?has_content>
     /*lint -e{9048} false positive about a missing 'U' literal */
@@ -297,7 +301,7 @@ void ${ADC_INSTANCE_NAME}_Initialize( void )
 void ${ADC_INSTANCE_NAME}_Enable( void )
 {
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLA |= (uint8_t)ADC_CTRLA_ENABLE_Msk;
-    while(0U != ${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY)
+    while((${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY & ADC_SYNCBUSY_ENABLE_Msk) == ADC_SYNCBUSY_ENABLE_Msk)
     {
         /* Wait for Synchronization */
     }
@@ -307,7 +311,7 @@ void ${ADC_INSTANCE_NAME}_Enable( void )
 void ${ADC_INSTANCE_NAME}_Disable( void )
 {
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLA &= (uint8_t)(~ADC_CTRLA_ENABLE_Msk);
-    while(0U != ${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY)
+    while((${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY & ADC_SYNCBUSY_ENABLE_Msk) == ADC_SYNCBUSY_ENABLE_Msk)
     {
         /* Wait for Synchronization */
     }
@@ -353,7 +357,11 @@ void ${ADC_INSTANCE_NAME}_ComparisonWindowSet(uint16_t low_threshold, uint16_t h
 {
     ${ADC_INSTANCE_NAME}_REGS->ADC_WINLT = low_threshold;
     ${ADC_INSTANCE_NAME}_REGS->ADC_WINUT = high_threshold;
-    while(0U != (${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY))
+    while((${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY & ADC_SYNCBUSY_WINLT_Msk) == ADC_SYNCBUSY_WINLT_Msk)
+    {
+        /* Wait for Synchronization */
+    }
+    while((${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY & ADC_SYNCBUSY_WINUT_Msk) == ADC_SYNCBUSY_WINUT_Msk)
     {
         /* Wait for Synchronization */
     }
@@ -362,7 +370,7 @@ void ${ADC_INSTANCE_NAME}_ComparisonWindowSet(uint16_t low_threshold, uint16_t h
 void ${ADC_INSTANCE_NAME}_WindowModeSet(ADC_WINMODE mode)
 {
     ${ADC_INSTANCE_NAME}_REGS->ADC_CTRLC =  (${ADC_INSTANCE_NAME}_REGS->ADC_CTRLC & (uint16_t)(~ADC_CTRLC_WINMODE_Msk)) | (uint16_t)((uint32_t)mode << ADC_CTRLC_WINMODE_Pos);
-    while(0U != (${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY))
+    while((${ADC_INSTANCE_NAME}_REGS->ADC_SYNCBUSY & ADC_SYNCBUSY_CTRLC_Msk) == ADC_SYNCBUSY_CTRLC_Msk)
     {
         /* Wait for Synchronization */
     }

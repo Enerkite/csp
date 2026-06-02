@@ -48,6 +48,28 @@ def setDacSpeed(symbol, event):
 
 def symbolVisible(symbol, event):
     symbol.setVisible(not event["value"])
+        
+def handleMessage(messageID, args):
+    retDict = {}
+    component = daccInstanceName.getValue().lower()
+    if (messageID == "DAC_CONFIG_HW_IO"):
+        channel = args['config']
+        enable = args['enable']
+
+        if enable == True:
+            res = Database.setSymbolValue(component, "DACC_CHER_CH{}".format(channel), enable)
+        else:
+            res = Database.clearSymbolValue(component, "DACC_CHER_CH{}".format(channel))
+            
+        if res == True:
+            retDict = {"Result": "Success"}
+        else:
+            retDict = {"Result": "Fail"}
+            
+    else:
+        retDict= {"Result": "DACC UnImplemented Command"}
+    
+    return retDict
 
 ################################################################################
 #### Component ####
@@ -68,6 +90,7 @@ def instantiateComponent(daccComponent):
     daccFreqCommnet.setDependencies(calcDacFrequency, ["core." + daccInstanceName.getValue() + "_CLOCK_FREQUENCY"])
 
     dacChannelConversionMode = daccComponent.createKeyValueSetSymbol("CONVERSION_MODE_CH", None)
+    dacChannelConversionMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dacc_6461;register:DACC_MR")
     dacChannelConversionMode.setLabel("Select Conversion Mode")
     dacChannelConversionMode.addKey("FREE_RUNNING_MODE", "0", "Free-Running Mode")
     dacChannelConversionMode.addKey("MAX_SPEED_MODE", "1", "Maximum Speed Mode")
@@ -77,6 +100,7 @@ def instantiateComponent(daccComponent):
     dacChannelConversionMode.setDefaultValue(0)
 
     daccSym_MR_STARTUP = daccComponent.createKeyValueSetSymbol("DACC_MR_STARTUP", None)
+    daccSym_MR_STARTUP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dacc_6461;register:DACC_MR")
     daccSym_MR_STARTUP.setLabel("Startup Time Selection")
     daccValGrp_STARTUP = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DACC\"]/value-group@[name=\"DACC_MR__STARTUP\"]")
     daccStartupValues = daccValGrp_STARTUP.getChildren()
@@ -94,13 +118,16 @@ def instantiateComponent(daccComponent):
 
     for channelID in range(daccSym_NUM_CHANNELS.getValue()):
         daccChannelEnable = daccComponent.createBooleanSymbol("DACC_CHER_CH" + str(channelID), None)
+        daccChannelEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dacc_6461;register:DACC_CHER")
         daccChannelEnable.setLabel("Enable Channel " + str(channelID))
 
     daccSym_MR_TAG_Enable = daccComponent.createBooleanSymbol("DACC_MR_TAG_ENABLE", None)
+    daccSym_MR_TAG_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dacc_6461;register:DACC_MR")
     daccSym_MR_TAG_Enable.setLabel("Enable Tag Selection Mode")
 
     dacChannelTriggerSelect = daccComponent.createKeyValueSetSymbol("DACC_TRIGR_TRGSEL", None)
     dacChannelTriggerSelect.setLabel("Select Trigger Source")
+    dacChannelTriggerSelect.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dacc_6461;register:DACC_MR")
     dacChannelTriggerSelect.setVisible(False)
     dacChannelTriggerSelect.setDependencies(triggerSelectVisibility, ["CONVERSION_MODE_CH"])
     daccValGrp_TRIGR_TRGSEL = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DACC\"]/value-group@[name=\"DACC_MR__TRGSEL\"]")

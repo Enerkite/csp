@@ -84,17 +84,59 @@ Local Functions
    Returns:
     None
 */
+<#if CTRLA0__ENABLE??>
 void ${CCL_INSTANCE_NAME}_Initialize(void)
 {
     /* First, reset CCL registers to their initial states */
     /* SWRST = 1 */
-    CCL_REGS->CCL_CTRL = 0x${CCL_CTRL_SWRST_MASK}U;
+    ${CCL_INSTANCE_NAME}_REGS->CCL_CTRLA = 0x${CCL_CTRL_SWRST_MASK}U;
+    
+
+    <#assign SEQ_REGVALUE = "CCL_SEQCTRL_REGVALUE">
+    <#assign SEQ_SEQSEL = "SEQCTRL0__SEQSEL0">
+    /* SEQSEL = 0x${.vars[SEQ_SEQSEL]} */
+    ${CCL_INSTANCE_NAME}_REGS->CCL_SEQCTRL = 0x${.vars[SEQ_REGVALUE]}U;
+
+<#list 0..NUM_LUT_BLOCKS - 1 as i>
+    <#assign LUTCTRL_REGVALUE = "CCL_LUTCTRL_REGVALUE" + i>
+    <#assign LUTCTRL_FILTSEL = "LUTCTRL" + i + "__FILTSEL">
+    <#assign LUTCTRL_EDGESEL = "LUTCTRL" + i + "__EDGESEL">
+    <#assign LUTCTRL_INSEL0 = "LUTCTRL" + i + "__INSEL0">
+    <#assign LUTCTRL_INSEL1 = "LUTCTRL" + i + "__INSEL1">
+    <#assign LUTCTRL_INSEL2 = "LUTCTRL" + i + "__INSEL2">
+    <#assign LUTCTRL_LUTINV = "LUTCTRL" + i + "__LUTINV">
+    <#assign LUTCTRL_LUTEI = "LUTCTRL" + i + "__LUTEI">
+    <#assign LUTCTRL_LUTEO = "LUTCTRL" + i + "__LUTEO">
+    <#assign LUTCTRL_TRUTH = "LUTCTRL" + i + "__TRUTH">
+    /* FILTSEL = ${.vars[LUTCTRL_FILTSEL]}   */
+    /* EDGESEL = ${.vars[LUTCTRL_EDGESEL]}   */
+    /* INSEL0  = ${.vars[LUTCTRL_INSEL0]}   */
+    /* INSEL1  = ${.vars[LUTCTRL_INSEL1]}   */
+    /* INSEL2  = ${.vars[LUTCTRL_INSEL2]}   */
+    /* LUTINV   = ${.vars[LUTCTRL_LUTINV]}   */
+    /* LUTEI   = ${.vars[LUTCTRL_LUTEI]}   */
+    /* LUTEO   = ${.vars[LUTCTRL_LUTEO]}   */
+    /* TRUTH   = ${.vars[LUTCTRL_TRUTH]}   */
+    ${CCL_INSTANCE_NAME}_REGS->CCL_LUTCTRL[${i}] = 0x${.vars[LUTCTRL_REGVALUE]}U;
+    
+</#list>
+    /* SWRST    = 0 */
+    /* ENABLE   = ${CTRLA0__ENABLE} */
+    /* RUNSTDBY = ${CTRLA0__RUNSTDBY} */
+    ${CCL_INSTANCE_NAME}_REGS->CCL_CTRLA = 0x${CCL_CTRL_REGVALUE}U;
+}
+<#else>
+void ${CCL_INSTANCE_NAME}_Initialize(void)
+{
+    /* First, reset CCL registers to their initial states */
+    /* SWRST = 1 */
+    ${CCL_INSTANCE_NAME}_REGS->CCL_CTRL = 0x${CCL_CTRL_SWRST_MASK}U;
     
 <#list 0..NUM_SEQUENTIAL_BLOCKS - 1 as i>
     <#assign SEQ_REGVALUE = "CCL_SEQCTRL_REGVALUE" + i>
     <#assign SEQ_SEQSEL = "SEQCTRL" + i + "__SEQSEL">
     /* SEQSEL = 0x${.vars[SEQ_SEQSEL]} */
-    CCL_REGS->CCL_SEQCTRL[${i}] = 0x${.vars[SEQ_REGVALUE]}U;
+    ${CCL_INSTANCE_NAME}_REGS->CCL_SEQCTRL[${i}] = 0x${.vars[SEQ_REGVALUE]}U;
 
 </#list>
 <#list 0..NUM_LUT_BLOCKS - 1 as i>
@@ -119,16 +161,16 @@ void ${CCL_INSTANCE_NAME}_Initialize(void)
     /* LUTEI   = ${.vars[LUTCTRL_LUTEI]}   */
     /* LUTEO   = ${.vars[LUTCTRL_LUTEO]}   */
     /* TRUTH   = ${.vars[LUTCTRL_TRUTH]}   */
-    CCL_REGS->CCL_LUTCTRL[${i}] = 0x${.vars[LUTCTRL_REGVALUE]}U;
+    ${CCL_INSTANCE_NAME}_REGS->CCL_LUTCTRL[${i}] = 0x${.vars[LUTCTRL_REGVALUE]}U;
     
 </#list>
     /* SWRST    = 0 */
     /* ENABLE   = ${CTRL0__ENABLE} */
     /* RUNSTDBY = ${CTRL0__RUNSTDBY} */
-    CCL_REGS->CCL_CTRL = 0x${CCL_CTRL_REGVALUE}U;
+    ${CCL_INSTANCE_NAME}_REGS->CCL_CTRL = 0x${CCL_CTRL_REGVALUE}U;
     
 }
-
+</#if>
 
 /*******************************************************************************
  End of File

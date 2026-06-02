@@ -122,13 +122,13 @@
 </#list>
 </#compress>
 
-/* MISRA C-2012 Rule 5.1 deviated:4 Deviation record ID -  H3_MISRAC_2012_R_5_1_DR_1 */
+/* MISRA C-2023 Rule 5.1 deviated:4 Deviation record ID -  H3_MISRAC_2023_R_5_1_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 </#if>
-#pragma coverity compliance block deviate:4 "MISRA C-2012 Rule 5.1" "H3_MISRAC_2012_R_5_1_DR_1"
+#pragma coverity compliance block deviate:4 "MISRA C-2023 Rule 5.1" "H3_MISRAC_2023_R_5_1_DR_1"
 </#if>
 
 <#assign ec_reg_bank_int_en = false>
@@ -139,7 +139,7 @@
 </#list>
 
 <#if ec_reg_bank_int_en == true>
-volatile static EC_REG_BANK_OBJECT ec_reg_bank[2] = {0};
+static volatile EC_REG_BANK_OBJECT ec_reg_bank[2] = {0};
 </#if>
 
 void ${ERB_INSTANCE_NAME}_Initialize( void )
@@ -357,10 +357,10 @@ void __attribute__((used)) VTR${n}_PAD_MON${INT_HANDLER_NAME_PREFIX}_InterruptHa
 </#list>
 
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 5.1"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 5.1"
 <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop
 </#if>
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 

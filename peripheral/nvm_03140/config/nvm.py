@@ -111,6 +111,7 @@ def instantiateComponent(nvmComponent):
     global nvmInterruptHandler
     global nvmInterruptVectorUpdate
     global nvmInterruptEnable
+    global NVM_nameInATDF
 
     nvmInstanceName = nvmComponent.createStringSymbol("NVM_INSTANCE_NAME", None)
     nvmInstanceName.setVisible(False)
@@ -171,6 +172,7 @@ def instantiateComponent(nvmComponent):
 
     nvmSym_MemoryDriver = nvmComponent.createBooleanSymbol("DRV_MEMORY_CONNECTED", None)
     nvmSym_MemoryDriver.setLabel("Memory Driver Connected")
+    nvmSym_MemoryDriver.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:nvm_03140;register:%NOREGISTER%")
     nvmSym_MemoryDriver.setVisible(False)
     nvmSym_MemoryDriver.setDefaultValue(False)
 
@@ -181,6 +183,7 @@ def instantiateComponent(nvmComponent):
 
     nvmSym_MemoryStartAddr = nvmComponent.createStringSymbol("START_ADDRESS", None)
     nvmSym_MemoryStartAddr.setLabel("NVM Media Start Address")
+    nvmSym_MemoryStartAddr.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:nvm_03140;register:%NOREGISTER%")
     nvmSym_MemoryStartAddr.setVisible(False)
     nvmSym_MemoryStartAddr.setDefaultValue(nvmOffset)
     nvmSym_MemoryStartAddr.setDependencies(nvmSetMemoryDependency, ["DRV_MEMORY_CONNECTED"])
@@ -189,18 +192,21 @@ def instantiateComponent(nvmComponent):
 
     nvmSym_MemoryMediaSize = nvmComponent.createIntegerSymbol("MEMORY_MEDIA_SIZE", None)
     nvmSym_MemoryMediaSize.setLabel("NVM Media Size (KB)")
+    nvmSym_MemoryMediaSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:nvm_03140;register:%NOREGISTER%")
     nvmSym_MemoryMediaSize.setVisible(False)
     nvmSym_MemoryMediaSize.setDefaultValue(memMediaSizeKB)
     nvmSym_MemoryMediaSize.setDependencies(nvmSetMemoryDependency, ["DRV_MEMORY_CONNECTED"])
 
     nvmSym_MemoryEraseEnable = nvmComponent.createBooleanSymbol("ERASE_ENABLE", None)
     nvmSym_MemoryEraseEnable.setLabel("NVM Erase Enable")
+    nvmSym_MemoryEraseEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:nvm_03140;register:%NOREGISTER%")
     nvmSym_MemoryEraseEnable.setVisible(False)
     nvmSym_MemoryEraseEnable.setDefaultValue(True)
     nvmSym_MemoryEraseEnable.setReadOnly(True)
 
     nvmSym_MemoryEraseBufferSize = nvmComponent.createIntegerSymbol("ERASE_BUFFER_SIZE", None)
     nvmSym_MemoryEraseBufferSize.setLabel("NVM Erase Buffer Size")
+    nvmSym_MemoryEraseBufferSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:nvm_03140;register:%NOREGISTER%")
     nvmSym_MemoryEraseBufferSize.setVisible(False)
     nvmSym_MemoryEraseBufferSize.setDefaultValue(int(nvmSym_ERASE_SIZE.getValue()))
     nvmSym_MemoryEraseBufferSize.setDependencies(nvmSetMemoryDependency, ["DRV_MEMORY_CONNECTED", "ERASE_ENABLE"])
@@ -209,6 +215,20 @@ def instantiateComponent(nvmComponent):
     nvmSym_MemoryEraseComment.setVisible(False)
     nvmSym_MemoryEraseComment.setLabel("*** Should be equal to Page Erase Size ***")
     nvmSym_MemoryEraseComment.setDependencies(nvmSetMemoryDependency, ["DRV_MEMORY_CONNECTED", "ERASE_ENABLE"])
+
+    product_faimily = Database.getSymbolValue("core", "PRODUCT_FAMILY")
+
+    if "PIC32C" in product_faimily:
+        nvmFlashWriteWordSz = nvmComponent.createStringSymbol("FLASH_WRITE_WORD_SIZE", None)
+        nvmFlashWriteWordSz.setVisible(False)
+        nvmFlashWriteWordSz.setReadOnly(True)
+
+        if product_faimily == "PIC32CX_BZ6":
+            nvmFlashWriteWordSz.setDefaultValue("64_BITS")
+        elif product_faimily == "PIC32CX_BZ2" or product_faimily == "PIC32CX_BZ3":
+            nvmFlashWriteWordSz.setDefaultValue("32_BITS")
+
+
 
     ################# Interrupt Settings ###########################
 
@@ -222,6 +242,7 @@ def instantiateComponent(nvmComponent):
 
     #Configures the library for interrupt mode operations
     nvmInterruptEnable = nvmComponent.createBooleanSymbol("INTERRUPT_ENABLE", None)
+    nvmInterruptEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:nvm_03140;register:NVMCON")
     nvmInterruptEnable.setLabel("Enable Interrupt?")
     nvmInterruptEnable.setDefaultValue(True)
 

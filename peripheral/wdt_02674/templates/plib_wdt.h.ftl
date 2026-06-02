@@ -61,6 +61,16 @@
 #endif
 // DOM-IGNORE-END
 
+typedef volatile union
+{
+	uint32_t wdt_r;
+	struct
+	{
+		uint16_t low;
+		uint16_t high;
+	} wdt_val;
+} WDT_REG_T;
+
 // *****************************************************************************
 // *****************************************************************************
 // Section: Interface

@@ -94,6 +94,52 @@ def updateEICClockWarringStatus(symbol, event):
 def filterMenu(symbol, event):
     symbol.setVisible((event["value"] > 0))
 
+def handleMessage(messageID, args):
+    global eicInstanceName
+    
+    retDict = {}
+    if (messageID == "EIC_CONFIG_HW_IO"):
+        component = eicInstanceName.getValue().lower()
+        channel, intMode, enable = args['config']
+        if channel == "NMI":
+            symbolId = "NMI_CTRL"
+        else:
+            symbolId = "EIC_CHAN_{}".format(int(channel))
+        
+        if enable == True:
+            res = Database.setSymbolValue(component, symbolId, enable)
+        else:
+            res = Database.clearSymbolValue(component, symbolId)
+
+        if channel != "NMI":
+            symbolId = "EIC_INT_{}".format(int(channel))
+            if enable == True:
+                res = Database.setSymbolValue(component, symbolId, enable)
+            else:
+                res = Database.clearSymbolValue(component, symbolId)
+
+            if intMode is not None:
+                symbolId = "EIC_CONFIG_SENSE_{}".format(int(channel))
+                eicComponent = Database.getComponentByID(component)
+                symbol = eicComponent.getSymbolByID(symbolId)
+                if symbol is not None:
+                    keyCount = symbol.getKeyCount()
+                    for index in range(0, keyCount):
+                        descr = symbol.getKeyDescription(index)
+                        if intMode.lower() in descr.lower().replace("-", " "):
+                            symbol.setValue(index)
+                            break
+                
+            if res == True:
+                retDict = {"Result": "Success"}
+            else:
+                retDict = {"Result": "Fail"}
+            
+    else:
+        retDict= {"Result": "EIC UnImplemented Command"}
+    
+    return retDict
+
 ###################################################################################################
 ######################################### Component ###############################################
 ###################################################################################################
@@ -128,6 +174,7 @@ def instantiateComponent(eicComponent):
 
     #Non-Maskable Interrupt Control
     eicPLX4 = eicComponent.createBooleanSymbol("NMI_CTRL", None)
+    eicPLX4.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:CTRL")
     eicPLX4.setLabel("Non Maskable Interrupt Control")
 
     nmiConfMenu = eicComponent.createMenuSymbol("NMI_MENU", eicPLX4)
@@ -137,10 +184,12 @@ def instantiateComponent(eicComponent):
 
     #NMIFILTEN
     NMI_FILTEN_Selection = eicComponent.createBooleanSymbol("NMI_FILTEN" , nmiConfMenu)
+    NMI_FILTEN_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:NMICTRL")
     NMI_FILTEN_Selection.setLabel("Enable filter")
 
     # NMI - SENSE
     NMI_SENSE_SelectionSymbol = eicComponent.createKeyValueSetSymbol("NMI_SENSE" , nmiConfMenu)
+    NMI_SENSE_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:NMICTRL")
     NMI_SENSE_SelectionSymbol.setLabel("NMI Interrupt Edge Selection")
 
     eicNMISenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_NMICTRL__NMISENSE\"]")
@@ -159,6 +208,7 @@ def instantiateComponent(eicComponent):
     for extIntIndex in range(0 , extIntCount):
 
         eicPLX1 = eicComponent.createBooleanSymbol("EIC_CHAN_" + str(extIntIndex) , None)
+        eicPLX1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:CTRL")
         eicPLX1.setLabel("Enable EIC Channel" + str(extIntIndex))
 
         eicConfiguration = eicComponent.createMenuSymbol("EIC_MENU" + str(extIntIndex), eicPLX1)
@@ -170,17 +220,20 @@ def instantiateComponent(eicComponent):
         eicSym_Channel.append("EIC_CHAN_" + str(extIntIndex))
 
         eicINT = eicComponent.createBooleanSymbol("EIC_INT_" + str(extIntIndex) , eicConfiguration)
+        eicINT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:INTENSET")
         eicINT.setLabel("Enable Interrupt")
         eicSym_InterruptList.append("EIC_INT_" + str(extIntIndex))
 
         #EVCTRL - External Interrupt Event Output Enable 0..7 Channel number
         EVCCTRL_EXTINTEO_Selection = eicComponent.createBooleanSymbol("EIC_EXTINTEO_" + str(extIntIndex) , eicConfiguration)
+        EVCCTRL_EXTINTEO_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:EVCTRL")
         EVCCTRL_EXTINTEO_Selection.setLabel("Enable Event Output")
 
         # populate a list with IDs for code generation dependency
         eicSym_eventsList.append("EIC_EXTINTEO_" + str(extIntIndex))
 
         eicWakeup = eicComponent.createBooleanSymbol("EIC_WAKEUP_" + str(extIntIndex) , eicConfiguration )
+        eicWakeup.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:WAKEUP")
         eicWakeup.setLabel("Enable Wakeup on Channel" + str(extIntIndex))
 
         # populate a list with IDs for code generation dependency
@@ -188,6 +241,7 @@ def instantiateComponent(eicComponent):
 
         #CONFIG - Sense Enable
         CONFIG_SENSE_SelectionSymbol = eicComponent.createKeyValueSetSymbol("EIC_CONFIG_SENSE_" + str(extIntIndex) , eicConfiguration)
+        CONFIG_SENSE_SelectionSymbol.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:CONFIG")
         CONFIG_SENSE_SelectionSymbol.setLabel("External Interrupt" + str(extIntIndex) + " Edge Selection")
 
         eicConfigSenseNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"EIC\"]/value-group@[name=\"EIC_CONFIG__SENSE0\"]")
@@ -204,6 +258,7 @@ def instantiateComponent(eicComponent):
 
         #CONFIG - Filter Enable
         CONFIG_FILTER_Selection = eicComponent.createBooleanSymbol("EIC_CONFIG_FILTEN_" + str(extIntIndex) , eicConfiguration)
+        CONFIG_FILTER_Selection.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:eic_u2217;register:CONFIG")
         CONFIG_FILTER_Selection.setLabel("Enable filter")
         CONFIG_FILTER_Selection.setVisible(False)
         CONFIG_FILTER_Selection.setDependencies(filterMenu, ["EIC_CONFIG_SENSE_" + str(extIntIndex)])

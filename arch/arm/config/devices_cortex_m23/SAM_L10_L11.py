@@ -23,7 +23,7 @@
 *****************************************************************************"""
 
 # load family specific configurations
-print("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
     trustZoneSupported = coreComponent.createBooleanSymbol("TRUSTZONE_SUPPORTED", devCfgMenu)
@@ -237,7 +237,15 @@ coreComponent.addPlugin("../peripheral/port_u2210/plugin/port_u2210.jar")
 
 # load clock manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_l10_l11/config/clock.py")
-coreComponent.addPlugin("../peripheral/clk_sam_l10_l11/plugin/clk_sam_l10_l11.jar")
+coreComponent.addPlugin(
+        "../../harmony-services/plugins/generic_plugin.jar",
+        "CLK_UI_MANAGER_ID_CLK_SAM_L10_L11",
+        {
+            "plugin_name": "Clock Configuration",
+            "main_html_path": "csp/plugins/configurators/clock-configurators/clk_sam_l10_l11_configurator/build/index.html",
+            "componentId": coreComponent.getID()
+        }
+    )
 
 #load mpu
 # execfile(Variables.get("__CORE_DIR") + "/../peripheral/mpu/config/mpu.py")

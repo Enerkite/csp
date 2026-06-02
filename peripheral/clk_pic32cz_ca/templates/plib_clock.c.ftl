@@ -67,6 +67,11 @@ static void OSCCTRL_Initialize(void)
         /* Waiting for the XOSC Ready state */
     }
     </#if>
+
+    <#if CONFIG_CLOCK_XOSC_GRES == true>
+    /* Use internal XOSC shunt Gain resistor */
+    <@compress single_line=true>OSCCTRL_REGS->OSCCTRL_XOSCCTRLB |= 0x04U;</@compress>
+    </#if>
 }
 </#if>
 
@@ -101,8 +106,8 @@ static void OSC32KCTRL_Initialize(void)
 static void PLL0_Initialize(void)
 {
     /* Enable Additional Voltage Regulator */
-    SUPC_REGS->SUPC_VREGCTRL |= SUPC_VREGCTRL_AVREGEN_Msk;
-    while ((SUPC_REGS->SUPC_STATUS & SUPC_STATUS_ADDVREGRDY_Msk) != SUPC_STATUS_ADDVREGRDY_Msk)
+    SUPC_REGS->SUPC_VREGCTRL |= SUPC_VREGCTRL_AVREGEN(4U);
+    while ((SUPC_REGS->SUPC_STATUS & ((uint32_t)4U << SUPC_STATUS_ADDVREGRDY_Pos)) != ((uint32_t)4U << SUPC_STATUS_ADDVREGRDY_Pos))
     {
         /* Do Nothing */
     }
@@ -118,6 +123,8 @@ static void PLL0_Initialize(void)
     /****************** PLL0 Initialization  *********************************/
 
     /* Configure PLL0 */
+    /* Disable PLL0 and clear PLL0 control register */
+    OSCCTRL_REGS->OSCCTRL_PLL0CTRL = 0U;
     <@compress single_line=true>OSCCTRL_REGS->OSCCTRL_PLL0REFDIV = OSCCTRL_PLL0REFDIV_REFDIV(${CONFIG_CLOCK_PLL0_PLLREFDIV_REFDIV}U);</@compress>
     <@compress single_line=true>OSCCTRL_REGS->OSCCTRL_PLL0FBDIV = OSCCTRL_PLL0FBDIV_FBDIV(${CONFIG_CLOCK_PLL0_PLLFBDIV_FBDIV}U);</@compress>
 
@@ -162,8 +169,8 @@ static void PLL0_Initialize(void)
 static void PLL1_Initialize(void)
 {
     /* Enable Additional Voltage Regulator */
-    SUPC_REGS->SUPC_VREGCTRL |= SUPC_VREGCTRL_AVREGEN_Msk;
-    while ((SUPC_REGS->SUPC_STATUS & SUPC_STATUS_ADDVREGRDY_Msk) != SUPC_STATUS_ADDVREGRDY_Msk)
+    SUPC_REGS->SUPC_VREGCTRL |= SUPC_VREGCTRL_AVREGEN(4U);
+    while ((SUPC_REGS->SUPC_STATUS & ((uint32_t)4U << SUPC_STATUS_ADDVREGRDY_Pos)) != ((uint32_t)4U << SUPC_STATUS_ADDVREGRDY_Pos))
     {
         /* Do Nothing */
     }
@@ -179,6 +186,8 @@ static void PLL1_Initialize(void)
     /****************** PLL1 Initialization  *********************************/
 
     /* Configure PLL1 */
+    /* Disable PLL1 and clear PLL1 control register */
+    OSCCTRL_REGS->OSCCTRL_PLL1CTRL = 0U;
     <@compress single_line=true>OSCCTRL_REGS->OSCCTRL_PLL1REFDIV = OSCCTRL_PLL1REFDIV_REFDIV(${CONFIG_CLOCK_PLL1_PLLREFDIV_REFDIV}U);</@compress>
     <@compress single_line=true>OSCCTRL_REGS->OSCCTRL_PLL1FBDIV = OSCCTRL_PLL1FBDIV_FBDIV(${CONFIG_CLOCK_PLL1_PLLFBDIV_FBDIV}U);</@compress>
 
@@ -278,6 +287,20 @@ static void DFLL_Initialize(void)
 }
 </#if>
 
+static void swDelayUs(uint32_t cpu_clock, uint32_t delay_us)
+{
+    uint32_t startCount, endCount;
+
+    /* Calculate the end count for the given delay */
+    endCount = (cpu_clock / 1000000U) * delay_us;
+
+    startCount = DWT->CYCCNT;
+    while((DWT->CYCCNT - startCount) < endCount)
+	{
+		/* Do Nothing */
+	}
+}
+
 <#list 0..15 as i>
     <#assign GCLK_INST_NUM = "GCLK_INST_NUM" + i>
         <#if .vars[GCLK_INST_NUM]?has_content>
@@ -311,7 +334,39 @@ static void GCLK${i}_Initialize(void)
         /* Wait for the Main Clock to be Ready */
     }
 </#if>
+    <#list 3..1 as index>
+    <#assign PLL0_CLOCK_FREQ_VAL = "PLL0_CLOCK_FREQ" + index>
+    <#if .vars[PLL0_CLOCK_FREQ_VAL] != 0 && .vars[GCLK_SRC] == "6">
+    <#assign GCLK_GENCTRL_SRC_VAL = 6 + index>
+    // ${.vars[PLL0_CLOCK_FREQ_VAL]} Hz
+    <@compress single_line=true>GCLK_REGS->GCLK_GENCTRL[${i}] = GCLK_GENCTRL_DIV(${.vars[GCLK_DIVISONVALUE]}U)
+                                                               | GCLK_GENCTRL_SRC(${GCLK_GENCTRL_SRC_VAL}U)
+                                                               ${(.vars[GCLK_DIVISONSELECTION] == "DIV2")?then('| GCLK_GENCTRL_DIVSEL_Msk' , ' ')}
+                                                               ${(.vars[GCLK_IMPROVE_DUTYCYCLE])?then('| GCLK_GENCTRL_IDC_Msk', ' ')}
+                                                               ${(.vars[GCLK_RUNSTDBY])?then('| GCLK_GENCTRL_RUNSTDBY_Msk', ' ')}
+                                                               <#if .vars[GCLK_OUTPUTENABLE]??>
+                                                               ${(.vars[GCLK_OUTPUTENABLE])?then('| GCLK_GENCTRL_OE_Msk', ' ')}
+                                                               ${((.vars[GCLK_OUTPUTOFFVALUE] == "HIGH"))?then('| GCLK_GENCTRL_OOV_Msk', ' ')}
+                                                               </#if>
+                                                               | GCLK_GENCTRL_GENEN_Msk;</@compress>
+
+    while((GCLK_REGS->GCLK_SYNCBUSY & GCLK_SYNCBUSY_GENCTRL${i}_Msk) == GCLK_SYNCBUSY_GENCTRL${i}_Msk)
+    {
+        /* Wait for the Generator ${i} synchronization */
+    }
+
+    <#if index == 3>
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->LAR = 0xC5ACCE55U;
+    DWT->CYCCNT = 0U;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
     </#if>
+    swDelayUs(${.vars[PLL0_CLOCK_FREQ_VAL]}U, 1U);
+
+    </#if>
+    </#list>
+    </#if>
+    // ${PLL0_CLOCK_FREQ0} Hz
     <@compress single_line=true>GCLK_REGS->GCLK_GENCTRL[${i}] = GCLK_GENCTRL_DIV(${.vars[GCLK_DIVISONVALUE]}U)
                                                                | GCLK_GENCTRL_SRC(${.vars[GCLK_SRC]}U)
                                                                ${(.vars[GCLK_DIVISONSELECTION] == "DIV2")?then('| GCLK_GENCTRL_DIVSEL_Msk' , ' ')}
@@ -328,6 +383,70 @@ static void GCLK${i}_Initialize(void)
         /* Wait for the Generator ${i} synchronization */
     }
 }
+
+<#if i == 0>
+void CLOCK_CpuStepUp(void)
+{
+    <#list 3..1 as index>
+    <#assign PLL0_CLOCK_FREQ_VAL = "PLL0_CLOCK_FREQ" + (index - 1)>
+    <#if .vars[PLL0_CLOCK_FREQ_VAL] != 0 && .vars[GCLK_SRC] == "6">
+    <#assign GCLK_GENCTRL_SRC_VAL = 6 + index - 1>
+    // ${.vars[PLL0_CLOCK_FREQ_VAL]} Hz
+    <@compress single_line=true>GCLK_REGS->GCLK_GENCTRL[${i}] = GCLK_GENCTRL_DIV(${.vars[GCLK_DIVISONVALUE]}U)
+                                                               | GCLK_GENCTRL_SRC(${GCLK_GENCTRL_SRC_VAL}U)
+                                                               ${(.vars[GCLK_DIVISONSELECTION] == "DIV2")?then('| GCLK_GENCTRL_DIVSEL_Msk' , ' ')}
+                                                               ${(.vars[GCLK_IMPROVE_DUTYCYCLE])?then('| GCLK_GENCTRL_IDC_Msk', ' ')}
+                                                               ${(.vars[GCLK_RUNSTDBY])?then('| GCLK_GENCTRL_RUNSTDBY_Msk', ' ')}
+                                                               <#if .vars[GCLK_OUTPUTENABLE]??>
+                                                               ${(.vars[GCLK_OUTPUTENABLE])?then('| GCLK_GENCTRL_OE_Msk', ' ')}
+                                                               ${((.vars[GCLK_OUTPUTOFFVALUE] == "HIGH"))?then('| GCLK_GENCTRL_OOV_Msk', ' ')}
+                                                               </#if>
+                                                               | GCLK_GENCTRL_GENEN_Msk;</@compress>
+
+    while((GCLK_REGS->GCLK_SYNCBUSY & GCLK_SYNCBUSY_GENCTRL${i}_Msk) == GCLK_SYNCBUSY_GENCTRL${i}_Msk)
+    {
+        /* Wait for the Generator ${i} synchronization */
+    }
+
+    <#if index != 1>
+    swDelayUs(${.vars[PLL0_CLOCK_FREQ_VAL]}U, 1U);
+    </#if>
+
+    </#if>
+    </#list>
+}
+
+void CLOCK_CpuStepDown(void)
+{
+    <#list 1..3 as index>
+    <#assign PLL0_CLOCK_FREQ_VAL = "PLL0_CLOCK_FREQ" + index>
+    <#if .vars[PLL0_CLOCK_FREQ_VAL] != 0 && .vars[GCLK_SRC] == "6">
+    <#assign GCLK_GENCTRL_SRC_VAL = 6 + index>
+    // ${.vars[PLL0_CLOCK_FREQ_VAL]} Hz
+    <@compress single_line=true>GCLK_REGS->GCLK_GENCTRL[${i}] = GCLK_GENCTRL_DIV(${.vars[GCLK_DIVISONVALUE]}U)
+                                                               | GCLK_GENCTRL_SRC(${GCLK_GENCTRL_SRC_VAL}U)
+                                                               ${(.vars[GCLK_DIVISONSELECTION] == "DIV2")?then('| GCLK_GENCTRL_DIVSEL_Msk' , ' ')}
+                                                               ${(.vars[GCLK_IMPROVE_DUTYCYCLE])?then('| GCLK_GENCTRL_IDC_Msk', ' ')}
+                                                               ${(.vars[GCLK_RUNSTDBY])?then('| GCLK_GENCTRL_RUNSTDBY_Msk', ' ')}
+                                                               <#if .vars[GCLK_OUTPUTENABLE]??>
+                                                               ${(.vars[GCLK_OUTPUTENABLE])?then('| GCLK_GENCTRL_OE_Msk', ' ')}
+                                                               ${((.vars[GCLK_OUTPUTOFFVALUE] == "HIGH"))?then('| GCLK_GENCTRL_OOV_Msk', ' ')}
+                                                               </#if>
+                                                               | GCLK_GENCTRL_GENEN_Msk;</@compress>
+
+    while((GCLK_REGS->GCLK_SYNCBUSY & GCLK_SYNCBUSY_GENCTRL${i}_Msk) == GCLK_SYNCBUSY_GENCTRL${i}_Msk)
+    {
+        /* Wait for the Generator ${i} synchronization */
+    }
+
+    <#if index != 3>
+    swDelayUs(${.vars[PLL0_CLOCK_FREQ_VAL]}U, 1U);
+    </#if>
+
+    </#if>
+    </#list>
+}
+</#if>
 
             </#if>
         </#if>

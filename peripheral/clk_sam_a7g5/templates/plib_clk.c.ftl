@@ -50,7 +50,7 @@
 #define PLL_ID_AUDIOPLL         5U
 #define PLL_ID_ETHPLL           6U
 #define PLL_UPDT_STUPTIM_VAL    0x3FU
-#define PLL_ACR_RECOMMENDED     0x1B040010U
+#define PLL_ACR_RECOMMENDED     0x00070010U
 
 <#if SYSTEM_COUNTER_ENABLE>
 #define APB_DEBUG_S_BASE 0xE8800000U
@@ -207,14 +207,19 @@ static void initPeripheralClocks(void)
                 <#else>
                 <#assign clken = false>
                 </#if>
-                <#if .vars["CLK_"+name+"_GCLKEN"]?has_content && .vars["CLK_"+name+"_GCLKEN"]>
+                <#if name?matches("TC[0-9]_CHANNEL0")>
+                    <#assign gclk_name = name[0..2]>
+                <#else>
+                    <#assign gclk_name = name>
+                </#if>
+                <#if .vars["CLK_" + gclk_name + "_GCLKEN"]?has_content && .vars["CLK_" + gclk_name + "_GCLKEN"]>
                     <#assign gclken = true>
                 <#else>
                     <#assign gclken = false>
                 </#if>
                 <#if gclken>
-                    <#assign gclkcss = .vars["CLK_"+name+"_GCLKCSS"]>
-                    <#assign gclkdiv = .vars["CLK_"+name+"_GCLKDIV"]>
+                    <#assign gclkcss = .vars["CLK_" + gclk_name + "_GCLKCSS"]>
+                    <#assign gclkdiv = .vars["CLK_" + gclk_name + "_GCLKDIV"]>
                 <#else>
                     <#assign gclkcss = "0">
                     <#assign gclkdiv = "0">

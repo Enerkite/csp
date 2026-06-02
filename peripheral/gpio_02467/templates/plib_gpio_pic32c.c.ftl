@@ -86,7 +86,7 @@
     <#assign portNumCbList = portNumCbList + [TOTAL_NUM_OF_INT_USED] >
 
     <#lt>/* Array to store callback objects of each configured interrupt */
-    <#lt>volatile static GPIO_PIN_CALLBACK_OBJ portPinCbObj[${TOTAL_NUM_OF_INT_USED}];
+    <#lt>static volatile GPIO_PIN_CALLBACK_OBJ portPinCbObj[${TOTAL_NUM_OF_INT_USED}];
 
     <#lt>/* Array to store number of interrupts in each PORT Channel + previous interrupt count */
     <@compress single_line=true>
@@ -111,6 +111,10 @@
 */
 void GPIO_Initialize ( void )
 {
+    <#if PRODUCT_FAMILY?contains("PIC32CX_BZ6")>
+        <#lt>    /* Disable JTAG since at least one of its pins is configured for Non-JTAG function */
+        <#lt>    CFG_REGS->CFG_CFGCON0CLR = CFG_CFGCON0_JTAGEN_Msk;
+    <#else>
       <#if (GPIO_PIN_TOTAL == 48)>
         <#if ((BSP_PIN_35_FUNCTION_TYPE == "TDI" || BSP_PIN_35_FUNCTION_TYPE == "") &&
           (BSP_PIN_38_FUNCTION_TYPE == "TDO" || BSP_PIN_38_FUNCTION_TYPE == "") &&
@@ -152,6 +156,7 @@ void GPIO_Initialize ( void )
 
         </#if>
       </#if>
+    </#if>
 <#assign CFGCON2_SOSCSEL_VAL = false>
 <#list 1..GPIO_PIN_TOTAL as i>
     <#assign functype = "BSP_PIN_" + i + "_FUNCTION_TYPE">

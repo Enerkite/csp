@@ -88,7 +88,7 @@ typedef struct
 <#if LPRAM_PRESENT> SECTION(".lpram")</#if> static  dmac_descriptor_registers_t  descriptor_section[DMAC_CHANNELS_NUMBER]    __ALIGNED(8);
 
 /* DMAC Channels object information structure */
-volatile static DMAC_CH_OBJECT dmacChannelObj[DMAC_CHANNELS_NUMBER];
+static volatile DMAC_CH_OBJECT dmacChannelObj[DMAC_CHANNELS_NUMBER];
 
 // *****************************************************************************
 // *****************************************************************************
@@ -663,7 +663,8 @@ uint32_t ${DMA_INSTANCE_NAME}_CRCCalculate(void *buffer, uint32_t length, DMAC_C
 <#if DMAC_MULTIVECTOR_SUPPORTED??>
 <#list 0..3 as x>
 <#if .vars["DMAC_ENABLE_CH_" + x] == true>
-void __attribute__((used)) ${DMA_INSTANCE_NAME}_${x}_InterruptHandler( void )
+<#assign DMAC_INT_HANDLER_NAME = "DMAC_INT_HANDLER_NAME_" + x>
+void __attribute__((used)) ${.vars[DMAC_INT_HANDLER_NAME]}_InterruptHandler( void )
 {
     volatile DMAC_CH_OBJECT  *dmacChObj;
     /* Get active channel number */
@@ -721,7 +722,8 @@ void __attribute__((used)) ${DMA_INSTANCE_NAME}_${x}_InterruptHandler( void )
 
 <#list 4..DMA_CHANNEL_COUNT - 1 as x>
 <#if .vars["DMAC_ENABLE_CH_" + x] == true>
-void __attribute__((used)) ${DMA_INSTANCE_NAME}_OTHER_InterruptHandler( void )
+<#assign DMAC_INT_HANDLER_NAME = "DMAC_INT_HANDLER_NAME_" + x>
+void __attribute__((used)) ${.vars[DMAC_INT_HANDLER_NAME]}_InterruptHandler( void )
 {
     volatile DMAC_CH_OBJECT  *dmacChObj;
     uint8_t channel = 0U;
@@ -776,6 +778,7 @@ void __attribute__((used)) ${DMA_INSTANCE_NAME}_OTHER_InterruptHandler( void )
     /* Restore channel ID */
     ${DMA_INSTANCE_NAME}_REGS->DMAC_CHID = channelId;
 }
+<#break>        <#-- Exit the list loop -->
 </#if>
 </#list>
 

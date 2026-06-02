@@ -1,0 +1,472 @@
+<?xml version="1.0"?>
+<!-- This is an auto-generated pin data file created: 15:42:23 09/30/24 -->
+<pinfile family="WBZ653">
+   <packages>
+     <package diagram="LGA59" id="1" name="LGA59" />
+  </packages>
+  <pins>
+     <pin name="AVDD">
+       <number package="1" pin="A1" />
+    </pin>
+    <pin name="RB0">
+       <number package="1" pin="B1" />
+      <function name="AC_AIN2" />
+      <function name="AIN4" />
+      <function name="CVD4" />
+      <function name="CVDR4" />
+      <function name="CVDT4" />
+      <function name="RPB0" />
+    </pin>
+    <pin name="RB1">
+       <number package="1" pin="A2" />
+      <function name="AC_AIN3" />
+      <function name="AIN5" />
+      <function name="CVD5" />
+      <function name="CVDR5" />
+      <function name="CVDT5" />
+      <function name="RPB1" />
+    </pin>
+    <pin name="RB2">
+       <number package="1" pin="B2" />
+      <function name="AC_AIN0" />
+      <function name="AIN6" />
+      <function name="CVD6" />
+      <function name="CVDR6" />
+      <function name="CVDT6" />
+      <function name="RPB2" />
+    </pin>
+    <pin name="RB3">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A3" />
+      <function name="AC_AIN1" />
+      <function name="AIN7" />
+      <function name="CVD7" />
+      <function name="CVDR7" />
+      <function name="CVDT7" />
+      <function name="RPB3" />
+    </pin>
+    <pin name="RB4">
+       <number package="1" pin="B3" />
+      <function name="AIN8" />
+      <function name="CVD8" />
+      <function name="TP4" />
+      <function name="CVDR8" />
+      <function name="CVDT8" />
+      <function name="RPB4" />
+    </pin>
+    <pin name="RB5">
+       <number package="1" pin="A4" />
+      <function name="AIN1" />
+      <function name="CVD1" />
+      <function name="TP5" />
+      <function name="CVDR1" />
+      <function name="CVDT1" />
+      <function name="RPB5" />
+    </pin>
+    <pin name="RB7">
+       <number package="1" pin="A5" />
+      <function name="AIN3" />
+      <function name="CVD3" />
+      <function name="CVDR3" />
+      <function name="CVDT3" />
+      <function name="RPB7" />
+    </pin>
+    <pin name="RB6">
+       <number package="1" pin="B4" />
+      <function name="AIN2" />
+      <function name="CVD2" />
+      <function name="CVDR2" />
+      <function name="CVDT2" />
+      <function name="RPB6" />
+    </pin>
+    <pin name="USB_DMINS">
+       <number package="1" pin="A6" />
+    </pin>
+    <pin name="USB_DPLUS">
+       <number package="1" pin="B5" />
+    </pin>
+    <pin name="RC11">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B6" />
+      <function name="RPC11" />
+    </pin>
+    <pin name="RA12">
+       <number package="1" pin="A8" />
+      <function name="RPA12" />
+    </pin>
+    <pin name="RA11">
+       <number package="1" pin="B7" />
+      <function name="RPA11" />
+    </pin>
+    <pin name="RB14">
+       <number package="1" pin="A9" />
+      <function name="AIN18" />
+      <function name="CVD18" />
+      <function name="CVDR18" />
+      <function name="CVDT17" />
+      <function name="RPB14" />
+    </pin>
+    <pin name="RB15">
+       <number package="1" pin="B8" />
+      <function name="AIN17" />
+      <function name="CVD17" />
+      <function name="CVDR17" />
+      <function name="CVDT16" />
+      <function name="RPB15" />
+    </pin>
+    <pin name="RC7">
+       <number package="1" pin="B9" />
+      <function name="AIN15" />
+      <function name="CVD15" />
+      <function name="CVDR15" />
+      <function name="CVDT15" />
+      <function name="RPC7" />
+    </pin>
+    <pin name="RD4">
+       <number package="1" pin="A11" />
+      <function name="AIN10" />
+      <function name="CVD10" />
+      <function name="CVDR10" />
+      <function name="CVDT10" />
+      <function name="RPD4" />
+    </pin>
+    <pin name="RA6">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B10" />
+      <function name="TA4D_ALT" />
+      <function name="RPA6" />
+      <function name="SERCOM0_PAD1" />
+    </pin>
+    <pin name="RA5">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A12" />
+      <function name="RPA5" />
+      <function name="SERCOM0_PAD0" />
+    </pin>
+    <pin name="MCLR">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B11" />
+    </pin>
+    <pin name="RA3">
+       <number package="1" pin="B12" />
+      <function name="ANN1" />
+      <function name="DAC_CTRL_DACOUT" />
+      <function name="RPA3" />
+      <function name="RTC_IN0" />
+    </pin>
+    <pin name="RE4">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A14" />
+      <function name="RPE4" />
+      <function name="USB_TSTVMI" />
+    </pin>
+    <pin name="RD1">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A15" />
+      <function name="RPD1" />
+    </pin>
+    <pin name="RD0">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B13" />
+      <function name="RPD0" />
+    </pin>
+    <pin name="RA0">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A16" />
+      <function name="RPA0" />
+      <function name="QSPI_DATA0" />
+      <function name="RTC_IN3" />
+    </pin>
+    <pin name="RA1">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B14" />
+      <function name="RPA1" />
+      <function name="QSPI_SCK" />
+      <function name="RTC_IN2" />
+    </pin>
+    <pin name="RA2">
+       <number package="1" pin="A17" />
+      <function name="RPA2" />
+      <function name="QSPI_DATA3" />
+      <function name="RTC_IN1" />
+    </pin>
+    <pin name="RB12">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B15" />
+      <function name="RPB12" />
+      <function name="QSPI_DATA1" />
+    </pin>
+    <pin name="RB11">
+       <number package="1" pin="A18" />
+      <function name="ANA0" />
+      <function name="RPB11" />
+      <function name="QSPI_DATA2" />
+    </pin>
+    <pin name="RA7">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A19" />
+      <function name="ADCSVCLKI" />
+      <function name="PMU_TEST_SCK" />
+      <function name="RPA7" />
+      <function name="SERCOM1_PAD0" />
+      <function name="USB_VBUSON" />
+    </pin>
+    <pin name="RB13">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B16" />
+      <function name="RPB13" />
+      <function name="QSPI_CS" />
+      <function name="RTC_EVENT" />
+    </pin>
+    <pin name="RA9">
+       <number package="1" pin="A20" />
+      <function name="ADCSVFRM" />
+      <function name="RTC_IN0_ALT" />
+      <function name="CAN0_RX" />
+      <function name="PMU_TEST_CS" />
+      <function name="RPA9" />
+      <function name="SERCOM1_PAD2" />
+    </pin>
+    <pin name="RA8">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B17" />
+      <function name="ADCSVTRG" />
+      <function name="CAN0_TX" />
+      <function name="PMU_TEST_SDI" />
+      <function name="RPA8" />
+      <function name="SERCOM1_PAD1" />
+    </pin>
+    <pin name="RA4">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A21" />
+      <function name="RPA4" />
+      <function name="RTC_OUT" />
+      <function name="SERCOM0_PAD3" />
+      <function name="USB_USBID" />
+    </pin>
+    <pin name="RE5">
+       <number package="1" pin="B18" />
+      <function name="ANB0" />
+      <function name="RPE5" />
+      <function name="USB_TSTVMO" />
+    </pin>
+    <pin name="RE3">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A22" />
+      <function name="RPE3" />
+      <function name="USB_TSTUOE" />
+    </pin>
+    <pin name="RA10">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B19" />
+      <function name="ADCSVSARCLK" />
+      <function name="MBISTCLK" />
+      <function name="RTC_OUT_ALT" />
+      <function name="PMU_TEST_SDO" />
+      <function name="RPA10" />
+      <function name="SERCOM1_PAD3" />
+    </pin>
+    <pin name="RC10">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A23" />
+      <function name="RPC10" />
+    </pin>
+    <pin name="RE0">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B20" />
+      <function name="RPE0" />
+      <function name="SERCOM2_PAD0" />
+    </pin>
+    <pin name="RB10">
+       <number package="1" pin="B21" />
+      <function name="AIN0" />
+      <function name="DSU_MSA" />
+      <function name="RPB10" />
+      <function name="USB_USBOEN" />
+    </pin>
+    <pin name="RC9">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A26" />
+      <function name="RPC9" />
+      <function name="GMAC_GTXEN" />
+    </pin>
+    <pin name="RE2">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A27" />
+      <function name="RPE2" />
+      <function name="GMAC_GCRS_DV" />
+      <function name="USB_TSTRCV" />
+    </pin>
+    <pin name="RC8">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B23" />
+      <function name="RPC8" />
+      <function name="GMAC_GRXER" />
+    </pin>
+    <pin name="RD6">
+       <number package="1" pin="A28" />
+      <function name="AIN12" />
+      <function name="CVD12" />
+      <function name="CVDR12" />
+      <function name="CVDT12" />
+      <function name="GMAC_GMDIO" />
+      <function name="RPD6" />
+    </pin>
+    <pin name="RD7">
+       <number package="1" pin="B24" />
+      <function name="AIN13" />
+      <function name="CVD13" />
+      <function name="CVDR13" />
+      <function name="CVDT13" />
+      <function name="GMAC_GMDC" />
+      <function name="RPD7" />
+    </pin>
+    <pin name="RA13">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A29" />
+      <function name="RPA13" />
+      <function name="SERCOM6_I2C_SERCOM_PAD0" />
+      <function name="GMAC_GRX1" />
+    </pin>
+    <pin name="RA14">
+       <number package="1" pin="B25" />
+      <function name="ANN0" />
+      <function name="RPA14" />
+      <function name="SERCOM6_I2C_SERCOM_PAD1" />
+      <function name="GMAC_GRX0" />
+    </pin>
+    <pin name="RC1">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A30" />
+      <function name="RPC1" />
+      <function name="GMAC_CLK_OUT" />
+      <function name="SERCOM2_PAD3" />
+    </pin>
+    <pin name="RC0">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="A31" />
+      <function name="RPC0" />
+      <function name="GMAC_GTX0" />
+      <function name="SERCOM2_PAD2" />
+    </pin>
+    <pin name="RE1">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B27" />
+      <function name="RPE1" />
+      <function name="GMAC_GTX1" />
+      <function name="SERCOM2_PAD1" />
+    </pin>
+    <pin name="RB8">
+       <number package="1" pin="A32" />
+      <function name="TP2" />
+      <function name="TP6" />
+      <function name="PMU_TEST_SCKO" />
+      <function name="RPB8" />
+    </pin>
+    <pin name="RB9">
+       <number package="1" pin="B28" />
+      <function name="ADCSVSOUT" />
+      <function name="TP3" />
+      <function name="FEM_PD_EXT_PA" />
+      <function name="PMU_INT0" />
+      <function name="RPB9" />
+      <function name="SERCOM0_PAD2" />
+    </pin>
+    <pin name="RA15">
+       <modifiers>
+         <modifier value="5V" />
+      </modifiers>
+      <number package="1" pin="B29" />
+      <function name="RPA15" />
+    </pin>
+    <pin name="RE6">
+       <number package="1" pin="A44" />
+      <function name="AIN14" />
+      <function name="CVD14" />
+      <function name="CVDR14" />
+      <function name="CVDT14" />
+      <function name="RPE6" />
+      <function name="USB_TSTVPI" />
+    </pin>
+    <pin name="RD2">
+       <number package="1" pin="A45" />
+      <function name="AIN16" />
+      <function name="CVD16" />
+      <function name="CVDR16" />
+      <function name="CVDT0" />
+      <function name="RPD2" />
+    </pin>
+    <pin name="RD5">
+       <number package="1" pin="A46" />
+      <function name="AIN11" />
+      <function name="CVD11" />
+      <function name="CVDR11" />
+      <function name="CVDT11" />
+      <function name="RPD5" />
+      <function name="USB_TSTVPO" />
+    </pin>
+    <pin name="USB_VBUS">
+       <number package="1" pin="A47" />
+    </pin>
+    <pin name="RD3">
+       <number package="1" pin="A48" />
+      <function name="AIN9" />
+      <function name="CVD9" />
+      <function name="CVDR9" />
+      <function name="CVDT9" />
+      <function name="RPD3" />
+    </pin>
+  </pins>
+</pinfile>

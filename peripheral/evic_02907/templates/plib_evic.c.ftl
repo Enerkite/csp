@@ -52,7 +52,7 @@
     <#assign EXT_INT_PIN = "EXTERNAL_" + i + "_EXTERNAL_INTERRUPT_UPDATE">
     <#if .vars[EXT_INT_PIN]?has_content && .vars[EXT_INT_PIN] == true>
         <#assign NumOfEnabledExtInt = NumOfEnabledExtInt + 1>
-        <#lt>volatile static EXT_INT_PIN_CALLBACK_OBJ extInt${i}CbObj;
+        <#lt>static volatile EXT_INT_PIN_CALLBACK_OBJ extInt${i}CbObj;
     </#if>
 </#list>
 // *****************************************************************************
@@ -190,6 +190,29 @@ void EVIC_INT_Restore( bool state )
         /* restore the state of CP0 Status register before the disable occurred */
        (void) __builtin_enable_interrupts();
     }
+}
+
+bool EVIC_INT_SourceDisable( INT_SOURCE source )
+{
+    bool processorStatus;
+    bool intSrcStatus;
+
+    processorStatus = EVIC_INT_Disable();
+    intSrcStatus = (EVIC_SourceIsEnabled(source) != 0U);
+    EVIC_SourceDisable( source );
+    EVIC_INT_Restore( processorStatus );
+
+    /* return the source status */
+    return intSrcStatus;
+}
+
+void EVIC_INT_SourceRestore( INT_SOURCE source, bool status )
+{
+    if( status ) {
+       EVIC_SourceEnable( source );
+    }
+
+    return;
 }
 
 <#if 0 < NumOfEnabledExtInt>

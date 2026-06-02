@@ -40,21 +40,21 @@
  *  The MPLAB X Simulator does not yet support simulation of programming the
  *  GPNVM bits yet. We can remove this once it supports the FRDY bit.
  */
- /* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2012_R_21_1_DR_1 */
+ /* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.1 deviated 1 time. Deviation record ID -  H3_MISRAC_2023_R_21_1_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma coverity compliance block deviate:1 "MISRA C-2012 Rule 21.1" "H3_MISRAC_2012_R_21_1_DR_1"
+#pragma coverity compliance block deviate:1 "MISRA C-2023 Rule 21.1" "H3_MISRAC_2023_R_21_1_DR_1"
 </#if>
 #ifdef __MPLAB_DEBUGGER_SIMULATOR
 #define __XC32_SKIP_STARTUP_GPNVM_WAIT
 #endif
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.1"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.1"
 #pragma GCC diagnostic pop
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 
 /*
  *  This startup code relies on features that are specific to the MPLAB XC32
@@ -64,15 +64,15 @@
 #warning This startup code is intended for use with the MPLAB XC32 Compiler only.
 #endif
 
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.2 deviated 5 times. Deviation record ID -  H3_MISRAC_2012_R_21_2_DR_1 */
-/* MISRA C-2012 Rule 8.6 deviated 6 times.  Deviation record ID -  H3_MISRAC_2012_R_8_6_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.2 deviated 5 times. Deviation record ID -  H3_MISRAC_2023_R_21_2_DR_1 */
+/* MISRA C-2023 Rule 8.6 deviated 6 times.  Deviation record ID -  H3_MISRAC_2023_R_8_6_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma coverity compliance block \
-(deviate:5 "MISRA C-2012 Rule 21.2" "H3_MISRAC_2012_R_21_2_DR_1")\
-(deviate:6 "MISRA C-2012 Rule 8.6" "H3_MISRAC_2012_R_8_6_DR_1")
+(deviate:5 "MISRA C-2023 Rule 21.2" "H3_MISRAC_2023_R_21_2_DR_1")\
+(deviate:6 "MISRA C-2023 Rule 8.6" "H3_MISRAC_2023_R_8_6_DR_1")
 </#if>
 
 /* array initialization  function */
@@ -93,11 +93,11 @@ extern uint32_t _stack;
 #endif
 
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 8.6"
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 8.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2"
 #pragma GCC diagnostic pop
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 
 
 extern int main(void);
@@ -105,7 +105,7 @@ extern int main(void);
 <#if CoreArchitecture == "CORTEX-M7">
     <#include "arch/startup_xc32_cortex_m7.c.ftl">
     <#include "devices/startup_xc32_${DeviceFamily}.c.ftl">
-<#elseif CoreArchitecture == "CORTEX-M4" || RAM_INIT??>
+<#elseif CoreArchitecture == "CORTEX-M4" || (RAM_INIT?? && RAM_INIT == true)>
     <#if DeviceFamily != "CEC_173X" && DeviceFamily != "SAM_G51" && DeviceFamily != "SAM_G53" && DeviceFamily != "SAM_G54">
         <#include "devices/startup_xc32_${DeviceFamily}.c.ftl">
     </#if>
@@ -155,7 +155,7 @@ void __attribute__((optimize("-O1"),long_call))Dummy_App_Func(void)
  */
 void __attribute__((optimize("-O1"), section(".text.Reset_Handler"), long_call, noreturn)) Reset_Handler(void)
 {
-<#if RAM_INIT??>
+<#if RAM_INIT?? && RAM_INIT == true>
     RAM_Initialize();
 
 </#if>

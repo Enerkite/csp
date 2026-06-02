@@ -27,6 +27,7 @@
 
 global updateSDASetupRegisterValue
 global updateSDASetupTimeMaxValueInNanoSeconds
+global getValueGrp
 
 def updateSDASetupTimeMaxValueInNanoSeconds():
     sda_setup_reg_max_value = int(Database.getSymbolValue(sercomInstanceName.getValue().lower(), "I2CS_SDASETUP_MAX_VALUE"))
@@ -92,6 +93,7 @@ global i2csSym_CTRLB_SMEN
 
 #I2C Interrupt Mode
 i2csSym_Interrupt_Mode = sercomComponent.createBooleanSymbol("I2CS_INTERRUPT_MODE", sercomSym_OperationMode)
+i2csSym_Interrupt_Mode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:INTENSET")
 i2csSym_Interrupt_Mode.setLabel("Enable Interrupts ?")
 i2csSym_Interrupt_Mode.setDefaultValue(True)
 i2csSym_Interrupt_Mode.setVisible(False)
@@ -112,10 +114,12 @@ for index in range(len(ctrlaValue)):
 if speedSupported == True:
     # I2C Transfer Speed Mode
     i2csSym_mode = sercomComponent.createKeyValueSetSymbol("I2CS_MODE", sercomSym_OperationMode)
+    i2csSym_mode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
     i2csSym_mode.setLabel("Transfer Speed Mode")
     i2csSym_mode.setVisible(False)
 
-    i2csTransferSpeedNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SERCOM"]/value-group@[name="SERCOM_I2CM_CTRLA__SPEED"]')
+    i2csTransferSpeedNode = getValueGrp("SERCOM", "SERCOM", "CTRLA", "SPEED", "I2CS")
+
     i2csTransferSpeedNodeValues = i2csTransferSpeedNode.getChildren()
 
     for index in range((len(i2cmTransferSpeedNodeValues))):
@@ -131,6 +135,7 @@ if speedSupported == True:
 
 # I2C Smart Mode Enable
 i2csSym_CTRLB_SMEN = sercomComponent.createBooleanSymbol("I2CS_SMEN", sercomSym_OperationMode)
+i2csSym_CTRLB_SMEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLB")
 i2csSym_CTRLB_SMEN.setLabel("Enable Smart Mode")
 i2csSym_CTRLB_SMEN.setDefaultValue(False)
 i2csSym_CTRLB_SMEN.setVisible(False)
@@ -148,6 +153,7 @@ for index in range(len(ctrlaValue)):
 
 if sclsmSupported == True:
     i2csSym_CTRLA_SCLSM = sercomComponent.createIntegerSymbol("I2CS_SCLSM", sercomSym_OperationMode)
+    i2csSym_CTRLA_SCLSM.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
     i2csSym_CTRLA_SCLSM.setLabel("Clock Stretch Mode")
     i2csSym_CTRLA_SCLSM.setVisible(False)
     i2csSym_CTRLA_SCLSM.setDefaultValue(0)
@@ -155,10 +161,12 @@ if sclsmSupported == True:
 #-----------------------------------------------------------------------------------
 # SDA Hold Time
 i2csSym_CTRLA_SDAHOLD = sercomComponent.createKeyValueSetSymbol("I2CS_SDAHOLD_TIME", sercomSym_OperationMode)
+i2csSym_CTRLA_SDAHOLD.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
 i2csSym_CTRLA_SDAHOLD.setLabel("SDA Hold Time")
 i2csSym_CTRLA_SDAHOLD.setVisible(False)
 
-i2csSDAHoldTimeReferenceNode = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"SERCOM\"]/value-group@[name=\"SERCOM_I2CM_CTRLA__SDAHOLD\"]")
+i2csSDAHoldTimeReferenceNode = getValueGrp("SERCOM", "SERCOM", "CTRLA", "SDAHOLD", "I2CS")
+
 i2csSDAHoldTimeReferenceValues = i2csSDAHoldTimeReferenceNode.getChildren()
 
 for index in range(len(i2csSDAHoldTimeReferenceValues)):
@@ -196,6 +204,7 @@ if sdaSetupTimeSupported == True:
         if str(sdaSetupTimeValue[index].getAttribute("name")) == "SDASETUP":
             sdaSetupTimeMask = int(sdaSetupTimeValue[index].getAttribute("mask"), 16)
             i2csSym_SDASETUP_MaxValue = sercomComponent.createIntegerSymbol("I2CS_SDASETUP_MAX_VALUE", sercomSym_OperationMode)
+            i2csSym_SDASETUP_MaxValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
             i2csSym_SDASETUP_MaxValue.setLabel("SDA Setup Time Max Register Value")
             i2csSym_SDASETUP_MaxValue.setVisible(False)
             i2csSym_SDASETUP_MaxValue.setDefaultValue(sdaSetupTimeMask)
@@ -209,6 +218,7 @@ if sdaSetupTimeSupported == True:
     i2csSym_SDASETUP.setValue(True)
 
     i2csSym_SDASETUP_Value = sercomComponent.createIntegerSymbol("I2CS_SDASETUP_TIME_NS", sercomSym_OperationMode)
+    i2csSym_SDASETUP_Value.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
     i2csSym_SDASETUP_Value.setLabel("SDA Setup Time (ns)")
     i2csSym_SDASETUP_Value.setVisible(False)
     i2csSym_SDASETUP_Value.setMin(0)
@@ -216,6 +226,7 @@ if sdaSetupTimeSupported == True:
     i2csSym_SDASETUP_Value.setDependencies(updateI2CSlaveConfigurationVisibleProperty, ["I2CS_SDASETUP_TIME_NS", "SERCOM_MODE", "core.CPU_CLOCK_FREQUENCY"])
 
     i2csSym_SDASETUP_RegValue = sercomComponent.createIntegerSymbol("I2CS_SDASETUP_TIME_REG_VALUE", sercomSym_OperationMode)
+    i2csSym_SDASETUP_RegValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLC")
     i2csSym_SDASETUP_RegValue.setLabel("SDA Setup Time Register Value")
     i2csSym_SDASETUP_RegValue.setVisible(False)
     i2csSym_SDASETUP_RegValue.setDefaultValue(0)
@@ -226,15 +237,25 @@ TenBitAddrSupported = False
 TenBitAddrSupportReferenceNode = ATDF.getNode('/avr-tools-device-file/modules/module@[name="SERCOM"]/register-group@[name="SERCOM"]/register@[modes="I2CS",name="ADDR"]')
 
 TenBitSupportValue = TenBitAddrSupportReferenceNode.getChildren()
+addrModePrefix = False
 
 for index in range(len(TenBitSupportValue)):
+    if ((str(TenBitSupportValue[index].getName()) == "mode") and
+        (str(TenBitSupportValue[index].getAttribute("name")) == 'SEVENBIT')):
+        addrModePrefix = True
     bitFieldName = str(TenBitSupportValue[index].getAttribute("name"))
     if bitFieldName == "TENBITEN":
         TenBitAddrSupported = True
         break
 
+i2cSym_ADDRMODE = sercomComponent.createBooleanSymbol("I2CS_ADDR_MODE_PREFIX", sercomSym_OperationMode)
+i2cSym_ADDRMODE.setVisible(False)
+i2cSym_ADDRMODE.setDefaultValue(addrModePrefix)
+
+
 if TenBitAddrSupported == True:
     i2csSym_TENBITEN = sercomComponent.createBooleanSymbol("I2CS_TENBITEN_SUPPORT", sercomSym_OperationMode)
+    i2csSym_TENBITEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:ADDR")
     i2csSym_TENBITEN.setLabel("Enable 10-bit Addressing")
     i2csSym_TENBITEN.setVisible(False)
     i2csSym_TENBITEN.setDefaultValue(False)
@@ -243,6 +264,7 @@ if TenBitAddrSupported == True:
 #-----------------------------------------------------------------------------------
 # Slave Address
 i2csSym_ADDR = sercomComponent.createHexSymbol("I2CS_SLAVE_ADDDRESS", sercomSym_OperationMode)
+i2csSym_ADDR.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:ADDR")
 i2csSym_ADDR.setLabel("I2C Slave Address (7-bit)")
 i2csSym_ADDR.setMin(0)
 i2csSym_ADDR.setMax(127)
@@ -283,6 +305,7 @@ for index in range(len(lowToutValue)):
 
 if lowToutSupported == True:
     i2csSym_LOWTOUT = sercomComponent.createBooleanSymbol("I2CS_LOWTOUT_SUPPORT", sercomSym_OperationMode)
+    i2csSym_LOWTOUT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
     i2csSym_LOWTOUT.setLabel("Enable SCL Low Time-Out")
     i2csSym_LOWTOUT.setVisible(False)
     i2csSym_LOWTOUT.setDefaultValue(False)
@@ -302,6 +325,7 @@ for index in range(len(lowExtendToutValue)):
 
 if lowExtendToutSupported == True:
     i2csSym_SEXTTOEN = sercomComponent.createBooleanSymbol("I2CS_SEXTTOEN_SUPPORT", sercomSym_OperationMode)
+    i2csSym_SEXTTOEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
     i2csSym_SEXTTOEN.setLabel("Enable SCL Low Extend Time-Out")
     i2csSym_SEXTTOEN.setVisible(False)
     i2csSym_SEXTTOEN.setDefaultValue(False)
@@ -321,11 +345,20 @@ i2csSym_SEXTTOUTErrorStatus.setDefaultValue(lowExtendToutSupported)
 #-----------------------------------------------------------------------------------
 # Run In Standby
 i2csSym_CTRLA_RUNSTDBY = sercomComponent.createBooleanSymbol("I2CS_RUNSTDBY", sercomSym_OperationMode)
+i2csSym_CTRLA_RUNSTDBY.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:sercom_u2201;register:CTRLA")
 i2csSym_CTRLA_RUNSTDBY.setLabel("Enable operation in Standby mode")
 i2csSym_CTRLA_RUNSTDBY.setVisible(False)
 i2csSym_CTRLA_RUNSTDBY.setDependencies(updateI2CSlaveConfigurationVisibleProperty, ["SERCOM_MODE"])
 #-----------------------------------------------------------------------------------
 
+i2cSym_CTRLA_MODE_Values = getValueGrp("SERCOM", "SERCOM", "CTRLA", "MODE", "I2CS").getChildren()
+
+i2cSymSlaveMode = sercomComponent.createStringSymbol("I2C_SLAVE_MODE", sercomSym_OperationMode)
+i2cSymSlaveMode.setVisible(False)
+for index in range(len(i2cSym_CTRLA_MODE_Values)):
+    if int(i2cSym_CTRLA_MODE_Values[index].getAttribute("value"), 0) == 4:
+        i2cSymSlaveMode.setDefaultValue(i2cSym_CTRLA_MODE_Values[index].getAttribute("name"))
+        break
 ###################################################################################################
 ####################################### Driver Symbols ############################################
 ###################################################################################################

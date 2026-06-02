@@ -69,11 +69,13 @@ def instantiateComponent(dacComponent):
     Database.setSymbolValue("core", dacInstanceName.getValue() + "_CLOCK_ENABLE", True, 2)
     
     dacOutputBuffer = dacComponent.createBooleanSymbol("DAC_OUTPUT_BUFFER", None)
+    dacOutputBuffer.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dac_ctrl_05063;register:DACCON")
     dacOutputBuffer.setLabel("Enable Output Buffer")
     dacOutputBuffer.setDefaultValue(False)
     
     global dacMode
     dacMode = dacComponent.createKeyValueSetSymbol("DAC_MODE", None)
+    dacMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dac_ctrl_05063;register:DACCON")
     dacMode.setLabel("Dac Mode")
     dacMode.addKey("Normal Mode", "0x0", "Normal Mode")
     dacMode.addKey("Low Power Mode", "0x1", "Low Power Mode")
@@ -81,10 +83,12 @@ def instantiateComponent(dacComponent):
 
     global dacLPRC_Enable
     dacLPRC_Enable = dacComponent.createBooleanSymbol("DAC_LPRC_ENABLE", None)
+    dacLPRC_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dac_ctrl_05063;register:DACCON")
     dacLPRC_Enable.setLabel("Enable LPRC Clock")
     dacLPRC_Enable.setDefaultValue(False)
 
     dacPrescaler = dacComponent.createKeyValueSetSymbol("DAC_SNH_PRESCALER", None)
+    dacPrescaler.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dac_ctrl_05063;register:DACCON2")
     dacPrescaler.setLabel("Sample and Hold Clock Prescaler")
     dacPrescaler.addKey("DIV_1", "0x0", "Sampling Clock is same as SnH Clock")
     dacPrescaler.addKey("DIV_2", "0x1", "Sampling Clock is SnH Clock/2")
@@ -101,14 +105,20 @@ def instantiateComponent(dacComponent):
     dacPrescaler.setDependencies(visibility_Control, ["DAC_LPRC_ENABLE", "DAC_MODE"])
 
     dacSnhClockPeriod = dacComponent.createHexSymbol("DAC_SNH_CLOCK_PERIOD", None)
+    dacSnhClockPeriod.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dac_ctrl_05063;register:DACCON2")
     dacSnhClockPeriod.setLabel("Sample and Hold Clock Period")
     dacSnhClockPeriod.setDefaultValue(0x0)
+    dacSnhClockPeriod.setMin(0)
+    dacSnhClockPeriod.setMax(1023)
     dacSnhClockPeriod.setVisible(True)
     dacSnhClockPeriod.setDependencies(visibility_Control, ["DAC_LPRC_ENABLE", "DAC_MODE"])
 
     dacSnhClockWidth = dacComponent.createHexSymbol("DAC_SNH_CLOCK_WIDTH", None)
+    dacSnhClockWidth.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dac_ctrl_05063;register:DACCON2")
     dacSnhClockWidth.setLabel("Sample and Hold Clock Width")
     dacSnhClockWidth.setDefaultValue(0x0)
+    dacSnhClockWidth.setMin(0)
+    dacSnhClockWidth.setMax(1023)
     dacSnhClockWidth.setVisible(True)
     dacSnhClockWidth.setDependencies(visibility_Control, ["DAC_LPRC_ENABLE", "DAC_MODE"])
 

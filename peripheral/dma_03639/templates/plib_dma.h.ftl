@@ -239,13 +239,13 @@ typedef union
     };
 } DMA_BDCTRLBbits_t;
 
-/* MISRA C-2012 Rule 6.1 deviated:16 Deviation record ID -  H3_MISRAC_2012_R_6_1_DR_1 */
+/* MISRA C-2023 Rule 6.1 deviated:16 Deviation record ID -  H3_MISRAC_2023_R_6_1_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 </#if>
-#pragma coverity compliance block deviate:16 "MISRA C-2012 Rule 6.1" "H3_MISRAC_2012_R_6_1_DR_1"
+#pragma coverity compliance block deviate:16 "MISRA C-2023 Rule 6.1" "H3_MISRAC_2023_R_6_1_DR_1"
 </#if>
 
 typedef union
@@ -285,12 +285,12 @@ typedef union
 } DMA_BDCTRLCRCbits_t;
 
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
-#pragma coverity compliance end_block "MISRA C-2012 Rule 6.1"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 6.1"
 <#if COMPILER_CHOICE == "XC32">
 #pragma GCC diagnostic pop
 </#if>
 </#if>
-/* MISRAC 2012 deviation block end */
+/* MISRAC 2023 deviation block end */
 
 typedef union
 {
@@ -321,7 +321,11 @@ typedef union
 } DMA_BDPDATbits_t;
 
 /** \brief DMA_DESCRIPTOR register API structure */
+<#if CoreArchitecture != "CORTEX-M4" && CoreArchitecture != "CORTEX-M33" && DATA_CACHE_ENABLE?? && DATA_CACHE_ENABLE == true >
+CACHE_ALIGN typedef struct
+<#else>
 typedef struct
+</#if>
 {  /* Direct Memory Access Controller */
     uint32_t                            DMA_BDNXT;
     DMA_BDCFGbits_t                     DMA_BDCFG;
@@ -335,6 +339,9 @@ typedef struct
     DMA_BDXSIZbits_t                    DMA_BDXSIZ;
     DMA_BDPDATbits_t                    DMA_BDPDAT;
     uint32_t                            DMA_BDCRCDAT;
+<#if CoreArchitecture != "CORTEX-M4" && CoreArchitecture != "CORTEX-M33" && DATA_CACHE_ENABLE?? && DATA_CACHE_ENABLE == true >
+    uint8_t                             dummy_for_cache_align[CACHE_ALIGNED_SIZE_GET(40) - 40];
+</#if>
 } DMA_DESCRIPTOR_REGS
 
 #ifdef __GNUC__

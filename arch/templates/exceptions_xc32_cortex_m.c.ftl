@@ -70,10 +70,9 @@
 
 typedef void(*advanced_handler_t)(uint32_t * fault_args, unsigned int lr_value);
 
-
 static inline void call_advanced_exception_handler(advanced_handler_t pHandler)
 {
-<#if CoreArchitecture == "CORTEX-M0PLUS">
+<#if CoreArchitecture == "CORTEX-M0PLUS" || CoreArchitecture == "CORTEX-M23">
     asm volatile (
         "MOVS   R0, #4\n\t"
         "MOV    R1, LR\n\t"
@@ -96,14 +95,14 @@ static inline void call_advanced_exception_handler(advanced_handler_t pHandler)
 </#if>
 }
 
-/* MISRAC 2012 deviation block start */
-/* MISRA C-2012 Rule 21.6 deviated 98 times.  Deviation record ID -  H3_MISRAC_2012_R_21_6_DR_1 */
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 21.6 deviated 98 times.  Deviation record ID -  H3_MISRAC_2023_R_21_6_DR_1 */
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
     <#if COMPILER_CHOICE == "XC32">
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunknown-pragmas"
     </#if>
-    #pragma coverity compliance block deviate:98 "MISRA C-2012 Rule 21.6" "H3_MISRAC_2012_R_21_6_DR_1"
+    #pragma coverity compliance block deviate:98 "MISRA C-2023 Rule 21.6" "H3_MISRAC_2023_R_21_6_DR_1"
 </#if>
 static void __attribute__((noreturn)) ProcessHardFaultException(uint32_t * fault_args, unsigned int lr_value)
 {
@@ -414,7 +413,7 @@ static void __attribute__((noreturn)) ProcessUsageFaultException(uint32_t * faul
 </#if><#-- M4_M7_EXCEPTIONS -->
 <#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
 
-#pragma coverity compliance end_block "MISRA C-2012 Rule 21.2" "MISRA C-2012 Rule 21.6"
+#pragma coverity compliance end_block "MISRA C-2023 Rule 21.2" "MISRA C-2023 Rule 21.6"
 #pragma GCC diagnostic pop
 </#if><#-- COVERITY_SUPPRESS_DEVIATION -->
 </#if> <#-- ADVANCED_EXCEPTION -->
@@ -424,6 +423,18 @@ static void __attribute__((noreturn)) ProcessUsageFaultException(uint32_t * faul
 // Section: Exception Handling Routine
 // *****************************************************************************
 // *****************************************************************************
+/* MISRAC 2023 deviation block start */
+/* MISRA C-2023 Rule 8.6 might be violated here if the users provide a strong
+   implementations to these weak handler functions. Deviation record ID -  H3_MISRAC_2023_R_8_6_DR_1
+*/
+<#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
+    <#if COMPILER_CHOICE == "XC32">
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+    </#if>
+#pragma coverity compliance block deviate "MISRA C-2023 Rule 8.6" "H3_MISRAC_2023_R_8_6_DR_1"
+</#if>
+
 <#if .vars["NVIC_-14_0_ENABLE"] && .vars["NVIC_-14_0_HANDLER"] ==  "NonMaskableInt_Handler">
 
 /* Brief default interrupt handlers for core IRQs.*/
@@ -518,6 +529,13 @@ void __attribute__((noreturn, weak)) UsageFault_Handler(void)
 }
 </#if> <#-- M4_M7_EXCEPTIONS -->
 </#if><#-- ADVANCED_EXCEPTION -->
+<#if COVERITY_SUPPRESS_DEVIATION?? && COVERITY_SUPPRESS_DEVIATION>
+
+#pragma coverity compliance end_block "MISRA C-2023 Rule 8.6"
+#pragma GCC diagnostic pop
+</#if><#-- COVERITY_SUPPRESS_DEVIATION -->
+/* MISRAC 2023 deviation block end for rule 8.6 */
+
 /*******************************************************************************
  End of File
  */

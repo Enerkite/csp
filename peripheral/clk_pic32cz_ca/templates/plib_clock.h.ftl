@@ -131,7 +131,8 @@ this interface.
 */
 
 void CLOCK_Initialize (void);
-
+void CLOCK_CpuStepUp(void);
+void CLOCK_CpuStepDown(void);
 
 #ifdef __cplusplus // Provide C++ Compatibility
 }

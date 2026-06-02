@@ -49,7 +49,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 <#if RTC_MODULE_SELECTION ="MODE2">
+/* MISRAC-2023 Rule 21.10 deviation taken for using time.h header file */
+    <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma coverity compliance deviate "MISRA C-2023 Rule 21.10" "H3_MISRAC_2023_R_21_10_DR_1"
+    </#if>
 #include <time.h>
+    <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
+#pragma GCC diagnostic pop
+    </#if>
 </#if>
 
 // DOM-IGNORE-BEGIN
@@ -66,15 +75,15 @@ extern "C" {
 
 <#if RTC_MODULE_SELECTION = "MODE0">
     <#lt>/* Frequency of Counter Clock for RTC */
-    <#if RTC_MODE0_PRESCALER = "0x0">
-        <#lt>#define RTC_COUNTER_CLOCK_FREQUENCY         0U
+    <#if RTC_MODE0_PRESCALER == "0x0">
+        <#lt>#define RTC_COUNTER_CLOCK_FREQUENCY        (${core.RTC_CLOCK_FREQUENCY}U)
     <#else>
         <#lt>#define RTC_COUNTER_CLOCK_FREQUENCY        (${core.RTC_CLOCK_FREQUENCY}U / (1UL << (${RTC_MODE0_PRESCALER}U - 1U)))
     </#if>
 <#elseif RTC_MODULE_SELECTION = "MODE1">
     <#lt>/* Frequency of Counter Clock for RTC */
-    <#if RTC_MODE1_PRESCALER = "0x0">
-        <#lt>#define RTC_COUNTER_CLOCK_FREQUENCY         0U
+    <#if RTC_MODE1_PRESCALER == "0x0">
+        <#lt>#define RTC_COUNTER_CLOCK_FREQUENCY        (${core.RTC_CLOCK_FREQUENCY}U)
     <#else>
         <#lt>#define RTC_COUNTER_CLOCK_FREQUENCY        (${core.RTC_CLOCK_FREQUENCY}U / (1UL << (${RTC_MODE1_PRESCALER}U - 1U)))
     </#if>
@@ -154,7 +163,7 @@ extern "C" {
             <#lt>    BACKUP_REGISTER_6 = 6U,
             <#lt>    BACKUP_REGISTER_7 = 7U
             <#lt>} BACKUP_REGISTER;
-        </#if>       
+        </#if>
         <#list 0..(TAMPER_CHANNEL_NUMBER - 1) as i>
             <#lt> #define   TAMPER_CHANNEL_${i}  (${i}U)
         </#list>

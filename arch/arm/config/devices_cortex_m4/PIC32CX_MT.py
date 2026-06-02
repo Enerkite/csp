@@ -39,7 +39,7 @@ def set_startup_file(symbol,event):
 
 
 # load family specific configurations
-print("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 # productFamily (ID = "PRODUCT_FAMILY") symbol should be used everywhere to
 # identify the product family.This symbol is created inside core.py with the
@@ -185,6 +185,9 @@ coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "MP
 # #load systick
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/systick/config/systick.py")
 
+# #load DWT
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/dwt/config/dwt.py")
+
 # #  load CMCC
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/cmcc_11108/config/cmcc.py")
 
@@ -215,7 +218,7 @@ armSysStartSourceFile.setOverwrite(True)
 armSysStartSourceFile.setDestPath("")
 armSysStartSourceFile.setProjectPath("config/" + configName + "/")
 armSysStartSourceFile.setType("SOURCE")
-armSysStartSourceFile.setDependencies(set_startup_file, [compilerChoice.getID()])
+armSysStartSourceFile.setDependencies(genSysSourceFile, ["CoreSysStartupFile", "CoreSysFiles"])
 
 # generate libc_syscalls.c file
 armLibCSourceFile = coreComponent.createFileSymbol("LIBC_SYSCALLS_C", None)

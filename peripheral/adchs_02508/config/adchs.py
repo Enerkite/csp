@@ -21,6 +21,7 @@
 * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
 *****************************************************************************"""
 import math
+import re
 
 ###################################################################################################
 ########################### Global variables   #################################
@@ -29,6 +30,9 @@ import math
 global adchsInstanceName
 global adchsSym_ADCTRGMODE__SHxALT
 global isDMAFeatureAvailable
+#SHD variable
+global adchsSharedModuleInputs
+adchsSharedModuleInputs = 0
 # A set of arrays for keeping track of each chanel's parameters.
 adchsCHMenu = []
 adchsCONMenu = [None] * 64
@@ -195,6 +199,7 @@ def adchsAddKeyValueSetFromATDFInitValue(Parent, ModuleName, RegisterName, BitFi
             if value_groupNode is not None:
                 Component = Parent.createKeyValueSetSymbol(RegisterName + '__' +
                     BitFieldName, Menu)
+                Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterName))
                 adchsValGrp_names = []
                 _get_bitfield_names(value_groupNode, adchsValGrp_names)
 
@@ -255,6 +260,7 @@ def adchsAddBooleanFromATDF1ValueValueGroup(Parent, ModuleName, RegisterName, Bi
     labelNode = ATDF.getNode(value_groupPath)
     if labelNode is not None:
         Component = Parent.createBooleanSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterName))
         Component.setLabel(labelNode.getAttribute('caption'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -270,6 +276,7 @@ def adchsAddBooleanFromATDFBitfieldName(Parent, ModuleName, RegisterName, BitFie
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createBooleanSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterName))
         Component.setLabel(labelNode.getAttribute('name'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -285,6 +292,7 @@ def adchsAddBooleanFromATDFBitfieldCaption(Parent, ModuleName, RegisterName, Bit
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createBooleanSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterName))
         Component.setLabel(labelNode.getAttribute('caption'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -318,6 +326,7 @@ def adchsAddLongFromATDFRegisterCaption(Parent, ModuleName, RegisterName, BitFie
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createLongSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterName))
         Component.setLabel(labelNode.getAttribute('caption') + ' - ' + BitFieldName)
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -333,6 +342,7 @@ def adchsAddLongFromATDFBitfieldCaption(Parent, ModuleName, RegisterName, BitFie
     labelNode = ATDF.getNode(labelPath)
     if labelNode is not None:
         Component = Parent.createLongSymbol(RegisterName + '__' + BitFieldName, Menu)
+        Component.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterName))
         Component.setLabel(labelNode.getAttribute('caption'))
         Component.setDefaultValue(0)
         Component.setVisible(Visibility)
@@ -722,10 +732,12 @@ def adchsCalcIEC0(symbol, event):
     iec0 = 0x00
     agien = 0x0
     component = symbol.getComponent()
-    start = Irq_index % 32
     for channelID in range(0, len(adciec_depList[0])):
+        signalID = re.search(r'\d+', (adciec_depList[0][channelID])[::-1]).group()[::-1]
+        reg_name = "ADC_DATA" + signalID 
+        iec_bit_pos = int (getIRQnumber(reg_name)) % 32
         if (component.getSymbolValue(adciec_depList[0][channelID]) != None):
-            agien = agien + (component.getSymbolValue(adciec_depList[0][channelID]) << (start + channelID))
+            agien = agien + (component.getSymbolValue(adciec_depList[0][channelID]) << (iec_bit_pos))   
     iec0 = agien
     symbol.setValue(iec0, 2)
 
@@ -734,8 +746,11 @@ def adchsCalcIEC1(symbol, event):
     agien = 0x0
     component = symbol.getComponent()
     for channelID in range(0, len(adciec_depList[1])):
+        signalID = re.search(r'\d+', (adciec_depList[1][channelID])[::-1]).group()[::-1]
+        reg_name = "ADC_DATA" + signalID 
+        iec_bit_pos = int (getIRQnumber(reg_name)) % 32
         if (component.getSymbolValue(adciec_depList[1][channelID]) != None):
-            agien = agien + (component.getSymbolValue(adciec_depList[1][channelID]) << (channelID))
+            agien = agien + (component.getSymbolValue(adciec_depList[1][channelID]) << iec_bit_pos)
     iec1 = agien
     symbol.setValue(iec1, 2)
 
@@ -744,8 +759,11 @@ def adchsCalcIEC2(symbol, event):
     agien = 0x0
     component = symbol.getComponent()
     for channelID in range(0, len(adciec_depList[2])):
+        signalID = re.search(r'\d+', (adciec_depList[2][channelID])[::-1]).group()[::-1]
+        reg_name = "ADC_DATA" + signalID 
+        iec_bit_pos = int (getIRQnumber(reg_name)) % 32
         if (component.getSymbolValue(adciec_depList[2][channelID]) != None):
-            agien = agien + (component.getSymbolValue(adciec_depList[2][channelID]) << (channelID))
+            agien = agien + (component.getSymbolValue(adciec_depList[2][channelID]) << (iec_bit_pos))
     iec2 = agien
     symbol.setValue(iec2, 2)
 
@@ -980,7 +998,90 @@ def resetChannels():
 
     Database.setSymbolValue(component, "ADCGIRQEN"+str((lastAdcChU/4) + 1)+"__AGIEN"+str(lastAdcChU), False)
 
-def handleMessage(messageID, args):
+def setAdcConfigParams( args ):
+    """The ADC PLIB has following configuration data
+                "id" : Unique identifier
+                "instance" : Instance of ADC to be configured
+                "channel"  : Channel of ADC to be set
+                "resolution" : ADC resolution
+                "mode": Conversion mode
+                "reference": ADC PLIB reference signals
+                "conversion_time" : Conversion time in microsecond
+                "trigger" : Trigger source
+                "result_alignment" : Left or right aligned results
+                "enable_eoc_event" : Enable end of conversion event
+                "enable_eoc_interrupt" : Enable end of conversion flag
+                "enable_slave_mode" : Enable slave mode
+                "enable_dma_sequence" : Enable DMA sequencing
+    """
+
+    component = str(adchsInstanceName.getValue()).lower()
+    instanceNum = int(filter(str.isdigit, str(args["instance"])))
+
+    if args["enable"] == True:
+
+        # Calculate prescaler and ADC sample counts based on requested conversion time
+        if not(args["conversion_time"] == "default"):
+            # ToDO: Place Holder. Add the code later
+            pass
+
+        # Set  ADC reference
+        if not(args["reference"] == "default"):
+            # ToDO: Placeholder. To be done later
+            pass
+
+        # Find the key index of the trigger as a PWM channel as per TRIGGER argument
+        count = adchsSym_ADCTRG__TRGSRC[(instanceNum/4) + 1].getKeyCount()
+        triggerIndex = 0
+        for i in range(0,count):
+            if ("PWM Generator "+ args["trigger"] in adchsSym_ADCTRG__TRGSRC[(instanceNum/4) + 1].getKey(i) ):
+                triggerIndex = i
+                break
+
+        # Enable ADC modules, alternate channel, trigger
+        if (instanceNum < 7):
+            Database.setSymbolValue(component, "ADCTRG" + str((instanceNum/4) + 1) + "__TRGSRC" + str(instanceNum), triggerIndex )
+            Database.setSymbolValue(component, "INTERRUPT_ADC_RESULT", "INT_SOURCE_ADC_DATA" + str(instanceNum))
+            Database.setSymbolValue(component, "AN" + str(instanceNum), True)
+
+            #Enable interrupt
+            Database.setSymbolValue(component, "ADCGIRQEN" + str((instanceNum >> 4 ) + 1) + "__AGIEN" + str(instanceNum), args['enable_eoc_interrupt'] )
+            adchsSym_ADCTRGMODE__SHxALT[instanceNum].setSelectedKey( "AN" + args["channel"] )
+
+            # Resolution
+            adchsSym_ADCTIME__SELRES[instanceNum].setSelectedKey(args["resolution"]+" bits")
+
+        else:
+            Database.setSymbolValue(component, "ADCTRG" + str((int(args["channel"])/4) + 1)+"__TRGSRC" + args["channel"], triggerIndex )
+            Database.setSymbolValue(component, "INTERRUPT_ADC_RESULT", "INT_SOURCE_ADC_DATA"+ args["channel"])
+
+            #interrupt
+            Database.setSymbolValue(component, "ADCGIRQEN"+ str(int(args["channel"]) >> 4) + "__AGIEN" + args["channel"], args['enable_eoc_interrupt'] )
+            Database.setSymbolValue(component, "AN"+ args["channel"], True)
+
+            # Resolution
+            if args["resolution"] == "12":
+                adchsSym_ADCCON1__SELRES.setSelectedKey(args["resolution"] +" bits (default)")
+            else:
+                adchsSym_ADCCON1__SELRES.setSelectedKey(args["resolution"] +" bits")
+
+        #Enable ADC Module
+        Database.setSymbolValue(component, "ADCHS_" + str(instanceNum) + "_ENABLE", True )
+
+    else:
+       # Enable ADC modules, alternate channel, trigger
+        if (instanceNum < 7):
+            Database.setSymbolValue(component, "AN" + str(instanceNum), False)
+        else:
+            Database.setSymbolValue(component, "AN"+ args["channel"], False)
+
+        # Set ADC result interrupt as false
+        Database.setSymbolValue(component, "ADCGIRQEN"+str((int(args["channel"]) >> 4) + 1 )+"__AGIEN"+ args["channel"], False)
+
+        #Disable ADC Module
+        Database.setSymbolValue(component, "ADCHS_" + str(instanceNum) + "_ENABLE", False )
+
+def handleMessage(id, args):
     global adchsSym_ADCTRGMODE__SHxALT
     global adchsSym_ADCCON1__SELRES
     global adchsSym_ADCTRG__TRGSRC
@@ -990,7 +1091,7 @@ def handleMessage(messageID, args):
     global lastADCChVdc
     dict = {}
 
-    if (messageID == "PMSM_FOC_ADC_CH_CONF"):
+    if (id == "PMSM_FOC_ADC_CH_CONF"):
         component = str(adchsInstanceName.getValue()).lower()
 
         resetChannels()
@@ -1026,7 +1127,8 @@ def handleMessage(messageID, args):
             #interrupt of Ph U channel
             Database.setSymbolValue(component, "ADCGIRQEN"+str((phUModule/4) + 1)+"__AGIEN"+str(phUModule), True)
             adchsSym_ADCTRGMODE__SHxALT[phUModule].setSelectedKey("AN"+str(args['PHASE_U_CH']))
-            #resolution
+
+            # Resolution
             adchsSym_ADCTIME__SELRES[phUModule].setSelectedKey(str(resolution)+" bits")
 
         else:
@@ -1084,7 +1186,8 @@ def handleMessage(messageID, args):
             Database.setSymbolValue(component, "ADC_CH_POT", "ADCHS_CH"+str(phPotCh))
             Database.setSymbolValue(component, "ADCTRG"+str((phPotCh/4) + 1)+"__TRGSRC"+str(phPotCh), triggerIndex)
             Database.setSymbolValue(component, "AN"+str(phPotCh), True)
-            #resolution
+
+            # Resolution
             if str(resolution) == "12":
                 adchsSym_ADCCON1__SELRES.setSelectedKey(str(resolution)+" bits (default)")
             else:
@@ -1096,7 +1199,50 @@ def handleMessage(messageID, args):
         Database.setSymbolValue(component, "ADCHS_"+str(phDCBusModule)+"_ENABLE", True)
         Database.setSymbolValue(component, "ADCHS_"+str(phPotModule)+"_ENABLE", True)
 
+    elif (id == "SET_ADC_CONFIG_PARAMS"):
+        # Set ADC configuration parameters
+        setAdcConfigParams( args )
+
+    elif (id == "ADC_CONFIG_HW_IO"):
+        global adchsSharedModuleInputs
+        component = str(adchsInstanceName.getValue()).lower()
+        channel, enable = args['config']
+
+        symbolName3 = ""
+
+        if channel > 5:
+            symbolName = "ADCHS_7_ENABLE"
+            if channel < 33:
+                symbolName3 = "ADCCSS1__CSS{}".format(channel)
+            else:
+                symbolName3 = "ADCCSS2__CSS{}".format(channel)
+                
+            if enable == False:
+                if adchsSharedModuleInputs > 0:
+                    adchsSharedModuleInputs = adchsSharedModuleInputs - 1
+            else:
+                adchsSharedModuleInputs = adchsSharedModuleInputs + 1
+        else:
+            symbolName = "ADCHS_{}_ENABLE".format(channel)
+            
+        symbolName2 = "AN{}".format(channel)
+            
+        if enable == False:
+            Database.clearSymbolValue(component, symbolName2)
+            if symbolName == "ADCHS_7_ENABLE" and adchsSharedModuleInputs == 0:
+                Database.clearSymbolValue(component, symbolName)
+            if symbolName3 != "":
+                Database.clearSymbolValue(component, symbolName3)
+        else:
+            Database.setSymbolValue(component, symbolName, True)
+            Database.setSymbolValue(component, symbolName2, True)
+            if symbolName3 != "":
+                Database.setSymbolValue(component, symbolName3, True)
+            
+        dict = {"Result": "Success"}
+
     return dict
+
 ###################################################################################################
 ########################### Component   #################################
 ###################################################################################################
@@ -1120,6 +1266,7 @@ def instantiateComponent(adchsComponent):
     global InterruptVectorUpdate
     global isDMAFeatureAvailable
     global ADC_Input_Signals_List
+    global ADC_Input_Signals_Type_Map
 
     MAX_AVAILABLE_SIGNALS = 64
 
@@ -1214,6 +1361,7 @@ def instantiateComponent(adchsComponent):
     ADC_Max_Class_1 = 0
     ADC_Class_2_Count = 0
     ADC_Input_Signals_List = [False] * MAX_AVAILABLE_SIGNALS
+    ADC_Input_Signals_Type_Map = dict()
 
     # Each of the dedicated ADCHS SARs must have a DIGEN bit field in the
     # ADCCON3 SFR.
@@ -1257,13 +1405,15 @@ def instantiateComponent(adchsComponent):
 
         #Find ADC input pins from ADCHS signals
         adc = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"ADCHS\"]/instance@[name=\""+adchsInstanceName.getValue()+"\"]/signals")
-        adc_signals = adc.getChildren()
-        for pad in range(0, len(adc_signals)):
-            group = adc_signals[pad].getAttribute("group")
-            if (("AIN" in group) and ("index" in adc_signals[pad].getAttributeList())):
-                padSignal = adc_signals[pad].getAttribute("pad")
-                if padSignal in availablePins:
-                    ADC_Input_Signals_List[int(adc_signals[pad].getAttribute("index"))] = True
+        if (adc != None):
+            adc_signals = adc.getChildren()
+            for pad in range(0, len(adc_signals)):
+                group = adc_signals[pad].getAttribute("group")
+                if (("AIN" in group) and ("index" in adc_signals[pad].getAttributeList())):
+                    padSignal = adc_signals[pad].getAttribute("pad")
+                    if padSignal in availablePins:
+                        ADC_Input_Signals_List[int(adc_signals[pad].getAttribute("index"))] = True
+                        ADC_Input_Signals_Type_Map["AIN" + adc_signals[pad].getAttribute("index")] = "External"
 
         #Find internal ADC signals from ADCHS parameters
         adc = ATDF.getNode("/avr-tools-device-file/devices/device/peripherals/module@[name=\"ADCHS\"]/instance@[name=\""+adchsInstanceName.getValue()+"\"]/parameters")
@@ -1272,6 +1422,7 @@ def instantiateComponent(adchsComponent):
             for pad in range(0, len(adc_parameters)):
                 if ("AIN" in adc_parameters[pad].getAttribute("name")):
                     ADC_Input_Signals_List[int(adc_parameters[pad].getAttribute("value"))] = True
+                    ADC_Input_Signals_Type_Map["AIN" + adc_parameters[pad].getAttribute("value")] = adc_parameters[pad].getAttribute("caption")
 
     # For PIC32M devices: Each Analog channel on the part must have a Data Register.  Each existing
     # Data register should indicate that there is an Analog pin for that signal.
@@ -1480,6 +1631,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCON1__DMABL = adchsAddKeyValueSetFromATDFInitValue(adchsComponent, Module, "ADCCON1", "DMABL", adchsMenu, True)
 
         adchsSym_ADCDSTAT__DMACEN = adchsComponent.createBooleanSymbol("ADCDSTAT__DMACEN", adchsMenu)
+        adchsSym_ADCDSTAT__DMACEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCDSTAT")
         adchsSym_ADCDSTAT__DMACEN.setLabel("Enable storing of sample count in DMA buffer")
         adchsSym_ADCDSTAT__DMACEN.setDefaultValue(False)
         adcDMAStat_deplist.append("ADCDSTAT__DMACEN")
@@ -1554,9 +1706,10 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCTRGMODE__SHxALT[channelID] = adchsAddKeyValueSetFromATDFInitValue(
             adchsComponent, Module, "ADCTRGMODE", "SH" + str(channelID) + "ALT",
             adchsSym_CH_ENABLE[channelID], False)
-        adchsSym_ADCTRGMODE__SHxALT[channelID].setDependencies(adchsVisibilityOnEvent,
-            ["ADCHS_"+str(channelID)+"_ENABLE"])
-        adctrgmode_deplist.append("ADCTRGMODE__SH" + str(channelID) + "ALT")
+        if adchsSym_ADCTRGMODE__SHxALT[channelID] != None:
+            adchsSym_ADCTRGMODE__SHxALT[channelID].setDependencies(adchsVisibilityOnEvent,
+                ["ADCHS_"+str(channelID)+"_ENABLE"])
+            adctrgmode_deplist.append("ADCTRGMODE__SH" + str(channelID) + "ALT")
 
 
         RegisterNameBase1 = "ADC"
@@ -1646,6 +1799,7 @@ def instantiateComponent(adchsComponent):
 
             adchsSym_ADCTIME__BCHEN.append(channelID)
             adchsSym_ADCTIME__BCHEN[channelID] = adchsComponent.createBooleanSymbol(RegisterBaseName_ADCTIME + '__' + BitFieldBaseName_BCHEN, adchsSym_CH_ENABLE[channelID])
+            adchsSym_ADCTIME__BCHEN[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterBaseName_ADCTIME))
             adchsSym_ADCTIME__BCHEN[channelID].setVisible(False)
             adchsSym_ADCTIME__BCHEN[channelID].setLabel("Enable DMA?")
             adchsSym_ADCTIME__BCHEN[channelID].setDefaultValue(False)
@@ -1660,6 +1814,7 @@ def instantiateComponent(adchsComponent):
 
             adchsSym_ADCDMASTAT__RAFIEN.append(channelID)
             adchsSym_ADCDMASTAT__RAFIEN[channelID] = adchsComponent.createBooleanSymbol(RegisterBaseName_ADCDSTAT + '__' + BitFieldBaseName_RAFIEN, adchsSym_ADCTIME__BCHEN[channelID])
+            adchsSym_ADCDMASTAT__RAFIEN[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterBaseName_ADCDSTAT))
             adchsSym_ADCDMASTAT__RAFIEN[channelID].setVisible(False)
             adchsSym_ADCDMASTAT__RAFIEN[channelID].setLabel("Enable Buffer A Full Interrupt?")
             adchsSym_ADCDMASTAT__RAFIEN[channelID].setDefaultValue(False)
@@ -1673,6 +1828,7 @@ def instantiateComponent(adchsComponent):
 
             adchsSym_ADCDMASTAT__RBFIEN.append(channelID)
             adchsSym_ADCDMASTAT__RBFIEN[channelID] = adchsComponent.createBooleanSymbol(RegisterBaseName_ADCDSTAT + '__' + BitFieldBaseName_RBFIEN, adchsSym_ADCTIME__BCHEN[channelID])
+            adchsSym_ADCDMASTAT__RBFIEN[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:" + str(RegisterBaseName_ADCDSTAT))
             adchsSym_ADCDMASTAT__RBFIEN[channelID].setVisible(False)
             adchsSym_ADCDMASTAT__RBFIEN[channelID].setLabel("Enable Buffer B Full Interrupt?")
             adchsSym_ADCDMASTAT__RBFIEN[channelID].setDefaultValue(False)
@@ -1835,7 +1991,11 @@ def instantiateComponent(adchsComponent):
 
             adchsCONMenu[signalID] = adchsComponent.createBooleanSymbol(
                 "AN"+str(signalID), menu)
-            adchsCONMenu[signalID].setLabel("Configure Analog Input AN"+str(signalID))
+            signalLabel = "Configure Analog Input AN" + str(signalID)
+            ain_sig = "AIN"+str(signalID)
+            if (ain_sig in ADC_Input_Signals_Type_Map) and (ADC_Input_Signals_Type_Map[ain_sig] != "External"):
+                signalLabel += " (" + ADC_Input_Signals_Type_Map[ain_sig] + ")"
+            adchsCONMenu[signalID].setLabel(signalLabel)
 
             RegisterName = RegisterBaseName_ADCIMCON + str((signalID/16)+1)
             index = int(((signalID/16)))
@@ -1904,12 +2064,14 @@ def instantiateComponent(adchsComponent):
         adchsSym_DCx_IFS.setVisible(False)
 
         adchsSym_ADCCMPCON_ENDCMP = adchsComponent.createBooleanSymbol("ADCCMPCON" + str(n) + "__ENDCMP", adchsCompMenu)
+        adchsSym_ADCCMPCON_ENDCMP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPCON1")
         adchsSym_ADCCMPCON_ENDCMP.setLabel("Digital Comparator " + str(n) + " Enable")
         adchsSym_ADCCMPCON_deplist[n-1].append("ADCCMPCON" + str(n) + "__ENDCMP")
         adchsSym_ADCCMPEN_deplist[n-1].append("ADCCMPCON" + str(n) + "__ENDCMP")
         adchsSym_ADCCMP_deplist[n-1].append("ADCCMPCON" + str(n) + "__ENDCMP")
 
         adchsSym_ADCCMP_DCMPHI = adchsComponent.createIntegerSymbol("ADCCMP" + str(n) + "__DCMPHI", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMP_DCMPHI.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMP1")
         adchsSym_ADCCMP_DCMPHI.setLabel("High Limit")
         adchsSym_ADCCMP_DCMPHI.setMin(0)
         adchsSym_ADCCMP_DCMPHI.setMax(65535)
@@ -1919,6 +2081,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCMP_deplist[n-1].append("ADCCMP" + str(n) + "__DCMPHI")
 
         adchsSym_ADCCMP_DCMPLO = adchsComponent.createIntegerSymbol("ADCCMP" + str(n) + "__DCMPLO", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMP_DCMPLO.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMP1")
         adchsSym_ADCCMP_DCMPLO.setLabel("Low Limit")
         adchsSym_ADCCMP_DCMPLO.setMin(0)
         adchsSym_ADCCMP_DCMPLO.setMax(65535)
@@ -1928,6 +2091,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCMP_deplist[n-1].append("ADCCMP" + str(n) + "__DCMPLO")
 
         adchsSym_ADCCMPCON_IEHIHI = adchsComponent.createBooleanSymbol("ADCCMPCON" + str(n) + "__IEHIHI", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMPCON_IEHIHI.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPCON1")
         adchsSym_ADCCMPCON_IEHIHI.setLabel("Enable Comparision Event - ADC value >= High Limit")
         adchsSym_ADCCMPCON_IEHIHI.setDefaultValue(False)
         adchsSym_ADCCMPCON_IEHIHI.setVisible(False)
@@ -1935,6 +2099,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCMPCON_deplist[n-1].append("ADCCMPCON" + str(n) + "__IEHIHI")
 
         adchsSym_ADCCMPCON_IEHILO = adchsComponent.createBooleanSymbol("ADCCMPCON" + str(n) + "__IEHILO", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMPCON_IEHILO.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPCON1")
         adchsSym_ADCCMPCON_IEHILO.setLabel("Enable Comparision Event - ADC value < High Limit")
         adchsSym_ADCCMPCON_IEHILO.setDefaultValue(False)
         adchsSym_ADCCMPCON_IEHILO.setVisible(False)
@@ -1942,6 +2107,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCMPCON_deplist[n-1].append("ADCCMPCON" + str(n) + "__IEHILO")
 
         adchsSym_ADCCMPCON_IELOHI = adchsComponent.createBooleanSymbol("ADCCMPCON" + str(n) + "__IELOHI", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMPCON_IELOHI.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPCON1")
         adchsSym_ADCCMPCON_IELOHI.setLabel("Enable Comparision Event - ADC value >= Low Limit")
         adchsSym_ADCCMPCON_IELOHI.setDefaultValue(False)
         adchsSym_ADCCMPCON_IELOHI.setVisible(False)
@@ -1949,6 +2115,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCMPCON_deplist[n-1].append("ADCCMPCON" + str(n) + "__IELOHI")
 
         adchsSym_ADCCMPCON_IELOLO = adchsComponent.createBooleanSymbol("ADCCMPCON" + str(n) + "__IELOLO", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMPCON_IELOLO.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPCON1")
         adchsSym_ADCCMPCON_IELOLO.setLabel("Enable Comparision Event - ADC value < Low Limit")
         adchsSym_ADCCMPCON_IELOLO.setDefaultValue(False)
         adchsSym_ADCCMPCON_IELOLO.setVisible(False)
@@ -1956,6 +2123,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCMPCON_deplist[n-1].append("ADCCMPCON" + str(n) + "__IELOLO")
 
         adchsSym_ADCCMPCON_IEBTWN = adchsComponent.createBooleanSymbol("ADCCMPCON" + str(n) + "__IEBTWN", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMPCON_IEBTWN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPCON1")
         adchsSym_ADCCMPCON_IEBTWN.setLabel("Enable Comparision Event - Low Limit <= ADC Value < High Limit")
         adchsSym_ADCCMPCON_IEBTWN.setDefaultValue(False)
         adchsSym_ADCCMPCON_IEBTWN.setVisible(False)
@@ -1963,6 +2131,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCCMPCON_deplist[n-1].append("ADCCMPCON" + str(n) + "__IEBTWN")
 
         adchsSym_ADCCMPCON_DCMPGIEN = adchsComponent.createBooleanSymbol("ADCCMPCON" + str(n) + "__DCMPGIEN", adchsSym_ADCCMPCON_ENDCMP)
+        adchsSym_ADCCMPCON_DCMPGIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPCON1")
         adchsSym_ADCCMPCON_DCMPGIEN.setLabel("Enable Interrupt")
         adchsSym_ADCCMPCON_DCMPGIEN.setDefaultValue(False)
         adchsSym_ADCCMPCON_DCMPGIEN.setVisible(False)
@@ -1972,6 +2141,7 @@ def instantiateComponent(adchsComponent):
         for index in range (0, 32):
             if (adchsSym_CMP_Channel[index] == 1) and (ADC_Input_Signals_List[index] == True):
                 adchsSym_ADCCMPEN_CMPE = adchsComponent.createBooleanSymbol("ADCCMPEN" + str(n) + "__CMPE" + str(index), adchsSym_ADCCMPCON_ENDCMP)
+                adchsSym_ADCCMPEN_CMPE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCMPEN1")
                 adchsSym_ADCCMPEN_CMPE.setLabel("Enable Comparator on Analog Input AN" + str(index))
                 adchsSym_ADCCMPEN_CMPE.setVisible(False)
                 adchsSym_ADCCMPEN_CMPE.setDependencies(adcCompVisibility, ["ADCCMPCON" + str(n) + "__ENDCMP"])
@@ -2025,10 +2195,12 @@ def instantiateComponent(adchsComponent):
         adchsSym_DFx_IFS.setVisible(False)
 
         adchsSym_ADCFLTR_AFEN = adchsComponent.createBooleanSymbol("ADCFLTR" + str(n) + "__AFEN", adchsFilterMenu)
+        adchsSym_ADCFLTR_AFEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCFLTR1")
         adchsSym_ADCFLTR_AFEN.setLabel("Digital Filter " + str(n) + " Enable")
         adchsSym_ADCFLTR_deplist[n-1].append("ADCFLTR" + str(n) + "__AFEN")
 
         adchsSym_ADCFLTR_DFMODE = adchsComponent.createKeyValueSetSymbol("ADCFLTR" + str(n) + "__DFMODE", adchsSym_ADCFLTR_AFEN)
+        adchsSym_ADCFLTR_DFMODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCFLTR1")
         adchsSym_ADCFLTR_DFMODE.setLabel("Filter Mode")
         adchsSym_ADCFLTR_DFMODE.addKey("0", "0", "Oversampling Mode")
         adchsSym_ADCFLTR_DFMODE.addKey("1", "1", "Averaging Mode")
@@ -2040,6 +2212,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCFLTR_deplist[n-1].append("ADCFLTR" + str(n) + "__DFMODE")
 
         adchsSym_ADCFLTR_OVRSAM = adchsComponent.createKeyValueSetSymbol("ADCFLTR" + str(n) + "__OVRSAM", adchsSym_ADCFLTR_AFEN)
+        adchsSym_ADCFLTR_OVRSAM.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCFLTR1")
         adchsSym_ADCFLTR_OVRSAM.setLabel("Oversampling Ratio")
         for id in range(len(OversamplingModeDescription)):
             for key, desc in OversamplingModeDescription[id].items():
@@ -2055,6 +2228,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_ADCFLTR_deplist[n-1].append("ADCFLTR" + str(n) + "__OVRSAM")
 
         adchsSym_ADCFLTR_CHNLID = adchsComponent.createIntegerSymbol("ADCFLTR" + str(n) + "__CHNLID", adchsSym_ADCFLTR_AFEN)
+        adchsSym_ADCFLTR_CHNLID.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCFLTR1")
         adchsSym_ADCFLTR_CHNLID.setLabel("Channel ID to Filter")
         adchsSym_ADCFLTR_CHNLID.setMin(0)
         adchsSym_ADCFLTR_CHNLID.setMax(31)
@@ -2069,6 +2243,7 @@ def instantiateComponent(adchsComponent):
         adchsSym_FltrChnlidComment.setDependencies(channelFilterIDComment, ["ADCFLTR" + str(n) + "__CHNLID"])
 
         adchsSym_ADCFLTR_AFGIEN = adchsComponent.createBooleanSymbol("ADCFLTR" + str(n) + "__AFGIEN", adchsSym_ADCFLTR_AFEN)
+        adchsSym_ADCFLTR_AFGIEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCFLTR1")
         adchsSym_ADCFLTR_AFGIEN.setLabel("Enable Interrupt")
         adchsSym_ADCFLTR_AFGIEN.setVisible(False)
         adchsSym_ADCFLTR_AFGIEN.setDependencies(adcFilterVisibility, ["ADCFLTR" + str(n) + "__AFEN"])
@@ -2095,6 +2270,7 @@ def instantiateComponent(adchsComponent):
     adccon1_deplist = ["ADCCON1__IRQVS", "ADCCON1__SIDL", "ADCCON1__CVDEN", "ADCCON1__FRACT",
     "ADCCON1__SELRES", "ADCCON1__STRGLVL", "ADCCON1__FSSCLKEN", "ADCCON1__FSPBCLKEN", "ADCCON1__STRGSRC", "ADCCON1__DMABL"]
     adchsSym_ADCCON1 = adchsComponent.createHexSymbol("ADCHS_ADCCON1", adchsMenu)
+    adchsSym_ADCCON1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCON1")
     adchsSym_ADCCON1.setLabel("ADCCON1 register value")
     adchsSym_ADCCON1.setVisible(False)
     adchsSym_ADCCON1.setDefaultValue(0x600000)
@@ -2102,6 +2278,7 @@ def instantiateComponent(adchsComponent):
 
     adccon2_deplist = ["ADCCON2__CVDCPL", "ADCCON2__ADCDIV", "ADCCON2__SAMC", "ADCHS_7_ENABLE", "ADCCON2__EOSIEN"]
     adchsSym_ADCCON2 = adchsComponent.createHexSymbol("ADCHS_ADCCON2", adchsMenu)
+    adchsSym_ADCCON2.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCON2")
     adchsSym_ADCCON2.setLabel("ADCCON2 register value")
     adchsSym_ADCCON2.setVisible(False)
     adchsSym_ADCCON2.setDefaultValue(0x0)
@@ -2109,6 +2286,7 @@ def instantiateComponent(adchsComponent):
 
     adccon3_deplist = ["ADCCON3__VREFSEL", "ADCCON3__CONCLKDIV", "ADCCON3__ADCSEL"]
     adchsSym_ADCCON3 = adchsComponent.createHexSymbol("ADCHS_ADCCON3", adchsMenu)
+    adchsSym_ADCCON3.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCON3")
     adchsSym_ADCCON3.setLabel("ADCCON3 register value")
     adchsSym_ADCCON3.setVisible(False)
     adchsSym_ADCCON3.setDefaultValue(0x1000000)
@@ -2116,29 +2294,34 @@ def instantiateComponent(adchsComponent):
 
     adchsSym_ADCTRGMODE = adchsComponent.createHexSymbol("ADCHS_ADCTRGMODE", None)
     adchsSym_ADCTRGMODE.setLabel("ADCTRGMODE Register")
+    adchsSym_ADCTRGMODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCTRGMODE")
     adchsSym_ADCTRGMODE.setVisible(False)
     adchsSym_ADCTRGMODE.setDependencies(adchsCalcADCTRGMODE, adctrgmode_deplist)
 
     adchsSym_ADCIMCON1 = adchsComponent.createHexSymbol("ADCHS_ADCIMCON1", None)
     adchsSym_ADCIMCON1.setLabel("ADCIMCON1 Register")
+    adchsSym_ADCIMCON1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCIMCON1")
     adchsSym_ADCIMCON1.setVisible(False)
     adchsSym_ADCIMCON1.setDependencies(adchsCalcADCIMCON1, adcimcon_deplist[0])
 
     if ATDF.getNode(adchsATDFRegisterPath("ADCHS", "ADCIMCON2")) is not None:
         adchsSym_ADCIMCON2 = adchsComponent.createHexSymbol("ADCHS_ADCIMCON2", None)
         adchsSym_ADCIMCON2.setLabel("ADCIMCON2 Register")
+        adchsSym_ADCIMCON2.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCIMCON2")
         adchsSym_ADCIMCON2.setVisible(False)
         adchsSym_ADCIMCON2.setDependencies(adchsCalcADCIMCON2, adcimcon_deplist[1])
 
     if ATDF.getNode(adchsATDFRegisterPath("ADCHS", "ADCIMCON3")) is not None:
         adchsSym_ADCIMCON3 = adchsComponent.createHexSymbol("ADCHS_ADCIMCON3", None)
         adchsSym_ADCIMCON3.setLabel("ADCIMCON3 Register")
+        adchsSym_ADCIMCON3.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCIMCON3")
         adchsSym_ADCIMCON3.setVisible(False)
         adchsSym_ADCIMCON3.setDependencies(adchsCalcADCIMCON3, adcimcon_deplist[2])
 
     if ATDF.getNode(adchsATDFRegisterPath("ADCHS", "ADCIMCON4")) is not None:
         adchsSym_ADCIMCON4 = adchsComponent.createHexSymbol("ADCHS_ADCIMCON4", None)
         adchsSym_ADCIMCON4.setLabel("ADCIMCON4 Register")
+        adchsSym_ADCIMCON4.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCIMCON4")
         adchsSym_ADCIMCON4.setVisible(False)
         adchsSym_ADCIMCON4.setDependencies(adchsCalcADCIMCON4, adcimcon_deplist[3])
 
@@ -2159,11 +2342,13 @@ def instantiateComponent(adchsComponent):
         if (adctrg_deplist[ctrg_id - 1] != []):
             adchsSym_ADCTRG[ctrg_id] = adchsComponent.createHexSymbol("ADCHS_ADCTRG" + str(ctrg_id), None)
             adchsSym_ADCTRG[ctrg_id].setLabel("ADCTRG" + str(ctrg_id) + "Register")
+            adchsSym_ADCTRG[ctrg_id].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCTRG1")
             adchsSym_ADCTRG[ctrg_id].setVisible(False)
             adchsSym_ADCTRG[ctrg_id].setDependencies(adchsCalcADCTRG,adctrg_deplist[ctrg_id - 1])
 
     adchsSym_ADCTGSNS = adchsComponent.createHexSymbol("ADCHS_ADCTRGSNS", None)
     adchsSym_ADCTGSNS.setLabel("ADCTRGSNS Register")
+    adchsSym_ADCTGSNS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCTRGSNS")
     adchsSym_ADCTGSNS.setVisible(False)
     adchsSym_ADCTGSNS.setDependencies(adchsCalcADCTRGSNS, adctrgsns_deplist)
 
@@ -2179,21 +2364,25 @@ def instantiateComponent(adchsComponent):
 
     adchsSym_ADCGIRQEN1 = adchsComponent.createHexSymbol("ADCHS_ADCGIRQEN1", None)
     adchsSym_ADCGIRQEN1.setLabel("ADCGIRQEN1 Register")
+    adchsSym_ADCGIRQEN1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCGIRQEN1")
     adchsSym_ADCGIRQEN1.setVisible(False)
     adchsSym_ADCGIRQEN1.setDependencies(adchsCalcADCGIRQEN1, adcgirqen_deplist[0])
 
     adchsSym_ADCGIRQEN2 = adchsComponent.createHexSymbol("ADCHS_ADCGIRQEN2", None)
     adchsSym_ADCGIRQEN2.setLabel("ADCGIRQEN2 Register")
+    adchsSym_ADCGIRQEN2.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCGIRQEN2")
     adchsSym_ADCGIRQEN2.setVisible(False)
     adchsSym_ADCGIRQEN2.setDependencies(adchsCalcADCGIRQEN2, adcgirqen_deplist[1])
 
     adchsSym_ADCCSS1 = adchsComponent.createHexSymbol("ADCHS_ADCCSS1", None)
     adchsSym_ADCCSS1.setLabel("ADCCSS1 Register")
+    adchsSym_ADCCSS1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCSS1")
     adchsSym_ADCCSS1.setVisible(False)
     adchsSym_ADCCSS1.setDependencies(adchsCalcADCCSS1, adccss_deplist[0])
 
     adchsSym_ADCCSS2 = adchsComponent.createHexSymbol("ADCHS_ADCCSS2", None)
     adchsSym_ADCCSS2.setLabel("ADCCSS2 Register")
+    adchsSym_ADCCSS2.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCCSS2")
     adchsSym_ADCCSS2.setVisible(False)
     adchsSym_ADCCSS2.setDependencies(adchsCalcADCCSS2, adccss_deplist[1])
 
@@ -2204,6 +2393,7 @@ def instantiateComponent(adchsComponent):
 
         adchsSym_ADCDSTAT = adchsComponent.createHexSymbol("ADCHS_ADCDSTAT", None)
         adchsSym_ADCDSTAT.setLabel("ADCDSTAT Register")
+        adchsSym_ADCDSTAT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:ADCDSTAT")
         adchsSym_ADCDSTAT.setVisible(False)
         adchsSym_ADCDSTAT.setDependencies(adchsCalcADCDSTAT, adcDMAStat_deplist)
 
@@ -2222,18 +2412,21 @@ def instantiateComponent(adchsComponent):
     if ADC_MIPS_Interrupt == True:
         adchsSym_IEC0 = adchsComponent.createHexSymbol("ADCHS_IEC0", None)
         adchsSym_IEC0.setLabel("IEC0 Register")
+        adchsSym_IEC0.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:%NOREGISTER%")
         adchsSym_IEC0.setVisible(False)
         adchsSym_IEC0.setDependencies(adchsCalcIEC0, adciec_depList[0])
 
         if (ADC_MAX_EIC_REG > 1):
             adchsSym_IEC1 = adchsComponent.createHexSymbol("ADCHS_IEC1", None)
             adchsSym_IEC1.setLabel("IEC1 Register")
+            adchsSym_IEC1.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:%NOREGISTER%")
             adchsSym_IEC1.setVisible(False)
             adchsSym_IEC1.setDependencies(adchsCalcIEC1, adciec_depList[1])
 
         if(ADC_MAX_EIC_REG > 2):
             adchsSym_IEC2 = adchsComponent.createHexSymbol("ADCHS_IEC2", None)
             adchsSym_IEC2.setLabel("IEC2 Register")
+            adchsSym_IEC2.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adchs_02508;register:%NOREGISTER%")
             adchsSym_IEC2.setVisible(False)
             adchsSym_IEC2.setDependencies(adchsCalcIEC2, adciec_depList[2])
 
@@ -2316,4 +2509,13 @@ def instantiateComponent(adchsComponent):
     adchsSystemDefFile.setSourcePath("../peripheral/adchs_02508/templates/system/definitions.h.ftl")
     adchsSystemDefFile.setMarkup(True)
 
-    adchsComponent.addPlugin("../peripheral/adchs_02508/plugin/adchs_02508.jar")
+
+    adchsComponent.addPlugin(
+        "../../harmony-services/plugins/generic_plugin.jar",
+        "ADCHS_UI_MANAGER_ID_adchs_02508",
+        {
+            "plugin_name": "ADCHS Configuration",
+            "main_html_path": "csp/plugins/configurators/adc-configurators/adchs_02508/build/index.html",
+            "componentId": adchsComponent.getID(),
+        }
+    )

@@ -222,6 +222,28 @@ def adcCalcTriggerPeriod(symbol, event):
 def adcSymbolVisible(symbol, event):
     symbol.setVisible(event["value"])
 
+def handleMessage(messageID, args):
+    retDict = {}
+    if (messageID == "ADC_CONFIG_HW_IO"):
+        component = str(adcInstanceName.getValue()).lower()
+        channel, isNegInput, enable = args['config']
+
+        if isNegInput == True:
+            if (channel % 2) == 0:
+                Database.setSymbolValue(component, "ADC_{}_CHER".format(channel - 1), enable)
+                res = Database.setSymbolValue(component, "ADC_{}_NEG_INP".format(channel - 1), "AN{}".format(channel))
+            else:
+                retDict = {"Result": "Fail"}
+        else:
+            res = Database.setSymbolValue(component, "ADC_{}_CHER".format(channel), enable)
+        
+        if res == True:
+            retDict = {"Result": "Success"}
+        else:
+            retDict = {"Result": "Fail"}
+
+    return retDict
+
 ###################################################################################################
 ########################### Component   #################################
 ###################################################################################################
@@ -245,7 +267,12 @@ def instantiateComponent(adcComponent):
     adcChannelsValues.append("NONE")
 
     children = []
-    val = ATDF.getNode("/avr-tools-device-file/pinouts/pinout@[name=\"" + Database.getSymbolValue("core", "COMPONENT_PACKAGE") + "\"]")
+    packageNode = ATDF.getNode("/avr-tools-device-file/variants")
+    for index in range(0, len(packageNode.getChildren())):
+        if packageNode.getChildren()[index].getAttribute("package") == Database.getSymbolValue("core", "COMPONENT_PACKAGE"):
+            val = ATDF.getNode("/avr-tools-device-file/pinouts/pinout@[name=\"" + packageNode.getChildren()[index].getAttribute("pinout") + "\"]")
+            break
+
     children = val.getChildren()
     for pad in range(0, len(children)):
         availablePins.append(children[pad].getAttribute("pad"))
@@ -275,6 +302,7 @@ def instantiateComponent(adcComponent):
     valueGroup = ATDF.getNode(valueGroupPath)
     if valueGroup is not None:
         adcSym_EMR_SRCCLK = adcComponent.createKeyValueSetSymbol("ADC_CLK_SRC", adcMenu)
+        adcSym_EMR_SRCCLK.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_EMR")
         adcSym_EMR_SRCCLK.setLabel(valueGroup.getAttribute("caption"))
         values = valueGroup.getChildren()
         for index in range(len(values)):
@@ -291,6 +319,7 @@ def instantiateComponent(adcComponent):
     #Clock prescaler
     global adcSym_MR_PRESCAL
     adcSym_MR_PRESCAL = adcComponent.createIntegerSymbol("ADC_MR_PRESCAL", adcMenu)
+    adcSym_MR_PRESCAL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_MR")
     adcSym_MR_PRESCAL.setLabel("Select Prescaler")
     adcSym_MR_PRESCAL.setDefaultValue(9)
     adcSym_MR_PRESCAL.setMin(0)
@@ -310,6 +339,7 @@ def instantiateComponent(adcComponent):
     valueGroup = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_MR__STARTUP\"]")
     if valueGroup is not None:
         adcSym_MR_STARTUP_TIME_VALUE = adcComponent.createKeyValueSetSymbol("ADC_MR_STARTUP_VALUE", adcMenu)
+        adcSym_MR_STARTUP_TIME_VALUE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_MR")
         adcSym_MR_STARTUP_TIME_VALUE.setLabel("Startup Time")
         adcSym_MR_STARTUP_TIME_VALUE.setDefaultValue(8)
         adcSym_MR_STARTUP_TIME_VALUE.setOutputMode("Key")
@@ -321,6 +351,7 @@ def instantiateComponent(adcComponent):
     #Tracking time
     global adcSym_MR_TRACKING_TIME_VALUE
     adcSym_MR_TRACKING_TIME_VALUE = adcComponent.createIntegerSymbol("ADC_MR_TRACKTIM_VALUE", adcMenu)
+    adcSym_MR_TRACKING_TIME_VALUE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_MR")
     adcSym_MR_TRACKING_TIME_VALUE.setLabel("Tracking Time")
     adcSym_MR_TRACKING_TIME_VALUE.setDefaultValue(15)
     adcSym_MR_TRACKING_TIME_VALUE.setMin(0)
@@ -335,6 +366,7 @@ def instantiateComponent(adcComponent):
     #Added keys here as combining two bit-fields EMR_ASTE and EMR_OSR
     global adcSym_EMR_OSR_VALUE
     adcSym_EMR_OSR_VALUE = adcComponent.createKeyValueSetSymbol("ADC_EMR_OSR_VALUE", adcMenu)
+    adcSym_EMR_OSR_VALUE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:adc_emr")
     adcSym_EMR_OSR_VALUE.setLabel("Result Resolution")
     adcSym_EMR_OSR_VALUE.setDefaultValue(0)
     adcSym_EMR_OSR_VALUE.setOutputMode("Value")
@@ -367,6 +399,7 @@ def instantiateComponent(adcComponent):
     valueGroup = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/value-group@[name=\"ADC_EMR__SIGNMODE\"]")
     if valueGroup is not None:
         adcSym_EMR_SIGNMODE_VALUE = adcComponent.createKeyValueSetSymbol("ADC_EMR_SIGNMODE_VALUE", adcMenu)
+        adcSym_EMR_SIGNMODE_VALUE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_EMR")
         adcSym_EMR_SIGNMODE_VALUE.setLabel("Result Sign")
         adcSym_EMR_SIGNMODE_VALUE.setDefaultValue(0)
         adcSym_EMR_SIGNMODE_VALUE.setOutputMode("Key")
@@ -377,6 +410,7 @@ def instantiateComponent(adcComponent):
 
     #Trigger Mode
     adcSym_TRGR_MODE = adcComponent.createKeyValueSetSymbol("ADC_TRGR_MODE", adcMenu)
+    adcSym_TRGR_MODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_TRGR")
     adcSym_TRGR_MODE.setLabel("Trigger Mode")
     adcSym_TRGR_MODE.setOutputMode("Key")
     adcSym_TRGR_MODE.setDisplayMode("Description")
@@ -394,7 +428,9 @@ def instantiateComponent(adcComponent):
         adcSym_TRGR_MODE.setDefaultValue(0)
 
     #External Trigger Mode
+    global adcSym_MR_TRGSEL_VALUE
     adcSym_MR_TRGSEL_VALUE = adcComponent.createKeyValueSetSymbol("ADC_MR_TRGSEL_VALUE", adcSym_TRGR_MODE)
+    adcSym_MR_TRGSEL_VALUE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_MR")
     adcSym_MR_TRGSEL_VALUE.setLabel("Select External Trigger Input")
     adcSym_MR_TRGSEL_VALUE.setVisible(False)
     adcSym_MR_TRGSEL_VALUE.setDefaultValue(1)
@@ -425,11 +461,13 @@ def instantiateComponent(adcComponent):
 
     #Sleep Mode
     adcSym_MR_SLEEP = adcComponent.createBooleanSymbol("ADC_MR_SLEEP", adcMenu)
+    adcSym_MR_SLEEP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_MR")
     adcSym_MR_SLEEP.setLabel("Sleep Mode")
     adcSym_MR_SLEEP.setDefaultValue(False)
 
     adcFastWakeupValues = ["OFF", "ON"]
     adcSym_MR_FWUP = adcComponent.createComboSymbol("ADC_MR_FWUP", adcSym_MR_SLEEP, adcFastWakeupValues)
+    adcSym_MR_FWUP.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_MR")
     adcSym_MR_FWUP.setLabel("Fast Wakeup")
     adcSym_MR_FWUP.setDefaultValue(adcFastWakeupValues[0])
     adcSym_MR_FWUP.setVisible(False)
@@ -441,6 +479,7 @@ def instantiateComponent(adcComponent):
     adcSym_COMP_WINDOW.setDefaultValue(False)
 
     adcSym_EMR_CMPMODE = adcComponent.createKeyValueSetSymbol("ADC_EMR_CMPMODE", adcSym_COMP_WINDOW)
+    adcSym_EMR_CMPMODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_EMR")
     adcSym_EMR_CMPMODE.setLabel("Comparison Mode")
     adcSym_EMR_CMPMODE.setDefaultValue(0)
     adcSym_EMR_CMPMODE.setOutputMode("Key")
@@ -453,6 +492,7 @@ def instantiateComponent(adcComponent):
     adcSym_EMR_CMPMODE.setDependencies(adcSymbolVisible, ["ADC_COMP_WINDOW"])
 
     adcSym_EMR_CMPTYPE = adcComponent.createKeyValueSetSymbol("ADC_EMR_CMPTYPE", adcSym_COMP_WINDOW)
+    adcSym_EMR_CMPTYPE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_EMR")
     adcSym_EMR_CMPTYPE.setLabel("Comparison Type")
     adcSym_EMR_CMPTYPE.setDefaultValue(0)
     adcSym_EMR_CMPTYPE.setOutputMode("Key")
@@ -465,12 +505,14 @@ def instantiateComponent(adcComponent):
     adcCompSelectedChannelValues = adcChannelsValues[1:]
     adcCompSelectedChannelValues.append("All");
     adcSym_EMR_CMPSEL = adcComponent.createComboSymbol("ADC_EMR_CMPSEL", adcSym_COMP_WINDOW, adcCompSelectedChannelValues)
+    adcSym_EMR_CMPSEL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_EMR")
     adcSym_EMR_CMPSEL.setLabel("Comparison Selected Channel")
     adcSym_EMR_CMPSEL.setDefaultValue(adcCompSelectedChannelValues[0])
     adcSym_EMR_CMPSEL.setVisible(False)
     adcSym_EMR_CMPSEL.setDependencies(adcSymbolVisible, ["ADC_COMP_WINDOW"])
 
     adcSym_CWR_LOWTHRES = adcComponent.createIntegerSymbol("ADC_CWR_LOWTHRES_VALUE", adcSym_COMP_WINDOW)
+    adcSym_CWR_LOWTHRES.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_CWR")
     adcSym_CWR_LOWTHRES.setLabel("Low Threshold")
     adcSym_CWR_LOWTHRES.setDefaultValue(0)
     adcSym_CWR_LOWTHRES.setVisible(False)
@@ -480,6 +522,7 @@ def instantiateComponent(adcComponent):
     adcSym_CWR_LOWTHRES.setDependencies(adcSymbolVisible, ["ADC_COMP_WINDOW"])
 
     adcSym_CWR_HIGHTHRES = adcComponent.createIntegerSymbol("ADC_CWR_HIGHTHRES_VALUE", adcSym_COMP_WINDOW)
+    adcSym_CWR_HIGHTHRES.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_CWR")
     adcSym_CWR_HIGHTHRES.setLabel("High Threshold")
     adcSym_CWR_HIGHTHRES.setDefaultValue(0)
     adcSym_CWR_HIGHTHRES.setVisible(False)
@@ -489,6 +532,7 @@ def instantiateComponent(adcComponent):
 
     global adcSym_IER_COMPE
     adcSym_IER_COMPE = adcComponent.createBooleanSymbol("ADC_IER_COMPE", adcSym_COMP_WINDOW)
+    adcSym_IER_COMPE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_IER")
     adcSym_IER_COMPE.setLabel("Comparison Event Interrupt")
     adcSym_IER_COMPE.setDefaultValue(False)
     adcSym_IER_COMPE.setVisible(False)
@@ -500,7 +544,14 @@ def instantiateComponent(adcComponent):
 
     adcSym_ChannelSeqNum = adcComponent.createIntegerSymbol("ADC_CHANNEL_SEQ_NUM", adcUserSeq)
     adcSym_ChannelSeqNum.setLabel("Total number of User Channel Sequence")
-    adcSym_ChannelSeqNum.setDefaultValue(len(ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/register-group@[name=\"ADC\"]/register@[name=\"ADC_SEQR2\"]").getChildren()) + 8)
+    adcChSeqNum = 0
+    adcSeq1Reg = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/register-group@[name=\"ADC\"]/register@[name=\"ADC_SEQR1\"]")
+    if adcSeq1Reg != None:
+        adcChSeqNum = len(adcSeq1Reg.getChildren())
+    adcSeq2Reg = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/register-group@[name=\"ADC\"]/register@[name=\"ADC_SEQR2\"]")
+    if adcSeq2Reg != None:
+        adcChSeqNum += len(adcSeq2Reg.getChildren())
+    adcSym_ChannelSeqNum.setDefaultValue(adcChSeqNum)
     adcSym_ChannelSeqNum.setVisible(False)
 
     #user sequence comment
@@ -509,6 +560,7 @@ def instantiateComponent(adcComponent):
 
     #enable user sequence
     adcSym_MR_USEQ = adcComponent.createBooleanSymbol("ADC_MR_USEQ", adcUserSeq)
+    adcSym_MR_USEQ.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_MR")
     adcSym_MR_USEQ.setLabel("Enable User Sequence Mode")
     adcSym_MR_USEQ.setDefaultValue(False)
 
@@ -516,6 +568,7 @@ def instantiateComponent(adcComponent):
         #channel selection for user sequence
         adcSym_SEQR1_USCH.append(channelID)
         adcSym_SEQR1_USCH[channelID] = adcComponent.createComboSymbol("ADC_SEQR1_USCH" + str(channelID + 1), adcSym_MR_USEQ, adcChannelsValues)
+        adcSym_SEQR1_USCH[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:ADC_SEQR1")
         adcSym_SEQR1_USCH[channelID].setLabel("Select Channel for Sequence Number " + str(channelID + 1))
         adcSym_SEQR1_USCH[channelID].setDefaultValue(adcChannelsValues[0])
         adcSym_SEQR1_USCH[channelID].setVisible(False)
@@ -539,6 +592,7 @@ def instantiateComponent(adcComponent):
         #Channel enable
         adcSym_CH_CHER.append(channelID)
         adcSym_CH_CHER[channelID] = adcComponent.createBooleanSymbol("ADC_"+str(channelID)+"_CHER", adcCHMenu[channelID])
+        adcSym_CH_CHER[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:adc_cher")
         adcSym_CH_CHER[channelID].setLabel("Enable Channel " + str(channelID))
         adcSym_CH_CHER[channelID].setDefaultValue(False)
         #enable corresponding channel pair for diff mode, e.g. CH0 and CH1
@@ -583,6 +637,7 @@ def instantiateComponent(adcComponent):
         if channelGainValueGroup is not None:
             adcSym_CGR_Gain.append(channelID)
             adcSym_CGR_Gain[channelID] = adcComponent.createKeyValueSetSymbol("ADC_" + str(channelID) + "_CGR_GAIN", adcSym_CH_CHER[channelID])
+            adcSym_CGR_Gain[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:adc_cgr")
             adcSym_CGR_Gain[channelID].setLabel("Gain")
             adcSym_CGR_Gain[channelID].setOutputMode("Key")
             adcSym_CGR_Gain[channelID].setDisplayMode("Description")
@@ -597,6 +652,7 @@ def instantiateComponent(adcComponent):
         if channelOffsetReg is not None:
             adcSym_COR_Offset.append(channelID)
             adcSym_COR_Offset[channelID] = adcComponent.createBooleanSymbol("ADC_" + str(channelID) + "_COR_OFFSET", adcSym_CH_CHER[channelID])
+            adcSym_COR_Offset[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:adc_cor")
             adcSym_COR_Offset[channelID].setLabel("Offset")
             adcSym_COR_Offset[channelID].setDescription("Centers the analog signal on VADVREF/2 before the gain scaling. The offset applied is (G-1)VADVREF/2 where G is the gain applied.")
             adcSym_COR_Offset[channelID].setVisible(False)
@@ -605,6 +661,7 @@ def instantiateComponent(adcComponent):
         #Channel interrupt
         adcSym_CH_IER_EOC.append(channelID)
         adcSym_CH_IER_EOC[channelID] = adcComponent.createBooleanSymbol("ADC_"+str(channelID)+"_IER_EOC", adcSym_CH_CHER[channelID])
+        adcSym_CH_IER_EOC[channelID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:adc_44073;register:adc_ier")
         adcSym_CH_IER_EOC[channelID].setLabel("End of conversion interrupt")
         adcSym_CH_IER_EOC[channelID].setDefaultValue(False)
         adcSym_CH_IER_EOC[channelID].setVisible(False)
@@ -642,6 +699,13 @@ def instantiateComponent(adcComponent):
 
     #--------------------------------------------------------------------------------------
     configName = Variables.get("__CONFIGURATION_NAME")
+
+    regName_CCR_COR = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"ADC\"]/register-group@[name=\"ADC\"]/register@[offset=\"0x4C\"]").getAttribute("name")
+
+    adcSym_ChnCfgName = adcComponent.createStringSymbol("ADC_CHN_CFG_NAME", None)
+    adcSym_ChnCfgName.setVisible(False)
+    adcSym_ChnCfgName.setDefaultValue(regName_CCR_COR)
+
 
 ###################################################################################################
 ########################### Code Generation   #################################
@@ -684,7 +748,159 @@ def instantiateComponent(adcComponent):
     adcSystemDefFile.setOutputName("core.LIST_SYSTEM_DEFINITIONS_H_INCLUDES")
     adcSystemDefFile.setSourcePath("../peripheral/adc_"+str(adcID)+"/templates/system/definitions.h.ftl")
     adcSystemDefFile.setMarkup(True)
-    
-    #Load ADC plugin
-    adcComponent.addPlugin("../peripheral/adc_44073/plugin/adc_44073.jar")
 
+    #Load ADC plugin
+    adcComponent.addPlugin(
+        "../../harmony-services/plugins/generic_plugin.jar",
+        "ADC_UI_MANAGER_ID_adc_44073",
+        {
+            "plugin_name": "ADC Configuration",
+            "main_html_path": "csp/plugins/configurators/adc-configurators/adc_44073/build/index.html",
+            "componentId": adcComponent.getID(),
+        }
+    )
+
+
+#------------------------------------------------------------------------------------
+#                            Handle message
+#------------------------------------------------------------------------------------
+def find_prescale_and_conv_samples(desired_conversion_time_us, resolution, input_clock):
+    desired_conversion_frequency = 1e6 / desired_conversion_time_us
+    best_error = float('inf')
+    best_prescaler = 0
+    best_sample_count = 0
+
+    for prescaler in range(7, 0, -1):  # Decreasing order of prescaler values
+        prev_error = float('inf')
+
+        for sample_count in range(1, 33):
+            actual_conversion_frequency = input_clock / ((2 ** (1 + prescaler)) * (sample_count + resolution))
+            error = abs(desired_conversion_frequency - actual_conversion_frequency)
+
+            if error > prev_error:
+                break
+
+            if error == 0:
+                return prescaler, sample_count
+
+            if error < best_error:
+                best_error = error
+                best_prescaler = prescaler
+                best_sample_count = sample_count
+
+            prev_error = error
+
+    return best_prescaler, best_sample_count
+
+def setAdcConfigParams( args ):
+    """The ADC PLIB has following configuration data
+                    "id" : Unique identifier
+                    "instance" : Instance of ADC to be configured
+                    "channel"  : Channel of ADC to be set
+                    "resolution" : ADC resolution
+                    "mode": Conversion mode
+                    "reference": ADC PLIB reference signals
+                    "conversion_time" : Conversion time in microsecond
+                    "trigger" : Trigger source
+                    "result_alignment" : Left or right aligned results
+                    "enable_eoc_event" : Enable end of conversion event
+                    "enable_eoc_interrupt" : Enable end of conversion flag
+                    "enable_slave_mode" : Enable slave mode
+                    "enable_dma_sequence" : Enable DMA sequencing
+        """
+
+    component = args["instance"].lower()
+
+    if args["enable"] == True:
+        if args["trigger"] != "SOFTWARE_TRIGGER":
+            # Find the key index of the trigger as a PWM channel as per TRIGGER argument
+            count = adcSym_MR_TRGSEL_VALUE.getKeyCount()
+            triggerIndex = 0
+            for i in range(0,count):
+                if ("PWM" + str(args["trigger"]) in adcSym_MR_TRGSEL_VALUE.getKeyDescription(i) ):
+                    triggerIndex = i
+                    break
+
+            Database.setSymbolValue(component, "ADC_TRGR_MODE", 2)
+            Database.setSymbolValue(component, "ADC_MR_TRGSEL_VALUE", triggerIndex)
+            Database.setSymbolValue(component, "ADC_CONV_MODE", 2)
+
+        # Enable/ Disable end-of-conversion interrupt
+        Database.setSymbolValue(component, "ADC_"+ args["channel"] +"_IER_EOC", args["enable_eoc_interrupt"])
+
+        # Enable/ Disable channel
+        Database.setSymbolValue(component, "ADC_"+ args["channel"] +"_CHER", True)
+
+        # Enable DMA sequencing
+        if not args["enable_dma_sequence"] == "default":
+            # ToDO: Placeholder for later development
+            pass
+
+        if not args["result_alignment"] == "default":
+            # ToDO: Placeholder for later development
+            pass
+
+        # Enable generic clock for the module
+        Database.setSymbolValue("core", "ADC_GCLK_ENABLE", True)
+
+        # Get the clock sources
+        index = 0
+        clock_freq = 0
+        clock_source = ATDF.getNode('/avr-tools-device-file/modules/module@[name="PMC"]/value-group@[name="PMC_PCR__GCLKCSS"]')
+        for entry in clock_source.getChildren():
+            # Get the clock sources
+            Database.setSymbolValue("core", "ADC_GCLK_CSS", index)
+
+            # Get ADC Clock
+            new_clock_freq = Database.getSymbolValue( component, "ADC_CLK")
+            if new_clock_freq > clock_freq:
+                clock_freq = new_clock_freq
+            else:
+                Database.setSymbolValue("core", "ADC_GCLK_CSS", index - 1)
+
+            index = index + 1
+
+        # Calculate prescale and sample counts
+        prescale, sample_count = find_prescale_and_conv_samples(float(args["conversion_time"] ), int(args["resolution"]), clock_freq)
+
+        # Set prescaler value
+        adcSym_MR_PRESCAL.setValue(prescale)
+
+        # Calculate prescaler and ADC sample counts based on requested conversion time
+        if not(args["conversion_time"] == "default"):
+            # ToDO: Place Holder. Add the code later
+            pass
+
+        # Calculate prescaler and ADC sample counts based on requested conversion time
+        if not(args["reference"] == "default"):
+            # ToDO: Placeholder. To be done later
+            pass
+
+        # Find the key index of the RESOLUTION
+        count = adcSym_EMR_OSR_VALUE.getKeyCount()
+        resIndex = 0
+        for i in range(0,count):
+            if (str(args["resolution"]) in adcSym_EMR_OSR_VALUE.getKeyDescription(i) ):
+                resIndex = i
+                break
+
+        # Set resolution value
+        Database.setSymbolValue(component, "ADC_EMR_OSR_VALUE", resIndex)
+
+    else:
+        # Enable/ Disable end-of-conversion interrupt
+        Database.setSymbolValue(component, "ADC_"+ args["channel"] +"_IER_EOC", False)
+        # Enable/ Disable channel
+        Database.setSymbolValue(component, "ADC_"+ args["channel"] +"_CHER", False)
+
+        # Enable generic clock for the module
+        Database.setSymbolValue("core", "ADC_GCLK_ENABLE", False)
+
+def handleMessage(id, args):
+    dict = {}
+
+    if (id == "SET_ADC_CONFIG_PARAMS"):
+        # Set ADC configuration parameters
+        setAdcConfigParams( args )
+
+    return dict

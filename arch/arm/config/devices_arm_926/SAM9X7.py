@@ -53,7 +53,7 @@ def updateSRAMCoherency(symbol, event):
     else:
         seg_symbol.clearValue()
 
-print ("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 deviceFamily = coreComponent.createStringSymbol("DeviceFamily", devCfgMenu)
 deviceFamily.setLabel("Device Family")
@@ -105,18 +105,18 @@ processor = Variables.get("__PROCESSOR")
 ddr_start = int(ddr_node.getAttribute("start"), 0)
 #Set 16MB as non-cacheable region and rest as cacheable region
 non_cacheable_size = 16 * pow(2, 20)
-if processor.endswith("2G"):
+if processor[:10].endswith("2G"):
     # 2 Gbit memory
     ddr_size = (2 * pow(2,30)) / 8
-elif processor.endswith("1G"):
+elif processor[:10].endswith("1G"):
     # 1 Gbit memory
     ddr_size = (1 * pow(2,30)) / 8
-elif processor.endswith("5M"):
+elif processor[:10].endswith("5M"):
     #512 Mbit memory
     ddr_size = (512 * pow(2,20)) / 8
     #reduce the non cacheable region to 8 MB
     non_cacheable_size = 8 * pow(2, 20)
-elif processor.endswith("1M"):
+elif processor[:10].endswith("1M"):
     #128 Mbit memory
     ddr_size = (128 * pow(2,20)) / 8
     #reduce the non cacheable region to 8 MB
@@ -176,7 +176,7 @@ execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_sam_9x7/config/clk.py
 coreComponent.addPlugin("../../harmony-services/plugins/generic_plugin.jar", "CLOCK_UI_MANAGER_ID_MX7", {"plugin_name": "Clock Manager", "main_html_path": "csp/plugins/configurators/clock-configurators/clock-sam-9x7/build/index.html"})
 
 # load device specific pin manager information
-execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio.py")
+execfile(Variables.get("__CORE_DIR") + "/../peripheral/pio_11004/config/pio_mpu.py")
 coreComponent.addPlugin("../peripheral/pio_11004/plugin/pio_11004.jar")
 
 # load AIC
@@ -267,4 +267,8 @@ linkerFile.setType("LINKER")
 linkerFile.setEnabled(compiler_choice.getSelectedKey() == "IAR")
 linkerFile.setDependencies(lambda symbol, event: symbol.setEnabled(event["symbol"].getSelectedKey() == "IAR"), ["COMPILER_CHOICE"])
 
-
+xc32MPUARMCompilerFlag = coreComponent.createSettingSymbol("XC32_MPU_ARM_FLAG", None)
+xc32MPUARMCompilerFlag.setCategory("C32")
+xc32MPUARMCompilerFlag.setKey("appendMe")
+xc32MPUARMCompilerFlag.setValue("-marm")
+xc32MPUARMCompilerFlag.setAppend(True, " ")

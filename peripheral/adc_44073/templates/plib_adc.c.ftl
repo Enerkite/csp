@@ -77,9 +77,9 @@
 <#if i % 2 == 0>
     <#if .vars[ADC_CH_CHER] == true && .vars[ADC_CH_NEG_INP] != "GND">
         <#if ADC_COR_DIFF != "">
-            <#assign ADC_COR_DIFF = ADC_COR_DIFF + " | " + "ADC_COR_DIFF"+i+"_Msk">
+            <#assign ADC_COR_DIFF = ADC_COR_DIFF + " | " + ADC_CHN_CFG_NAME + "_DIFF"+i+"_Msk">
         <#else>
-            <#assign ADC_COR_DIFF = "ADC_COR_DIFF"+i+"_Msk">
+            <#assign ADC_COR_DIFF = ADC_CHN_CFG_NAME + "_DIFF"+i+"_Msk">
         </#if>
     </#if>
 </#if>
@@ -106,9 +106,9 @@
     <#if (i % 2 != 0) && (.vars[ADC_CH_DIFF_PAIR] != "GND")>
     <#else>
         <#if ADC_COR_OFFSET != "">
-            <#assign ADC_COR_OFFSET = ADC_COR_OFFSET + " | " + "ADC_COR_OFFSET" + i + "_Msk">
+            <#assign ADC_COR_OFFSET = ADC_COR_OFFSET + " | " + ADC_CHN_CFG_NAME + "_OFFSET" + i + "_Msk">
         <#else>
-            <#assign ADC_COR_OFFSET = "ADC_COR_OFFSET" + i + "_Msk">
+            <#assign ADC_COR_OFFSET = ADC_CHN_CFG_NAME + "_OFFSET" + i + "_Msk">
         </#if>
     </#if>
 </#if>
@@ -218,7 +218,7 @@
 // *****************************************************************************
 <#if ADC_INTERRUPT == true>
     <#lt>/* Object to hold callback function and context */
-    <#lt>volatile static ADC_CALLBACK_OBJECT ${ADC_INSTANCE_NAME}_CallbackObj;
+    <#lt>static volatile ADC_CALLBACK_OBJECT ${ADC_INSTANCE_NAME}_CallbackObj;
 </#if>
 
 /* Initialize ADC peripheral */
@@ -259,7 +259,7 @@ void ${ADC_INSTANCE_NAME}_Initialize(void)
 </#if>
 <#if ADC_COR_VALUE?has_content>
     /* Differential mode and offset */
-    ${ADC_INSTANCE_NAME}_REGS->ADC_COR = ${ADC_COR_VALUE};
+    ${ADC_INSTANCE_NAME}_REGS->${ADC_CHN_CFG_NAME} = ${ADC_COR_VALUE};
 
 </#if>
 <#if ADC_MR_USEQ == true>
@@ -330,23 +330,29 @@ void ${ADC_INSTANCE_NAME}_ConversionSequenceSet(ADC_CHANNEL_NUM *channelList, ui
 {
     uint8_t channelIndex;
     ${ADC_INSTANCE_NAME}_REGS->ADC_SEQR1 = 0U;
+<#if ADC_SEQR2_USCH?has_content>
     ${ADC_INSTANCE_NAME}_REGS->ADC_SEQR2 = 0U;
+</#if>
 
-    if (numChannel <= ${ADC_CHANNEL_SEQ_NUM}U)
+<#if ADC_SEQR2_USCH?has_content>
+    if (numChannel > ${ADC_CHANNEL_SEQ_NUM}U)
     {
-        for (channelIndex = 0U; channelIndex < numChannel; channelIndex++)
-    {
-        if (channelIndex < ADC_SEQ1_CHANNEL_NUM)
-        {
-            ${ADC_INSTANCE_NAME}_REGS->ADC_SEQR1 |= (uint32_t)channelList[channelIndex] << (channelIndex * 4U);
-        }
-        else
-        {
-            ${ADC_INSTANCE_NAME}_REGS->ADC_SEQR2 |= (uint32_t)channelList[channelIndex] << ((channelIndex - ADC_SEQ1_CHANNEL_NUM) * 4U);
-        }
-    }
-    }
-
+        return;
+	}
+</#if>
+	for (channelIndex = 0U; channelIndex < numChannel; channelIndex++)
+	{
+		if (channelIndex < ADC_SEQ1_CHANNEL_NUM)
+		{
+			${ADC_INSTANCE_NAME}_REGS->ADC_SEQR1 |= (uint32_t)channelList[channelIndex] << (channelIndex * 4U);
+		}
+<#if ADC_SEQR2_USCH?has_content>
+		else
+		{
+			${ADC_INSTANCE_NAME}_REGS->ADC_SEQR2 |= (uint32_t)channelList[channelIndex] << ((channelIndex - ADC_SEQ1_CHANNEL_NUM) * 4U);
+		}
+</#if>
+	}
 }
 
 /* Sets Low threshold and High threshold in comparison window */

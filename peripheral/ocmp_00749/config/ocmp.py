@@ -198,6 +198,33 @@ def updateOCMPClockWarningStatus(symbol, event):
 
     symbol.setVisible(not event["value"])
 
+def handleMessage(messageID, args):
+    global ocmpInstanceName
+    global ocmpSym_OCxCON_OCM
+    
+    retDict = {}
+    if (messageID == "OCMP_CONFIG_HW_IO"):
+        component = ocmpInstanceName.getValue().lower()
+        output, enable = args['config']
+        symbolId = "OCMP_OCxCON_OCM"
+        retDict = {"Result": "Fail"}
+
+        if output == "pwm":
+            # <value caption="PWM mode on OCx; Fault pin disabled" name="" value="0x6" />
+            outputValue = 6
+            if enable == True:
+                res = ocmpSym_OCxCON_OCM.setValue(outputValue)
+            else:
+                res = Database.clearSymbolValue(component, symbolId)
+
+            if res == True:
+                retDict = {"Result": "Success"}
+            
+    else:
+        retDict= {"Result": "OCMP UnImplemented Command"}
+    
+    return retDict
+
 ################################################################################
 #### Component ####
 ################################################################################
@@ -236,11 +263,13 @@ def instantiateComponent(ocmpComponent):
     Database.setSymbolValue("core", ocmpInstanceName.getValue() + "_CLOCK_ENABLE", True, 1)
 
     ocmpSymInterruptMode = ocmpComponent.createBooleanSymbol("OCMP_INTERRUPT_ENABLE", None)
+    ocmpSymInterruptMode.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSymInterruptMode.setLabel("Enable Interrupt ?")
 
     ocmpxOCM_names = []
     _get_bitfield_names(ocmpValGrp_OCxCON_OCM, ocmpxOCM_names)
     ocmpSym_OCxCON_OCM = ocmpComponent.createKeyValueSetSymbol("OCMP_OCxCON_OCM", None)
+    ocmpSym_OCxCON_OCM.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSym_OCxCON_OCM.setLabel("Select Output Compare Mode")
     ocmpSym_OCxCON_OCM.setDefaultValue(1)
     ocmpSym_OCxCON_OCM.setOutputMode("Value")
@@ -250,6 +279,7 @@ def instantiateComponent(ocmpComponent):
 
     if cfgBifield_OCACLK != None:
         ocmpSym_CFGCON_OCACLK = ocmpComponent.createBooleanSymbol("OCMP_CFGCON_OCACLK", None)
+        ocmpSym_CFGCON_OCACLK.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
         ocmpSym_CFGCON_OCACLK.setLabel("Use Alternate Timer Source")
         ocmpSym_CFGCON_OCACLK.setVisible(cfgBifield_OCACLK != None)
 
@@ -260,6 +290,7 @@ def instantiateComponent(ocmpComponent):
     ocmpxOCTSEL_names = []
     ocmpSym_OCxCON_OCTSEL_ALT = ocmpComponent.createKeyValueSetSymbol("OCMP_OCxCON_OCTSEL_ALT", None)
     ocmpSym_OCxCON_OCTSEL_ALT.setLabel("Select Timer Source")
+    ocmpSym_OCxCON_OCTSEL_ALT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSym_OCxCON_OCTSEL_ALT.setDefaultValue(0)
     ocmpSym_OCxCON_OCTSEL_ALT.setOutputMode("Value")
     ocmpSym_OCxCON_OCTSEL_ALT.setDisplayMode("Description")
@@ -274,6 +305,7 @@ def instantiateComponent(ocmpComponent):
 
     ocmpxOCTSEL_names = []
     ocmpSym_OCxCON_OCTSEL = ocmpComponent.createKeyValueSetSymbol("OCMP_OCxCON_OCTSEL", None)
+    ocmpSym_OCxCON_OCTSEL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSym_OCxCON_OCTSEL.setLabel("Select Timer Source")
     ocmpSym_OCxCON_OCTSEL.setDefaultValue(0)
     ocmpSym_OCxCON_OCTSEL.setOutputMode("Value")
@@ -292,6 +324,7 @@ def instantiateComponent(ocmpComponent):
     ocmpxOC32_names = []
     _get_bitfield_names(ocmpValGrp_OCxCON_OC32, ocmpxOC32_names)
     ocmpSym_OCxCON_OC32 = ocmpComponent.createKeyValueSetSymbol("OCMP_OCxCON_OC32", None)
+    ocmpSym_OCxCON_OC32.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSym_OCxCON_OC32.setLabel("Select Timer Width")
     ocmpSym_OCxCON_OC32.setDefaultValue(0)
     ocmpSym_OCxCON_OC32.setOutputMode("Value")
@@ -300,6 +333,7 @@ def instantiateComponent(ocmpComponent):
         ocmpSym_OCxCON_OC32.addKey( ii['desc'], ii['value'], ii['key'] )
 
     ocmpSym_COMPARE_VAL = ocmpComponent.createLongSymbol("OCMP_OCxR", None)
+    ocmpSym_COMPARE_VAL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSym_COMPARE_VAL.setLabel("Compare Value")
     ocmpSym_COMPARE_VAL.setDefaultValue(2000)
     ocmpSym_COMPARE_VAL.setMin(0)
@@ -308,6 +342,7 @@ def instantiateComponent(ocmpComponent):
 
     ocmpSym_SEC_COMPARE_VAL = ocmpComponent.createLongSymbol("OCMP_OCxRS", None)
     ocmpSym_SEC_COMPARE_VAL.setLabel("Secondary Compare Value")
+    ocmpSym_SEC_COMPARE_VAL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSym_SEC_COMPARE_VAL.setDefaultValue(4000)
     ocmpSym_SEC_COMPARE_VAL.setMin(0)
     ocmpSym_SEC_COMPARE_VAL.setMax(65535)
@@ -320,6 +355,7 @@ def instantiateComponent(ocmpComponent):
     ocmpSym_PERIOD_COMMENT.setDependencies(ocmpCommentVisible, ["OCMP_OCxCON_OCM"])
 
     ocmpSym_OCxCON_SIDL = ocmpComponent.createBooleanSymbol("OCMP_OCxCON_SIDL", None)
+    ocmpSym_OCxCON_SIDL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ocmp_00749;register:%NOREGISTER%")
     ocmpSym_OCxCON_SIDL.setLabel("Stop in IDLE")
 
     #Collect user input to combine into OCxCON register

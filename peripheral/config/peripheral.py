@@ -30,6 +30,7 @@ peripherals = {
                 "NVMCTRL_U2207" : ["MEMORY"],
                 "NVMCTRL_U2802" : ["MEMORY"],
                 "NVMCTRL_03929" : ["MEMORY"],
+                "NVMCTRL_06228" : ["MEMORY"],
                 "FLEXCOM_11268" : ["UART", "SPI", "I2C"],
                 "FLEXCOM_11277" : ["UART", "SPI", "I2C"],
                 "SERCOM_U2201"  : ["UART", "SPI", "I2C"],
@@ -39,12 +40,14 @@ peripherals = {
                 "TWIHS_11210"   : ["I2C"],
                 "I2C_01441"     : ["I2C"],
                 "I2C_00774"     : ["I2C"],
+                "I2C_05155"     : ["I2C"],
                 "SMB_31"        : ["I2C"],
                 "UART_02478"    : ["UART"],
                 "UART_6418"     : ["UART"],
                 "USART_6089"    : ["UART", "SPI"],
                 "USART_11278"   : ["UART"],
                 "UART_39"       : ["UART"],
+                "UART_03076"    : ["UART"],
                 "QSPI_U2008"    : ["SQI","SPI"],
                 "QSPI_44132"    : ["SQI","SPI"],
                 "QMSPI_147"     : ["SQI", "SPI"],
@@ -60,6 +63,7 @@ peripherals = {
                 "RTC_U2202"     : ["TMR"],
                 "TMR_02815"     : ["TMR"],
                 "TMR_00745"     : ["TMR"],
+                "Timer_02673"   : ["TMR"],
                 "TIMER32_108b"  : ["TMR"],
                 "RTOS_140"      : ["TMR"],
                 "CCT_12"        : ["TMR"],
@@ -75,6 +79,7 @@ peripherals = {
                 "NVM_02695"     : ["MEMORY"],
                 "HEFC_44123"    : ["MEMORY"],
                 "FCW_03433"     : ["MEMORY"],
+                "FCW_04971"     : ["MEMORY"],
                 "SDMMC_44002"   : ["SDHC"],
                 "SDHC_U2011"    : ["SDHC"],
                 "HSMCI_6449"    : ["SDHC"],
@@ -90,9 +95,11 @@ peripherals = {
                 "ADC_U2247"     : ["ADC"],
                 "ADC_U2204"     : ["ADC"],
                 "ADC_44134"     : ["ADC"],
+                "ADC_44073"     : ["ADC"],
+                "ADC_06272"     : ["ADC"],
                 "MCPWM_01477"   : ["PWM"],
                 "PWM_6343"      : ["PWM"],
-                "TCC_U2213"     : ["PWM"],
+                "TCC_U2213"     : ["TMR", "PWM"],
                 "QEI_01494"     : ["QDEC"],
                 "PDEC_U2263"    : ["QDEC", "HALL"],
                 "PM_U2206"      : ["PM"],
@@ -105,7 +112,9 @@ peripherals = {
                 "CAN_01152"     : ["CAN"],
                 "CAN_03247"     : ["CAN"],
                 "CAN_6019"      : ["CAN"],
-                "SEFC_04463"    : ["MEMORY"]
+                "SEFC_04463"    : ["MEMORY"],
+                "CAN_05010"     : ["CAN"],
+                "SPI_01482"     : ["SPI"]
 }
 
 # a dictionary to translate the new id mentioned in ATDF to old id used in csp
@@ -115,8 +124,11 @@ peripheral_ID_map = {
     "CAN_03723"    : "CAN_U2003",
     "CCL_03718"    : "CCL_U2225",
     "CCL_04702"    : "CCL_U2225",
+    "CCL_03628"    : "CCL_U2225",
+    "CCL_05277"    : "CCL_U2225",
     "CMCC_04727"   : "CMCC_U2015",
     "DMAC_04587"   : "DMAC_U2503",
+    "DMAC_dma_u2223_v2" : "DMAC_U2223",
     "DSU_03716"    : "DSU_U2810",
     "DSU_04850"    : "DSU_U2810",
     "DSU_05006"    : "DSU_U2410",
@@ -136,13 +148,14 @@ peripheral_ID_map = {
     "SERCOM_03715" : "SERCOM_U2201",
     "SERCOM_04707" : "SERCOM_U2201",
     "TC_04705"     : "TC_U2249",
+    "TC_03609"     : "TC_U2249",
     "TCC_03610"    : "TCC_U2213",
     "TCC_04706"    : "TCC_U2213",
     "TRAM_03938"   : "TRAM_U2801",
     "TRNG_03597"   : "TRNG_U2242"
 }
 
-system_components = ["PORT", "PIO", "AIC", "NVIC", "XDMAC", "DMAC", "DMA", "OSCILLATOR", "PMC", "WDT", "DMT", "PAC", "MATRIX", "L2CC", "CMCC", "ECIA", "EC_REG_BANK"]
+system_components = ["PORT", "PIO", "AIC", "NVIC", "XDMAC", "DMAC", "DMA", "OSCILLATOR", "PMC", "WDT", "DMT", "PAC", "MATRIX", "L2CC", "CMCC", "ECIA", "EC_REG_BANK","wdt","clk","intc"]
 
 #RSTC, SUPC is loaded as a system component for PIC32CXMT devices
 if ATDF.getNode("/avr-tools-device-file/devices/device").getAttribute("family") == "PIC32CXMT":
@@ -152,6 +165,7 @@ if("MIPS" in coreArch):
     coreTimerComponent = Module.CreateComponent("core_timer", "CORE TIMER", "/Peripherals/CORE TIMER/", "../peripheral/coretimer/config/coretimer.py")
     coreTimerComponent.addCapability("CORE_TIMER_TMR", "TMR")
     coreTimerComponent.setDisplayType("Peripheral Library")
+    coreTimerComponent.setHelpKeyword("MH3_CSP_core")
 
 valueGroup_OSCCON_SLPEN = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"CRU\"]/value-group@[name=\"OSCCON__SLPEN\"]")
 if valueGroup_OSCCON_SLPEN is None:
@@ -172,17 +186,18 @@ else:
     peripherals["QSPI_11171"]=["SPI","SQI"]   # most parts in the family support QSPI mode from the QSPI peripheral
 
 #Cortex M7 devices support quadrature encoder mode
-if( (("SAMV7" in processor) or ("SAME7" in processor) or ("SAMS7" in processor) or ("SAMRH71" in processor)) ):
-    peripherals["TC_6082"]=["TMR","QDEC"]
+if( (("SAMV7" in processor) or ("SAME7" in processor) or ("SAMS7" in processor) or ("SAMRH71" in processor) or ("SAMRH707" in processor)) ):
+    peripherals["TC_6082"]=["TMR", "QDEC"]
 else:
     peripherals["TC_6082"]=["TMR"]
 
 # Create RAM Peripheral Library
-if ("CEC173" not in processor):
+if ("CEC173" not in processor and "dsPIC33AK" not in processor and "PIC32AK" not in processor):
     print("CSP: create component: Peripheral RAM")
     ramComponent = Module.CreateComponent("ram", "RAM", "/Peripherals/RAM/", "../peripheral/ram/config/ram.py")
     ramComponent.setDisplayType("Peripheral Library")
     ramComponent.addCapability("RAM_MEMORY", "MEMORY")
+    ramComponent.setHelpKeyword("MH3_CSP_ram")
 
 
 for module in range (0, len(modules)):
@@ -194,6 +209,7 @@ for module in range (0, len(modules)):
 
     periphScript = "/peripheral/" + periphName.lower() + "_" + periphID.lower() + \
                     "/config/" + periphName.lower() + ".py"
+    periphKeyword = "MH3_CSP_{0}".format(periphName.lower())
 
     # Don't load system services. They will be loaded by family specific script
     if any(x in periphName for x in system_components):
@@ -211,6 +227,7 @@ for module in range (0, len(modules)):
 
             periphComponent = Module.CreateComponent(periphInstanceName.lower(), periphInstanceName.upper(), "/Peripherals/" +
                             periphName.upper() + "/", ".." + periphScript)
+            periphComponent.setHelpKeyword(periphKeyword)
 
             periphComponent.setDisplayType("Peripheral Library")
 
@@ -225,7 +242,7 @@ for module in range (0, len(modules)):
                     smcRegGroup = ATDF.getNode( '/avr-tools-device-file/modules/module@[name="SMC"]/register-group@[name="SMC"]/register-group@[name="SMC_CS_NUMBER"]' )
                     smcChipSelCount = int( smcRegGroup.getAttribute( "count" ) )
                     for smcChipSel in range(0, smcChipSelCount):
-                        if (("SAM9X60" in processor) and smcChipSel == 3) or (("SAM9X7" in processor) and smcChipSel == 2):
+                        if ((any(x in processor for x in ["SAM9X60", "SAMA5D2", "SAMA7G"])) and smcChipSel == 3) or (("SAM9X7" in processor) and smcChipSel == 2) or (("SAMA7D" in processor) and smcChipSel == 0):
                             periphComponent.addCapability("smc_cs"  + str(smcChipSel), "NAND_CS", "SMC_CS"  + str(smcChipSel), False)
                         else:
                             periphComponent.addCapability("smc_cs"  + str(smcChipSel), "SMC_CS", "SMC_CS"  + str(smcChipSel), False)
@@ -245,5 +262,7 @@ for module in range (0, len(modules)):
                     hemcChipSelectCount = int(ATDF.getNode('/avr-tools-device-file/modules/module@[name="HSMC"]/register-group@[name="HSMC"]/register-group@[name="HSMC_CS"]').getAttribute("count"))
                     for hemcChipSel in range(0, hemcChipSelectCount):
                         periphComponent.addCapability("hemc_cs"  + str(hemcChipSel), "HEMC_CS", "HEMC_CS"  + str(hemcChipSel), False)
+                if periphName == "MCSPI":
+                    periphComponent.addCapability("mcspi", "MCSPI", "MCSPI", True)
     else:
         print("CSP: Peripheral [" + periphName + " id=" + periphID + "] is not supported in MCC")

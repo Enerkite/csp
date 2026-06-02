@@ -55,7 +55,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "device.h"
+/* MISRAC-2023 Rule 21.10 deviation taken for using time.h header file */
+<#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma coverity compliance deviate "MISRA C-2023 Rule 21.10" "H3_MISRAC_2023_R_21_10_DR_1"
+</#if>
 #include <time.h>
+<#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
+#pragma GCC diagnostic pop
+</#if>
 
 // DOM-IGNORE-BEGIN
 #ifdef __cplusplus // Provide C++ Compatibility
@@ -109,9 +118,9 @@ void ${RTCC_INSTANCE_NAME}_TimeGet(struct tm  *Time );
 
 bool ${RTCC_INSTANCE_NAME}_AlarmSet( struct tm *alarmTime, RTCC_ALARM_MASK alarmFreq );
 
+<#if RTCC_INTERRUPT_MODE == true>
 void ${RTCC_INSTANCE_NAME}_CallbackRegister( RTCC_CALLBACK callback, uintptr_t context );
 
-<#if RTCC_INTERRUPT_MODE == true>
 void ${RTCC_INSTANCE_NAME}_InterruptEnable( RTCC_INT_MASK interrupt );
 
 void ${RTCC_INSTANCE_NAME}_InterruptDisable( RTCC_INT_MASK interrupt );

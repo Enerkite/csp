@@ -1,0 +1,1148 @@
+.main-image {
+    position: absolute;
+    width: 1200px;
+    height: 1000px;
+    top: 0;
+    left: 0
+    }
+.pll1_enable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 248px;
+    top: 336px
+    }
+.spinner_pll1pre {
+    position: absolute;
+    height: 30px;
+    width: 25px;
+    top: 472px;
+    left: 187px
+    }
+.spinner_fbdiv1 {
+    position: absolute;
+    height: 30px;
+    width: 40px;
+    top: 525px;
+    left: 264px
+    }
+.pll1Postdiv1 {
+    height: 30px;
+    position: absolute;
+    width: 50px;
+    top: 355px;
+    left: 338px
+    }
+.pll1Postdiv2 {
+    height: 30px;
+    position: absolute;
+    width: 50px;
+    top: 355px;
+    left: 406px
+    }
+.pll1Vcodiv {
+    height: 30px;
+    position: absolute;
+    width: 35px;
+    top: 525px;
+    left: 383px
+    }
+.pll1_plloFreq {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    top: 413px;
+    left: 477px
+    }
+.pll1_pllVcoFreq {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    top: 501px;
+    left: 477px
+    }
+.pll1ClkRadio0 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 375px;
+    left: 162px
+    }
+.pll1ClkRadio1 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 413px;
+    left: 162px
+    }
+.pll1ClkRadio2 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 452px;
+    left: 162px
+    }
+.pll1ClkRadio3 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 493px;
+    left: 162px
+    }
+.pll1ClkRadio4 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 533px;
+    left: 162px
+    }
+.pll1ClkRadioName0 {
+    position: absolute;
+    height: 20px;
+    width: 39.17px;
+    left: 51px;
+    top: 370px
+    }
+.pll1ClkRadioName1 {
+    position: absolute;
+    height: 20px;
+    width: 39.17px;
+    left: 51px;
+    top: 406px
+    }
+.pll1ClkRadioName2 {
+    position: absolute;
+    height: 20px;
+    width: 39.17px;
+    left: 51px;
+    top: 444px
+    }
+.pll1ClkRadioName3 {
+    position: absolute;
+    height: 20px;
+    width: 39.21px;
+    left: 51px;
+    top: 485px
+    }
+.pll1ClkRadioName4 {
+    position: absolute;
+    height: 20px;
+    width: 39.17px;
+    left: 51px;
+    top: 525px
+    }
+.pll1ClkFreq0 {
+    position: absolute;
+    height: 20px;
+    width: 71px;
+    left: 89px;
+    top: 369px
+    }
+.pll1ClkFreq1 {
+    position: absolute;
+    height: 20px;
+    width: 70.91px;
+    left: 89px;
+    top: 405px
+    }
+.pll1ClkFreq2 {
+    position: absolute;
+    height: 20px;
+    width: 70.91px;
+    left: 89px;
+    top: 443px
+    }
+.pll1ClkFreq3 {
+    position: absolute;
+    height: 20px;
+    width: 71px;
+    left: 89px;
+    top: 484px
+    }
+.pll1ClkFreq4 {
+    position: absolute;
+    height: 20px;
+    width: 70.91px;
+    left: 89px;
+    top: 524px
+    }
+.pll1Clk_reset {
+    height: 30px;
+    position: absolute;
+    width: 30px;
+    left: 446px;
+    top: 585px
+    }
+.pll1Clk_Settings {
+    height: 30px;
+    position: absolute;
+    width: 30px;
+    left: 422px;
+    top: 585px
+    }
+.pll2_enable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 248px;
+    top: 638px
+    }
+.spinner_pll2pre {
+    position: absolute;
+    height: 30px;
+    width: 25px;
+    left: 187px;
+    top: 773px
+    }
+.spinner_fbdiv2 {
+    position: absolute;
+    height: 30px;
+    width: 40px;
+    top: 828px;
+    left: 264px
+    }
+.pll2Postdiv1 {
+    height: 30px;
+    position: absolute;
+    width: 50px;
+    top: 658px;
+    left: 338px
+    }
+.pll2Postdiv2 {
+    height: 30px;
+    position: absolute;
+    width: 50px;
+    top: 658px;
+    left: 406px
+    }
+.pll2Vcodiv {
+    height: 30px;
+    position: absolute;
+    width: 35px;
+    top: 828px;
+    left: 383px
+    }
+.pll2_plloFreq {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    top: 718px;
+    left: 477px
+    }
+.pll2_pllVcoFreq {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    top: 802px;
+    left: 477px
+    }
+.pll2ClkRadio0 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 679px;
+    left: 162px
+    }
+.pll2ClkRadio1 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 716px;
+    left: 162px
+    }
+.pll2ClkRadio2 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 754px;
+    left: 162px
+    }
+.pll2ClkRadio3 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 794px;
+    left: 162px
+    }
+.pll2ClkRadio4 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 835px;
+    left: 162px
+    }
+.pll2ClkRadioName0 {
+    position: absolute;
+    height: 20px;
+    width: 38.22px;
+    left: 51px;
+    top: 670px
+    }
+.pll2ClkRadioName1 {
+    position: absolute;
+    height: 20px;
+    width: 38.22px;
+    left: 52px;
+    top: 708px
+    }
+.pll2ClkRadioName2 {
+    position: absolute;
+    height: 20px;
+    width: 38.22px;
+    left: 52px;
+    top: 745px
+    }
+.pll2ClkRadioName3 {
+    position: absolute;
+    height: 20px;
+    width: 38.22px;
+    left: 52px;
+    top: 785px
+    }
+.pll2ClkRadioName4 {
+    position: absolute;
+    height: 20px;
+    width: 38.22px;
+    left: 52px;
+    top: 825px
+    }
+.pll2ClkFreq0 {
+    position: absolute;
+    height: 20px;
+    width: 69.83px;
+    left: 90px;
+    top: 670px
+    }
+.pll2ClkFreq1 {
+    position: absolute;
+    height: 20px;
+    width: 69.83px;
+    left: 90px;
+    top: 707px
+    }
+.pll2ClkFreq2 {
+    position: absolute;
+    height: 20px;
+    width: 69.83px;
+    left: 90px;
+    top: 744px
+    }
+.pll2ClkFreq3 {
+    position: absolute;
+    height: 20px;
+    width: 69.83px;
+    left: 89px;
+    top: 784px
+    }
+.pll2ClkFreq4 {
+    position: absolute;
+    height: 20px;
+    width: 69.83px;
+    left: 89px;
+    top: 824px
+    }
+.pll2Clk_reset {
+    height: 30px;
+    position: absolute;
+    width: 30px;
+    left: 446px;
+    top: 888px
+    }
+.pll2Clk_Settings {
+    height: 30px;
+    position: absolute;
+    width: 30px;
+    left: 422px;
+    top: 888px
+    }
+.ClkGenRadio0 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 54px;
+    left: 819px
+    }
+.ClkGenRadio1 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 78px;
+    left: 819px
+    }
+.ClkGenRadio2 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 103px;
+    left: 819px
+    }
+.ClkGenRadio3 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 130px;
+    left: 819px
+    }
+.ClkGenRadio4 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 154px;
+    left: 819px
+    }
+.ClkGenRadio5 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 177px;
+    left: 819px
+    }
+.ClkGenRadio6 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 204px;
+    left: 819px
+    }
+.ClkGenRadio7 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 232px;
+    left: 819px
+    }
+.ClkGenRadio8 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 255px;
+    left: 819px
+    }
+.ClkGenRadio9 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 283px;
+    left: 819px
+    }
+.ClkGenRadioName0 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 45px;
+    width: 89.99px
+    }
+.ClkGenRadioName1 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 69px;
+    width: 88.95px
+    }
+.ClkGenRadioName2 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 94px;
+    width: 88.95px
+    }
+.ClkGenRadioName3 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 120px;
+    width: 88.95px
+    }
+.ClkGenRadioName4 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 145px;
+    width: 88.95px
+    }
+.ClkGenRadioName5 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 169px;
+    width: 88.95px
+    }
+.ClkGenRadioName6 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 196px;
+    width: 88.95px
+    }
+.ClkGenRadioName7 {
+    position: absolute;
+    height: 19.84px;
+    top: 224px;
+    width: 88.95px;
+    left: 608.06px
+    }
+.ClkGenRadioName8 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 246px;
+    width: 88.95px
+    }
+.ClkGenRadioName9 {
+    position: absolute;
+    height: 19.84px;
+    left: 607px;
+    top: 274px;
+    width: 88.95px
+    }
+.ClkGenFreqLabel0 {
+    position: absolute;
+    height: 20px;
+    width: 118px;
+    left: 697px;
+    top: 45px
+    }
+.ClkGenFreqLabel1 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 698px;
+    top: 69px
+    }
+.ClkGenFreqLabel2 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 697px;
+    top: 94px
+    }
+.ClkGenFreqLabel3 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 697px;
+    top: 120px
+    }
+.ClkGenFreqLabel4 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 698px;
+    top: 145px
+    }
+.ClkGenFreqLabel5 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 697px;
+    top: 169px
+    }
+.ClkGenFreqLabel6 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 697px;
+    top: 196px
+    }
+.ClkGenFreqLabel7 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 697px;
+    top: 223px
+    }
+.ClkGenFreqLabel8 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 697px;
+    top: 246px
+    }
+.ClkGenFreqLabel9 {
+    position: absolute;
+    height: 20px;
+    width: 116.9px;
+    left: 697px;
+    top: 274px
+    }
+.ClkGenDivCheckBox {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 962px;
+    top: 70px
+    }
+.ClkGenIntdiv {
+    position: absolute;
+    width: 35px;
+    height: 30px;
+    left: 872px;
+    top: 123px
+    }
+.ClkGenFracdiv {
+    position: absolute;
+    width: 35px;
+    height: 30px;
+    left: 872px;
+    top: 226px
+    }
+.ClkGenSysFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    left: 1041px;
+    top: 196px
+    }
+.ClkGenPeripheralFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    left: 1041px;
+    top: 266px
+    }
+.ClkGenSlowPeripheralFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    left: 1041px;
+    top: 324px
+    }
+.ClockGenRadio0 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 605px
+    }
+.ClockGenRadio1 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 629px
+    }
+.ClockGenRadio2 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 654px
+    }
+.ClockGenRadio3 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 679px
+    }
+.ClockGenRadio4 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 704px
+    }
+.ClockGenRadio5 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 728px
+    }
+.ClockGenRadio6 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 754px
+    }
+.ClockGenRadio7 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 782px
+    }
+.ClockGenRadio8 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 807px
+    }
+.ClockGenRadio9 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 820px;
+    top: 833px
+    }
+.ClockGenRadioName0 {
+    position: absolute;
+    height: 20px;
+    left: 606px;
+    top: 594px;
+    width: 90.92px
+    }
+.ClockGenRadioName1 {
+    position: absolute;
+    height: 20px;
+    top: 617px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenRadioName2 {
+    position: absolute;
+    height: 20px;
+    top: 643px;
+    width: 90.48px;
+    left: 607.08px
+    }
+.ClockGenRadioName3 {
+    position: absolute;
+    height: 20px;
+    top: 671px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenRadioName4 {
+    position: absolute;
+    height: 20px;
+    top: 694px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenRadioName5 {
+    position: absolute;
+    height: 20px;
+    top: 718px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenRadioName6 {
+    position: absolute;
+    height: 20px;
+    top: 744px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenRadioName7 {
+    position: absolute;
+    height: 20px;
+    top: 771px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenRadioName8 {
+    position: absolute;
+    height: 20px;
+    top: 796px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenRadioName9 {
+    position: absolute;
+    height: 20px;
+    top: 823px;
+    width: 90.92px;
+    left: 607.08px
+    }
+.ClockGenFreqLabel0 {
+    position: absolute;
+    height: 20px;
+    top: 594px;
+    left: 697px;
+    width: 115.84px
+    }
+.ClockGenFreqLabel1 {
+    position: absolute;
+    height: 20px;
+    width: 115.84px;
+    left: 698.08px;
+    top: 617px
+    }
+.ClockGenFreqLabel2 {
+    position: absolute;
+    height: 20px;
+    width: 115.84px;
+    left: 699.16px;
+    top: 643px
+    }
+.ClockGenFreqLabel3 {
+    position: absolute;
+    height: 20px;
+    width: 115.84px;
+    left: 698px;
+    top: 670px
+    }
+.ClockGenFreqLabel4 {
+    position: absolute;
+    height: 20px;
+    top: 694px;
+    width: 115.84px;
+    left: 699.16px
+    }
+.ClockGenFreqLabel5 {
+    position: absolute;
+    height: 20px;
+    top: 718px;
+    width: 115.84px;
+    left: 698.08px
+    }
+.ClockGenFreqLabel6 {
+    position: absolute;
+    height: 20px;
+    width: 115.84px;
+    left: 699.16px;
+    top: 743px
+    }
+.ClockGenFreqLabel7 {
+    position: absolute;
+    height: 20px;
+    top: 771px;
+    width: 115.84px;
+    left: 698.08px
+    }
+.ClockGenFreqLabel8 {
+    position: absolute;
+    height: 20px;
+    width: 115.84px;
+    left: 698.08px;
+    top: 796px
+    }
+.ClockGenFreqLabel9 {
+    position: absolute;
+    height: 20px;
+    width: 115.84px;
+    left: 698.08px;
+    top: 823px
+    }
+.clockGenDivCheckBox {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 962px;
+    top: 666px
+    }
+.clockGenIntdiv {
+    position: absolute;
+    width: 35px;
+    height: 30px;
+    top: 721px;
+    left: 873px
+    }
+.clockGenFracdiv {
+    position: absolute;
+    width: 35px;
+    height: 30px;
+    top: 821px;
+    left: 873px
+    }
+.clockGenOutFreq {
+    position: absolute;
+    height: 20px;
+    width: 150px;
+    top: 788px;
+    left: 1075px
+    }
+.clockGenButton {
+    position: absolute;
+    width: 75px;
+    top: 534px;
+    left: 998px;
+    height: 248px
+    }
+.primaryOscFreq {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    left: 351px;
+    top: 75px
+    }
+.refi1Freq {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    left: 352px;
+    top: 118px
+    }
+.refi2Freq {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    left: 352px;
+    top: 161px
+    }
+.clockOutputPin {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 1165px;
+    top: 179px
+    }
+.extClkSrcSel {
+    position: absolute;
+    height: 30px;
+    width: 140px;
+    left: 326px;
+    top: 34px
+    }
+.pll1AutoCalc {
+    position: absolute;
+    height: 30px;
+    width: 120px;
+    left: 187px;
+    top: 575px
+    }
+.pll2AutoCalc {
+    position: absolute;
+    height: 30px;
+    width: 120px;
+    left: 187px;
+    top: 879px
+    }
+.clkGen1_Settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 945px;
+    top: 339px
+    }
+.clkGen1_Reset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 967px;
+    top: 339px
+    }
+.clkGen_Settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 888px;
+    left: 947px
+    }
+.clkGen_Reset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 888px;
+    left: 967px
+    }
+.clkGenEnable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 539px;
+    left: 900px
+    }
+.clkGen2ClkSrc {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    left: 718px;
+    top: 400px
+    }
+.clkGen3ClkSrc {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    left: 718px;
+    top: 471px
+    }
+.clkGen2OutFreq {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    left: 1041px;
+    top: 414px
+    }
+.clkGen3OutFreq {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    left: 1041px;
+    top: 485px
+    }
+.clkGen2_Settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 945px;
+    top: 414px
+    }
+.clkGen2_Reset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 967px;
+    top: 414px
+    }
+.clkGen3_Settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 947px;
+    top: 486px
+    }
+.clkGen3_Reset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 967px;
+    top: 486px
+    }
+.pll1FvcoFreq {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    left: 340px;
+    top: 461px
+    }
+.pll2FvcoFreq {
+    position: absolute;
+    width: 100px;
+    height: 20px;
+    left: 340px;
+    top: 765px
+    }
+.clockGenFreqLabel {
+    position: absolute;
+    width: 130px;
+    height: 20px;
+    top: 734px;
+    left: 1075px
+    }
+.clockGenPaneName {
+    position: absolute;
+    height: 20px;
+    width: 295px;
+    left: 601px;
+    top: 538px
+    }
+.clockInputLabelDescription {
+    position: absolute;
+    height: 20px;
+    width: 340px;
+    left: 601px;
+    top: 561px
+    }
+.extClkSrcLabel {
+    position: absolute;
+    height: 30px;
+    width: 200px;
+    left: 51px;
+    top: 36px
+    }
+.priClkFreqLabel {
+    position: absolute;
+    height: 30px;
+    width: 300px;
+    left: 51px;
+    top: 78px
+    }
+.enableClkOpPin {
+    position: absolute;
+    height: 30px;
+    width: 130px;
+    left: 1190px;
+    top: 179px
+    }
+.enableRefIpPin1Label {
+    position: absolute;
+    height: 30px;
+    width: 188px;
+    left: 51px;
+    top: 123px
+    }
+.enableRefIpPin2Label {
+    position: absolute;
+    height: 30px;
+    width: 188px;
+    left: 51px;
+    top: 166px
+    }
+.enRefi1Checkbox {
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 239px;
+    top: 123px
+    }
+.enRefi2Checkbox {
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 239px;
+    top: 166px
+    }
+.refi1FreqLabel {
+    position: absolute;
+    height: 30px;
+    width: 75px;
+    left: 271px;
+    top: 122px
+    }
+.refi2FreqLabel {
+    position: absolute;
+    height: 30px;
+    width: 75px;
+    left: 271px;
+    top: 166px
+    }
+.ClkGenDivEn {
+    position: absolute;
+    height: 20px;
+    width: 110px;
+    left: 850px;
+    top: 70px
+    }
+.clockGenDivEn {
+    position: absolute;
+    height: 20px;
+    width: 110px;
+    left: 850px;
+    top: 665px
+    }
+.clkFailIntEnable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 238px;
+    top: 270px
+    }
+.clkFailIntLable {
+    position: absolute;
+    height: 20px;
+    width: 180px;
+    left: 51px;
+    top: 270px
+    }
+.ClkGenAutoCalcButton {
+    position: absolute;
+    height: 30px;
+    width: 120px;
+    left: 847px;
+    top: 290px
+    }
+.ClockGenAutoCalcButton {
+    position: absolute;
+    height: 30px;
+    width: 120px;
+    left: 781px;
+    top: 880px
+    }
+.clkGenLabel {
+    position: absolute;
+    height: 20px;
+    width: 385px;
+    left: 601px;
+    top: 6px
+    }
+.clkFailIntComment {
+    position: absolute;
+    left: 264px;
+    height: 20px;
+    top: 270px;
+    width: 200px
+    }

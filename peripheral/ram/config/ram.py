@@ -23,7 +23,7 @@
 global plibId
 plibId = None
 
-RamNames = ["HSRAM", "HRAMC0", "HMCRAMC0", "IRAM", "IRAM0", "EBI_MPDDR", "FlexRAM", "FLEXRAM", "DRAM", "SDRAM_CS", "DDR_CS", "kseg0_data_mem", "kseg1_data_mem", "RAM_SYSTEM_RAM", "HSRAM_RET"]
+RamNames = ["HSRAM", "HRAMC0", "HMCRAMC0", "IRAM", "IRAM0", "EBI_MPDDR", "FlexRAM", "FLEXRAM", "DRAM", "SDRAM_CS", "DDR_CS", "kseg0_data_mem", "kseg1_data_mem", "RAM_SYSTEM_RAM", "HSRAM_RET", "MCRAMC_RET"]
 
 addr_space          = ATDF.getNode("/avr-tools-device-file/devices/device/address-spaces/address-space")
 addr_space_children = addr_space.getChildren()
@@ -65,25 +65,28 @@ def instantiateComponent(ramComponent):
         mcramcPlibId = mcramcPlib.getAttribute("id")
         plibId = "mcramc_" + mcramcPlibId
 
-    if plibId == "mcramc_03727":
-        execfile(Module.getPath() + "../../csp/peripheral/ram/config/" + "mcramc_03727.py")
+    if plibId == "mcramc_03727" or plibId == "mcramc_04921":
+        execfile(Module.getPath() + "../peripheral/ram/config/mcramc_03727.py")
 
     ##### Do not modify below symbol names as they are used by Memory Driver #####
 
     # Configures the library for interrupt mode operations
     ramSym_Interrupt = ramComponent.createBooleanSymbol("INTERRUPT_ENABLE", None)
     ramSym_Interrupt.setLabel("Enable Interrupt?")
+    ramSym_Interrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ram;register:%NOREGISTER%")
     ramSym_Interrupt.setVisible(False)
     ramSym_Interrupt.setDefaultValue(False)
 
     # Configuration when interfaced with memory driver
     ramSym_MemoryDriver = ramComponent.createBooleanSymbol("DRV_MEMORY_CONNECTED", None)
     ramSym_MemoryDriver.setLabel("Memory Driver Connected")
+    ramSym_MemoryDriver.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ram;register:%NOREGISTER%")
     ramSym_MemoryDriver.setVisible(False)
     ramSym_MemoryDriver.setDefaultValue(False)
 
     ramSym_MemoryStartAddr = ramComponent.createStringSymbol("START_ADDRESS", None)
     ramSym_MemoryStartAddr.setLabel("RAM Media Start Address (Hex)")
+    ramSym_MemoryStartAddr.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ram;register:%NOREGISTER%")
     ramSym_MemoryStartAddr.setVisible(False)
     ramSym_MemoryStartAddr.setDefaultValue(ram_start[2:])
     ramSym_MemoryStartAddr.setDependencies(ramSetMemoryDependency, ["DRV_MEMORY_CONNECTED"])
@@ -96,6 +99,7 @@ def instantiateComponent(ramComponent):
 
     ramSym_MemoryMediaSize = ramComponent.createIntegerSymbol("MEMORY_MEDIA_SIZE", None)
     ramSym_MemoryMediaSize.setLabel("RAM Media Size (KB)")
+    ramSym_MemoryMediaSize.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ram;register:%NOREGISTER%")
     ramSym_MemoryMediaSize.setVisible(False)
     ramSym_MemoryMediaSize.setDefaultValue(96)
     ramSym_MemoryMediaSize.setDependencies(ramSetMemoryDependency, ["DRV_MEMORY_CONNECTED"])
@@ -103,11 +107,13 @@ def instantiateComponent(ramComponent):
 
     ramSym_PROGRAM_SIZE = ramComponent.createStringSymbol("FLASH_PROGRAM_SIZE", None)
     ramSym_PROGRAM_SIZE.setLabel("RAM Program Size (Bytes)")
+    ramSym_PROGRAM_SIZE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ram;register:%NOREGISTER%")
     ramSym_PROGRAM_SIZE.setVisible(False)
     ramSym_PROGRAM_SIZE.setDefaultValue("512")
 
     ramSym_MemoryEraseEnable = ramComponent.createBooleanSymbol("ERASE_ENABLE", None)
     ramSym_MemoryEraseEnable.setLabel("RAM Erase Enable")
+    ramSym_MemoryEraseEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ram;register:%NOREGISTER%")
     ramSym_MemoryEraseEnable.setVisible(False)
     ramSym_MemoryEraseEnable.setDefaultValue(False)
     ramSym_MemoryEraseEnable.setReadOnly(True)

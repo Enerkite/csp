@@ -53,6 +53,33 @@
 <#if core.CoreSysIntFile == true>
 #include "interrupts.h"
 </#if>
+<#assign ISO7816_T0_MODE_ID = ["ISO7816_T_0", "IS07816_T_0"]>
+<#if ISO7816_T0_MODE_ID?seq_contains(FLEXCOM_USART_MR_USART_MODE)>
+#include "peripheral/pio/plib_pio.h"
+#include "definitions.h"
+
+enum{
+    CMD_LEN_4 = 4U,
+    CMD_LEN_5,
+    CMD_LEN_6,
+    CMD_LEN_7
+};
+#define OUTPUT_CLOCK    ${FLEXCOM_USART_OUTPUTCLOCK}U
+
+#define USART_SEND      0U
+#define USART_RCV       1U
+
+/** Case for APDU commands. */
+/* Application Protocol Data Unit */
+#define CASE1           1U
+#define CASE2           2U
+#define CASE3           3U
+
+/** NULL byte to restart byte procedure. */
+#define ISO_NULL_VAL    0x60U
+
+static uint8_t usart_state = USART_RCV;
+</#if>
 
 <#if FLEXCOM_USART_FIFO_ENABLE == true>
 #define ${FLEXCOM_INSTANCE_NAME}_USART_HW_RX_FIFO_THRES                 ${FLEXCOM_USART_RX_FIFO_THRESHOLD}U
@@ -72,10 +99,10 @@
 // *****************************************************************************
 // *****************************************************************************
 <#if FLEXCOM_USART_INTERRUPT_MODE_ENABLE == true>
-volatile static FLEXCOM_USART_OBJECT ${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj;
+static volatile FLEXCOM_USART_OBJECT ${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj;
 </#if>
 
-void static ${FLEXCOM_INSTANCE_NAME}_USART_ErrorClear( void )
+static void ${FLEXCOM_INSTANCE_NAME}_USART_ErrorClear( void )
 {
     if ((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & (FLEX_US_CSR_OVRE_Msk | FLEX_US_CSR_FRAME_Msk | FLEX_US_CSR_PARE_Msk)) != 0U)
     {
@@ -100,7 +127,7 @@ void static ${FLEXCOM_INSTANCE_NAME}_USART_ErrorClear( void )
 <#if FLEXCOM_USART_INTERRUPT_MODE_ENABLE == true>
 
 <#if !(USE_USART_RECEIVE_DMA??) || (USE_USART_RECEIVE_DMA == false)>
-void static __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_RX_Handler( void )
+static void __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_RX_Handler( void )
 {
 <#if FLEXCOM_USART_FIFO_ENABLE == true>
     uint32_t rxPending = 0;
@@ -168,7 +195,7 @@ void static __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_RX_Handler(
 
 </#if>
 <#if !(USE_USART_TRANSMIT_DMA??) || (USE_USART_TRANSMIT_DMA == false)>
-void static __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_TX_Handler( void )
+static void __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_USART_ISR_TX_Handler( void )
 {
     if(${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj.txBusyStatus == true)
     {
@@ -251,7 +278,7 @@ void __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_InterruptHandler( void )
     </#if>
 
     <#if USE_USART_RECEIVE_DMA?? && USE_USART_RECEIVE_DMA == true>
-    if ((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_PTSR & FLEX_PTSR_RXTEN_Msk) && (channelStatus & FLEX_US_CSR_ENDRX_Msk))
+    if (((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_PTSR & FLEX_PTSR_RXTEN_Msk) != 0U) && ((channelStatus & FLEX_US_CSR_ENDRX_Msk) != 0U))
     {
         if(${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj.rxBusyStatus == true)
         {
@@ -312,7 +339,7 @@ void __attribute__((used)) ${FLEXCOM_INSTANCE_NAME}_InterruptHandler( void )
 </#if>
 
     <#if USE_USART_TRANSMIT_DMA?? && USE_USART_TRANSMIT_DMA == true>
-    if ((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_PTSR & FLEX_PTSR_TXTEN_Msk) && (channelStatus & FLEX_US_CSR_ENDTX_Msk))
+    if (((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_PTSR & FLEX_PTSR_TXTEN_Msk) != 0U) && ((channelStatus & FLEX_US_CSR_ENDTX_Msk) != 0U))
     {
         if(${FLEXCOM_INSTANCE_NAME?lower_case}UsartObj.txBusyStatus == true)
         {
@@ -355,12 +382,54 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_Initialize( void )
     /* Setup transmitter timeguard register */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_TTGR = ${FLEXCOM_USART_TTGR};
 
+<#if ISO7816_T0_MODE_ID?seq_contains(FLEXCOM_USART_MR_USART_MODE)>
+    /* ISO7816 */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_FIDI = 372U;
+
+    /* ISO7816 */
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART mode for ISO7816 */
+    /* When operating in ISO7816, either in T = 0 or T = 1 modes, the character format is partially predefined.
+     * The configuration is forced to 8 data bits, and 1 or 2 stop bits, regardless of the values programmed in
+     * the FLEX_US_MR_CHRL, FLEX_US_MR_MODE9 and FLEX_US_MR_CHMODE fields.
+     * FLEX_US_MR_MSBF can be used to transmit LSB or MSB first.
+     * FLEX_US_MR_INVDATA can be used to transmit in Normal or Inverse mode. */
+    /* T = 0 only (t=0) */
+    /* ISO7816 */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR = ( FLEX_US_MR_USART_MODE_${FLEXCOM_USART_MR_USART_MODE} | FLEX_US_MR_USCLKS_${FLEXCOM_USART_MR_USCLKS} | FLEX_US_MR_CHRL_8_BIT
+            | FLEX_US_MR_CLKO_Msk | FLEX_US_MR_PAR_EVEN | FLEX_US_MR_NBSTOP_1_BIT | FLEX_US_MR_OVER(0U));
+
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART Baud Rate */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_BRGR = ${FLEX_USART_CLOCK_FREQ}U / OUTPUT_CLOCK;
+
+<#elseif FLEXCOM_USART_MR_USART_MODE == "LON">
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART ${FLEXCOM_USART_MR_USART_MODE} mode */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR = ( FLEX_US_MR_USART_MODE_${FLEXCOM_USART_MR_USART_MODE} | FLEX_US_MR_USCLKS_${FLEXCOM_USART_MR_USCLKS} ${(FLEX_USART_MR_MODE9 == true)?then('| FLEX_US_MR_MODE9_Msk', '| FLEX_US_MR_CHRL_${FLEX_USART_MR_CHRL}')} | FLEX_US_MR_PAR_${FLEX_USART_MR_PAR} | FLEX_US_MR_NBSTOP_${FLEX_USART_MR_NBSTOP} | (${FLEXCOM_USART_MR_OVER}UL << FLEX_US_MR_OVER_Pos));
+
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART Baud Rate */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_BRGR = FLEX_US_BRGR_CD(${BRG_VALUE}) | FLEX_US_BRGR_FP(${FP_VALUE});
+
+<#elseif FLEXCOM_USART_MR_USART_MODE == "LIN_MASTER">
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART ${FLEXCOM_USART_MR_USART_MODE} mode */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR = ( FLEX_US_MR_USART_MODE_${FLEXCOM_USART_MR_USART_MODE} | FLEX_US_MR_USCLKS_${FLEXCOM_USART_MR_USCLKS} ${(FLEX_USART_MR_MODE9 == true)?then('| FLEX_US_MR_MODE9_Msk', '| FLEX_US_MR_CHRL_${FLEX_USART_MR_CHRL}')} | FLEX_US_MR_PAR_${FLEX_USART_MR_PAR} | FLEX_US_MR_NBSTOP_${FLEX_USART_MR_NBSTOP} | (${FLEXCOM_USART_MR_OVER}UL << FLEX_US_MR_OVER_Pos));
+
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART Baud Rate */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_BRGR = FLEX_US_BRGR_CD(${BRG_VALUE}) | FLEX_US_BRGR_FP(${FP_VALUE});
+
+<#elseif FLEXCOM_USART_MR_USART_MODE == "LIN_SLAVE">
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART ${FLEXCOM_USART_MR_USART_MODE} mode */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR = ( FLEX_US_MR_USART_MODE_${FLEXCOM_USART_MR_USART_MODE} | FLEX_US_MR_USCLKS_${FLEXCOM_USART_MR_USCLKS} ${(FLEX_USART_MR_MODE9 == true)?then('| FLEX_US_MR_MODE9_Msk', '| FLEX_US_MR_CHRL_${FLEX_USART_MR_CHRL}')} | FLEX_US_MR_PAR_${FLEX_USART_MR_PAR} | FLEX_US_MR_NBSTOP_${FLEX_USART_MR_NBSTOP} | (${FLEXCOM_USART_MR_OVER}UL << FLEX_US_MR_OVER_Pos));
+
+    /* Configure ${FLEXCOM_INSTANCE_NAME} USART Baud Rate */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_BRGR = FLEX_US_BRGR_CD(${BRG_VALUE}) | FLEX_US_BRGR_FP(${FP_VALUE});
+
+<#else>
     /* Configure ${FLEXCOM_INSTANCE_NAME} USART mode */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR = ( FLEX_US_MR_USART_MODE_${FLEXCOM_USART_MR_USART_MODE} | FLEX_US_MR_USCLKS_${FLEXCOM_USART_MR_USCLKS} ${(FLEX_USART_MR_MODE9 == true)?then('| FLEX_US_MR_MODE9_Msk', '| FLEX_US_MR_CHRL_${FLEX_USART_MR_CHRL}')} | FLEX_US_MR_PAR_${FLEX_USART_MR_PAR} | FLEX_US_MR_NBSTOP_${FLEX_USART_MR_NBSTOP} | (${FLEXCOM_USART_MR_OVER}UL << FLEX_US_MR_OVER_Pos));
 
     /* Configure ${FLEXCOM_INSTANCE_NAME} USART Baud Rate */
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_BRGR = FLEX_US_BRGR_CD(${BRG_VALUE}) | FLEX_US_BRGR_FP(${FP_VALUE});
 
+</#if>
 <#if FLEXCOM_USART_MR_USART_MODE == "IRDA">
     /* Setup IR Filter value*/
     ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_IF = ${FLEX_USART_IRDA_FILTER_VAL};
@@ -496,7 +565,7 @@ bool ${FLEXCOM_INSTANCE_NAME}_USART_SerialSetup( FLEXCOM_USART_SERIAL_SETUP *set
         else
         {
             /* Requested baud can be generated with either with 8x oversampling or with 16x oversampling. Select valid one. */
-            if ((cd1 > 0U )&& (cd1 <= 65535U))
+            if ((cd1 > 0U) && (cd1 <= 65535U))
             {
                 cd0 = cd1;
                 fp0 = fp1;
@@ -617,7 +686,7 @@ bool ${FLEXCOM_INSTANCE_NAME}_USART_Read( void *buffer, const size_t size )
             status = true;
 
 <#if USE_USART_RECEIVE_DMA?? && USE_USART_RECEIVE_DMA == true>
-            ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_RPR = (uint32_t) buffer;
+            ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_RPR = (uint32_t)(uint8_t*)buffer;
             ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_RCR = (uint32_t) size;
             ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_PTCR = FLEX_PTCR_RXTEN_Msk;
             ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_IER = FLEX_US_IER_ENDRX_Msk;
@@ -671,7 +740,7 @@ bool ${FLEXCOM_INSTANCE_NAME}_USART_Write( void *buffer, const size_t size )
             status = true;
 
         <#if USE_USART_TRANSMIT_DMA?? && USE_USART_TRANSMIT_DMA == true>
-            ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_TPR = (uint32_t) buffer;
+            ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_TPR = (uint32_t)(uint8_t*)buffer;
             ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_TCR = (uint32_t) size;
             ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_PTCR = FLEX_PTCR_TXTEN_Msk;
             ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_IER = FLEX_US_IER_ENDTX_Msk;
@@ -813,3 +882,584 @@ void ${FLEXCOM_INSTANCE_NAME}_USART_IrDA_DirectionSet(FLEXCOM_IRDA_DIR dir)
     }
 }
 </#if>
+
+<#if ISO7816_T0_MODE_ID?seq_contains(FLEXCOM_USART_MR_USART_MODE)>
+void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_On( void )
+{
+    CARD_RESET_Set();
+}
+
+void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_Off( void )
+{
+    CARD_RESET_Clear();
+}
+
+bool ${FLEXCOM_INSTANCE_NAME}_ISO7816_Card_Detect(void)
+{
+    if(CARD_DETECT_Get() == 1U)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Vcc_Enable( void )
+{
+    CARD_VCC_Set();
+}
+
+void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Vcc_Disable( void )
+{
+    CARD_VCC_Clear();
+}
+
+static uint32_t Send_Receive_Timeout(void)
+{
+    /* wait 40.000 cycles */
+    return ((CPU_CLOCK_FREQUENCY/OUTPUT_CLOCK)*40000U);
+}
+
+/* Wait cold reset */
+static uint32_t Reset_Waitcount(void)
+{
+    /* wait 400 cycles */
+    return ((CPU_CLOCK_FREQUENCY/OUTPUT_CLOCK)*400U);
+}
+
+static void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Cold_Reset(void)
+{
+    uint32_t i, rst_wait_time;
+
+    rst_wait_time = Reset_Waitcount();
+
+    /* The card is reset by maintaining RST at state L for at least 400 clock cycles (tb) after the
+     * clock signal is applied to CLK (time tb after Ta). */
+    for (i = 0; i < rst_wait_time; i++)
+    {
+        /* Wait for reset */
+    }
+
+    //Read all the leftover data from card
+    while(${FLEXCOM_INSTANCE_NAME}_USART_ReadByte() != 0U)
+    {
+        /* Complete the read */
+    }
+
+    /* RSTSTA  Reset Status Bits */
+    /* RSTIT   Reset Iterations */
+    /* RSTNACK Reset Non Acknowledge */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RSTSTA_Msk | FLEX_US_CR_RSTIT_Msk | FLEX_US_CR_RSTNACK_Msk;
+
+    /* ISO7816 reset iterations */
+    if((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR & FLEX_US_MR_MAX_ITERATION_Msk) != 0U)
+    {
+        /* Defines the maximum number of iterations in mode ISO7816, protocol T = 0. */
+        ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR |= FLEX_US_MR_MAX_ITERATION_Msk;
+    }
+
+    /* Enable Reset pin to high */
+    ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_On();
+}
+
+
+void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Warm_Reset(void)
+{
+    /* Enable Reset pin to high */
+    /* Disable card reset */
+    ${FLEXCOM_INSTANCE_NAME}_ISO7816_Icc_Power_Off();
+
+    ${FLEXCOM_INSTANCE_NAME}_ISO7816_Cold_Reset();
+}
+
+
+/******************************************************************************/
+static uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(uint8_t *p_char_received)
+{
+    uint32_t timeout;
+    uint32_t rx_timeout = 0U;
+    uint32_t status = 0U;
+
+    rx_timeout = Send_Receive_Timeout();
+
+    if (usart_state == USART_SEND)
+    {
+        timeout = 0U;
+        /*  All transmit finish */
+        while ((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & FLEX_US_CSR_TXEMPTY_Msk) == 0U)
+        {
+            timeout++;
+            if (timeout > rx_timeout)
+            {
+                return (0U);
+            }
+        }
+        ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RSTSTA_Msk | FLEX_US_CR_RSTIT_Msk | FLEX_US_CR_RSTNACK_Msk;
+        ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_TXDIS_Msk;
+        usart_state = USART_RCV;
+    }
+
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RXEN_Msk;
+
+    /* Wait USART ready for reception */
+    timeout = 0U;
+    while((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & FLEX_US_CSR_RXRDY_Msk) == 0U)
+    {
+        /* 0: Receive FIFO is empty; no data to read */
+        timeout++;
+        if (timeout > rx_timeout)
+        {
+            return (0U);
+        }
+    }
+
+    /* Receive a char */
+    *p_char_received = (uint8_t) ${FLEXCOM_INSTANCE_NAME}_USART_ReadByte();
+
+    status = (${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & (FLEX_US_CSR_OVRE_Msk | FLEX_US_CSR_FRAME_Msk | FLEX_US_CSR_PARE_Msk
+            | FLEX_US_CSR_TIMEOUT_Msk | FLEX_US_CSR_NACK_Msk | FLEX_US_CSR_ITER_Msk));
+
+    // Disable receiver
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RXDIS_Msk;
+
+    if (status != 0U)
+    {
+        return (0U);
+    }
+    return (1U);
+}
+
+/******************************************************************************/
+static uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(uint8_t uc_char)
+{
+    uint32_t timeout;
+    uint32_t rx_timeout = 0U;
+    uint32_t status =0U;
+
+    rx_timeout = Send_Receive_Timeout();
+
+    if (usart_state == USART_RCV)
+    {
+        ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RSTSTA_Msk | FLEX_US_CR_RSTIT_Msk | FLEX_US_CR_RSTNACK_Msk;
+
+        timeout = 0U;
+        while((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & FLEX_US_CSR_RXRDY_Msk) != 0U)
+        {
+            (void)${FLEXCOM_INSTANCE_NAME}_USART_ReadByte();
+            timeout++;
+            if (timeout > rx_timeout)
+            {
+                return (0U);
+            }
+        }
+        /* ISO7816 reset iterations */
+        if((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR & FLEX_US_MR_MAX_ITERATION_Msk) != 0U)
+        {
+            /* Defines the maximum number of iterations in mode ISO7816, protocol T = 0. */
+            ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_MR |= FLEX_US_MR_MAX_ITERATION_Msk;
+        }
+        ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_RXDIS_Msk;
+        usart_state = USART_SEND;
+    }
+
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CR = FLEX_US_CR_TXEN_Msk;
+
+    /* Wait flexcom ready for transmit */
+    timeout = 0U;
+    while ((${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & FLEX_US_CSR_TXEMPTY_Msk) == 0U)
+    {
+        /* There are characters in either FLEX_US_THR or the Transmit Shift Register, or the transmitter is disabled. */
+        timeout++;
+        if (timeout > rx_timeout)
+        {
+            return (0U);
+        }
+    }
+    /* Transmit a char */
+    ${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_THR = uc_char;
+
+    status = (${FLEXCOM_INSTANCE_NAME}_REGS->FLEX_US_CSR & (FLEX_US_CSR_OVRE_Msk | FLEX_US_CSR_FRAME_Msk | FLEX_US_CSR_PARE_Msk
+            | FLEX_US_CSR_TIMEOUT_Msk | FLEX_US_CSR_NACK_Msk | FLEX_US_CSR_ITER_Msk));
+    if (status != 0U)
+    {
+        return (0U);
+    }
+    return (1U);
+}
+
+uint8_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Data_Read_Atr( uint8_t *p_atr )
+{
+    uint8_t j, response_length, uc_value;
+    uint8_t status;
+
+    /* Read ATR TS. */
+    status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[0]);
+    if (status == 0U)
+    {
+        return 0U;
+    }
+
+    /* Read ATR T0. */
+    status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[1]);
+    if (status == 0U)
+    {
+        return 0U;
+    }
+
+    uc_value = p_atr[1] & 0xF0U;
+    response_length = 2;
+
+    /* Read ATR Ti. */
+    while (uc_value != 0U)
+    {
+        if ((uc_value & 0x10U) == 0x10U)
+        { /* TA[response_length] */
+            status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[response_length++]);
+            if (status == 0U)
+            {
+                return 0U;
+            }
+        }
+
+        if ((uc_value & 0x20U) == 0x20U)
+        { /* TB[response_length] */
+            status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[response_length++]);
+            if (status == 0U)
+            {
+                return 0U;
+            }
+        }
+
+        if ((uc_value & 0x40U) == 0x40U)
+        { /* TC[response_length] */
+            status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[response_length++]);
+            if (status == 0U)
+            {
+                return 0U;
+            }
+        }
+
+        if ((uc_value & 0x80U) == 0X80U)
+        { /* TD[response_length] */
+            status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[response_length]);
+            if (status == 0U)
+            {
+                return 0U;
+            }
+
+            uc_value = p_atr[response_length++] & 0xF0U;
+        }
+        else
+        {
+            uc_value = 0;
+        }
+    }
+
+    /* Historical Bytes. */
+    uc_value = p_atr[1] & 0x0FU;
+    for (j = 0; j < uc_value; j++)
+    {
+        status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[response_length++]);
+        if (status == 0U)
+        {
+            return 0U;
+        }
+    }
+
+    /* TCK (optional) */
+    status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&p_atr[response_length]);
+    if (status != 0U)
+    {
+        response_length++;
+    }
+
+    return (response_length);
+}
+
+
+
+/**
+ * Decode ATR trace
+ * \param pAtr pointer on ATR buffer
+ */
+void ${FLEXCOM_INSTANCE_NAME}_ISO7816_Decode_Atr(uint8_t * pAtr, uint8_t size)
+{
+    uint32_t i, j, y, z;
+    uint8_t offset;
+
+    switch (pAtr[0])
+    {
+        case 0x3B:
+            //printf("Direct Convention\n\r");
+            break;
+        case 0x3F:
+            //printf("Inverse Convention\n\r");
+            break;
+        default:
+            //printf("BAD Convention\n\r");
+            break;
+    }
+    //printf("  T0 = 0x%X Format character\n\r", pAtr[1]);
+    //printf("    Number of historical bytes: K = %d\n\r", pAtr[1] & 0x0F);
+    //printf("    Presence further interface byte:");
+    if ((pAtr[1] & 0x10U) != 0U)
+    {
+        //printf("  TA ");
+    }
+    if ((pAtr[1] & 0x20U) != 0U)
+    {
+        //printf("  TB ");
+    }
+    if ((pAtr[1] & 0x40U) != 0U)
+    {
+        //printf("  TC ");
+    }
+    if ((pAtr[1] & 0x80U) != 0U)
+    {
+        //printf("  TD ");
+    }
+    if (pAtr[1] != 0U)
+    {
+        //printf(" present(s)\n\r");
+    }
+
+    i = 2;
+    y = (uint32_t)pAtr[1] & 0xF0U;
+
+    /* Read ATR Ti */
+    offset = 1;
+    while (y != 0U)
+    {
+        if ((y & 0x10U) != 0U)
+        {    /* TA[i] */
+            //printf("  TA[%d] = 0x%X ", offset, pAtr[i]);
+            if (offset == 1U)
+            {
+                //printf("FI = %d, ", (pAtr[i] >> 4));
+                //printf("DI = %d", (pAtr[i] & 0x0F));
+            }
+            if( offset == 2U)
+            {
+                /* TA[2] */
+                if(0x80U == (pAtr[i] & 0x80U))
+                {
+                    //printf("  Unable to change: protocol T=%d", pAtr[i]&0xF);
+                }
+                else
+                {
+                    //printf("  Capable to change: protocol T=%d", pAtr[i]&0xF);
+                }
+            }
+            //printf("\n\r");
+            i++;
+        }
+        if ((y & 0x20U) != 0U)
+        {    /* TB[i] */
+            //printf("  TB[%d] = 0x%X\n\r", offset, pAtr[i]);
+            i++;
+        }
+        if ((y & 0x40U) != 0U)
+        {    /* TC[i] */
+            //printf("  TC[%d] = 0x%X ", offset, pAtr[i]);
+            if (offset == 1U)
+            {
+                //printf("Extra Guard Time: N = %d", pAtr[i]);
+            }
+            //printf("\n\r");
+            i++;
+        }
+        if ((y & 0x80U) != 0U)
+        {    /* TD[i] */
+            //printf("  TD[%d] = 0x%X ", offset, pAtr[i]);
+            //printf("Protocol T = %d\n\r", (pAtr[i]&0x0F) );
+            y = (uint32_t)pAtr[i++] & 0xF0U;
+        }
+        else
+        {
+            y = 0U;
+        }
+        offset++;
+    }
+
+    /* Historical Bytes */
+    //printf("  Historical bytes:");
+    y = (uint32_t)pAtr[1] & 0x0FU;
+    z = i;
+    for (j = 0; j < y; j++)
+    {
+        //printf(" 0x%X", pAtr[i]);
+        i++;
+    }
+    //printf("\n\r    ASCII: ");
+    i = z;
+    for (j = 0; j < y; j++)
+    {
+        if ((pAtr[i] > 0x21U) && (pAtr[i] < 0x7DU))
+        {
+            /* ASCII */
+            //printf("%c", pAtr[i]);
+        }
+        i++;
+    }
+    if(size < i)
+    {
+        //printf("\n\rTCK present");
+    }
+    else
+    {
+        //printf("\n\r  no TCK");
+    }
+}
+
+
+uint16_t ${FLEXCOM_INSTANCE_NAME}_ISO7816_Xfr_Block_Tpdu( uint8_t *apdu_cmd_buffer, uint8_t *apdu_res_buffer, const size_t apdu_cmd_length )
+{
+    uint16_t us_ne_nc, cmd_index = 4;
+    uint16_t resp_index = 0;
+    uint8_t sw1_rcvd = 0, cmd_type, status;
+    uint8_t proc_byte;
+
+    (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(apdu_cmd_buffer[0]);    /* CLA */
+    (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(apdu_cmd_buffer[1]);    /* INS */
+    (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(apdu_cmd_buffer[2]);    /* P1 */
+    (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(apdu_cmd_buffer[3]);    /* P2 */
+    (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(apdu_cmd_buffer[4]);    /* P3 */
+
+    /* Handle the four structures of command APDU. */
+    switch (apdu_cmd_length)
+    {
+        case CMD_LEN_4:
+
+            cmd_type = CASE1;
+            us_ne_nc = 0;
+
+            break;
+
+        case CMD_LEN_5:
+
+            cmd_type = CASE2;
+            us_ne_nc = apdu_cmd_buffer[4];                                                              /* C5, only Standard Le */
+            if (us_ne_nc == 0U)
+            {
+                us_ne_nc = 256;
+            }
+            break;
+
+        case CMD_LEN_6:
+
+            us_ne_nc = apdu_cmd_buffer[4];                                                              /* C5, only Standard Lc */
+            cmd_type = CASE3;
+
+            break;
+
+        case CMD_LEN_7:
+
+            us_ne_nc = apdu_cmd_buffer[4];                                                              /* C5 */
+            if (us_ne_nc == 0U)
+            {
+                cmd_type = CASE2;
+                us_ne_nc = ((uint16_t)apdu_cmd_buffer[5] << 8) + (uint16_t)apdu_cmd_buffer[6];          /*Extended Le */
+            }
+            else
+            {
+                cmd_type = CASE3;                                                                       /*Standard Lc*/
+            }
+            break;
+
+        default:
+
+            us_ne_nc = apdu_cmd_buffer[4];                                                              /* C5 */
+
+            if (us_ne_nc == 0U)
+            {
+                cmd_type = CASE3;
+                us_ne_nc = ((uint16_t)apdu_cmd_buffer[5] << 8) + (uint16_t)apdu_cmd_buffer[6];          /*Extended Lc */
+            }
+            else
+            {
+                cmd_type = CASE3;                                                                       /*Standard Lc*/
+            }
+
+            break;
+    }
+
+    /* Handle Procedure Bytes. */
+    do{
+        status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&proc_byte);
+        if(status == 0U)
+        {
+            return 0U;
+        }
+
+        /* Handle NULL. */
+        if (ISO_NULL_VAL == proc_byte) {
+            continue;
+        }
+        /* Handle sw1. */
+        else if (((proc_byte & 0xF0U) == 0x60U) || ((proc_byte & 0xF0U) == 0x90U))
+        {
+            sw1_rcvd = 1;
+        }
+        /* Handle INS. */
+        else if (apdu_cmd_buffer[1] == proc_byte)
+        {
+            if (cmd_type == CASE2)
+            {
+                /* Receive data from card. */
+                do {
+                    status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&apdu_res_buffer[resp_index]);
+                    resp_index++;
+                } while (0U != --us_ne_nc);
+            }
+            else
+            {
+                /* Send data. */
+                do {
+                    cmd_index++;
+                    (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(apdu_cmd_buffer[cmd_index]);
+                } while (0U != --us_ne_nc);
+            }
+        }
+        /* Handle INS ^ 0xff. */
+        else if ((apdu_cmd_buffer[1] ^ 0xffU) == proc_byte)
+        {
+            if (cmd_type == CASE2)
+            {
+                /* receive data from card. */
+                status = ${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&apdu_res_buffer[resp_index]);
+                resp_index++;
+            }
+            else
+            {
+                (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Send_Char(apdu_cmd_buffer[cmd_index]);
+                cmd_index++;
+            }
+            us_ne_nc--;
+        }
+        else
+        {
+            break;
+        }
+    } while (us_ne_nc != 0U);
+
+    /* Status Bytes. */
+    if (sw1_rcvd == 0U)
+    {
+        (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&apdu_res_buffer[resp_index]);                 /* sw1_rcvd */
+        resp_index++;
+    }
+    else
+    {
+        apdu_res_buffer[resp_index] = proc_byte;
+        resp_index++;
+    }
+    (void)${FLEXCOM_INSTANCE_NAME}_ISO7816_Get_Char(&apdu_res_buffer[resp_index]);                     /* SW2 */
+
+    resp_index++;
+
+    return (resp_index);
+}
+</#if>
+

@@ -20,8 +20,24 @@
 * ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
 * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
 *****************************************************************************"""
+import re
 
 global _find_default_value
+global getMaxValue
+
+def getMaxValue(mask):
+    import re
+    
+    if mask == 0 :
+        return hex(0)
+
+    mask = "0x" + re.findall(r'[a-f, 0-9]+', mask.lower())[1]
+    
+    mask = int(mask, 16)
+    while (mask % 2) == 0:
+        mask = mask >> 1
+
+    return mask
 
 def _find_default_value(bitfieldNode, initialRegValue):
     '''
@@ -58,7 +74,7 @@ def _find_key(value, keypairs):
     for keyname, val in keypairs.items():
         if(val == str(value)):
             return keyname
-    print("_find_key: could not find value in dictionary",val,str(value)) # should never get here
+    Log.writeDebugMessage("_find_key: could not find value in dictionary {0}: {1}".format(val,str(value))) # should never get here
     return ""
 
 global _process_valuegroup_entry
@@ -205,6 +221,8 @@ def populate_config_items(basenode, bitfieldHexSymbols, baseLabel, moduleNode, c
                 bitfielditem.setVisible(visibility)
 
                 if(bitfieldName in bitfieldHexSymbols):
+                    bitfielditem.setMin(0)
+                    bitfielditem.setMax(getMaxValue(bitfields[jj].getAttribute('mask')))
                     bitfielditem.setDefaultValue(_find_default_value(bitfields[jj], porValue))
 
                 label = bitfields[jj].getAttribute('caption')+' ('+bitfields[jj].getAttribute('name')+')'
@@ -212,7 +230,7 @@ def populate_config_items(basenode, bitfieldHexSymbols, baseLabel, moduleNode, c
                 bitfielditem.setDescription(bitfields[jj].getAttribute('caption'))
 
 clkValGrp_DEVCFG0__FECCCON = ATDF.getNode('/avr-tools-device-file/modules/module@[name="FUSECONFIG"]/value-group@[name="DEVCFG0__FECCCON"]')
-print("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 fuseModuleGrp = ATDF.getNode('/avr-tools-device-file/modules/module@[name="FUSECONFIG"]')
 
 fuseSettings = coreComponent.createBooleanSymbol("FUSE_CONFIG_ENABLE", devCfgMenu)

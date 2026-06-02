@@ -26,6 +26,7 @@ global rswdtInstanceName
 global rswdtinterruptVector
 global rswdtinterruptHandler
 global rswdtinterruptHandlerLock
+global rswdt_WdtDisabled_Comment
 
 rswdtInstanceName = coreComponent.createStringSymbol("RSWDT_INSTANCE_NAME", None)
 rswdtInstanceName.setVisible(False)
@@ -38,8 +39,23 @@ rswdtMenu = coreComponent.createMenuSymbol("RSWDT_MENU_0", None)
 rswdtMenu.setLabel("RSWDT")
 
 rswdtEnable = coreComponent.createBooleanSymbol("rswdtENABLE", rswdtMenu)
+rswdtEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:rswdt_11110;register:RSWDT_MR")
 rswdtEnable.setLabel("Enable Reinforced Safety Watchdog Timer (RSWDT)?")
 rswdtEnable.setDefaultValue(False)
+
+def commentVisibility(symbol, event):
+    rswdtEnabled = event["source"].getSymbolByID("rswdtENABLE")
+    wdtEnabled = event["source"].getSymbolByID("wdtENABLE")
+    
+    if (rswdtEnabled.getValue() == True and wdtEnabled.getValue() == False):
+        symbol.setVisible(True)
+    else:
+        symbol.setVisible(False)
+    
+rswdt_WdtDisabled_Comment = coreComponent.createCommentSymbol("WDT_IS_DISABLED_COMMENT", rswdtMenu)
+rswdt_WdtDisabled_Comment.setLabel("******** WDT is Disabled. Please Enable WDT ********")
+rswdt_WdtDisabled_Comment.setVisible(False)
+rswdt_WdtDisabled_Comment.setDependencies(commentVisibility, ["wdtENABLE", "rswdtENABLE"])
 
 def rswdtEnableCfgMenu(rswdtCfgMenu, event):
     rswdtCfgMenu.setVisible(event["value"])
@@ -55,6 +71,7 @@ rswdtCfgMenu.setDependencies(rswdtEnableCfgMenu, ["rswdtENABLE"])
 rswdtCfgMenu.setVisible(False)
 
 rswdtReset = coreComponent.createBooleanSymbol("rswdtEnableReset", rswdtCfgMenu)
+rswdtReset.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:rswdt_11110;register:RSWDT_MR")
 rswdtReset.setLabel("Enable Reset")
 rswdtReset.setDefaultValue(True)
 
@@ -66,12 +83,14 @@ def rswdtResetEnable(rswdtInterrupt,event):
         rswdtInterrupt.setVisible(True)
 
 rswdtInterrupt = coreComponent.createBooleanSymbol("rswdtinterruptMode", rswdtCfgMenu)
+rswdtInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:rswdt_11110;register:RSWDT_MR")
 rswdtInterrupt.setLabel("Enable Interrupts")
 rswdtInterrupt.setDefaultValue(False)
 rswdtInterrupt.setDependencies(rswdtResetEnable, ["rswdtEnableReset"])
 rswdtInterrupt.setVisible(False)
 
 rswdtCounterValue = coreComponent.createIntegerSymbol("rswdtWDV", rswdtCfgMenu)
+rswdtCounterValue.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:rswdt_11110;register:RSWDT_MR")
 rswdtCounterValue.setLabel("Counter value")
 rswdtCounterValue.setMax(0xfff)
 rswdtCounterValue.setDefaultValue(0xfff)
@@ -81,12 +100,14 @@ def rswdtcounter_cal(rswdtCounterValueTime, event):
     rswdtCounterValueTime.setValue(int(round(data)),2)
 
 rswdtCounterValueTime = coreComponent.createIntegerSymbol("rswdtWDVTIME", rswdtCfgMenu)
+rswdtCounterValueTime.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:rswdt_11110;register:RSWDT_MR")
 rswdtCounterValueTime.setLabel("Counter value in ms")
 rswdtCounterValueTime.setDependencies(rswdtcounter_cal, ["rswdtWDV"])
 rswdtCounterValueTime.setReadOnly(True)
 rswdtCounterValueTime.setDefaultValue(15996)
 
 rswdtDebugHalt = coreComponent.createBooleanSymbol("rswdtdebugHalt", rswdtCfgMenu)
+rswdtDebugHalt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:rswdt_11110;register:RSWDT_MR")
 rswdtDebugHalt.setLabel("Enable Debug halt")
 rswdtDebugHalt.setDefaultValue(False)
 
@@ -95,6 +116,7 @@ rswdtIndex.setVisible(False)
 rswdtIndex.setDefaultValue(0)
 
 rswdtIdleHalt = coreComponent.createBooleanSymbol("rswdtidleHalt", rswdtCfgMenu)
+rswdtIdleHalt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:rswdt_11110;register:RSWDT_MR")
 rswdtIdleHalt.setLabel("Enable Idle halt")
 rswdtIdleHalt.setDefaultValue(False)
 

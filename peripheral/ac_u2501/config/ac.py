@@ -30,6 +30,59 @@ global acInstanceName
 global acSym_SCALERn
 global ACfilesArray
 ACfilesArray = []
+global evsys_generatorsNamesList
+evsys_generatorsNamesList = []
+global evsys_usersNamesList
+evsys_usersNamesList = []
+
+def acEvsysGeneratorNamesPopulate(instanceName):
+    global evsys_generatorsNamesList
+
+    generatorNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/generators")
+    generatorValues = generatorNode.getChildren()
+    for id in range(0, len(generatorNode.getChildren())):
+        if generatorValues[id].getAttribute("module-instance") == instanceName:
+            evsys_generatorsNamesList.append(generatorValues[id].getAttribute("name"))
+
+def acEvsysUserNamesPopulate(instanceName):
+    global evsys_usersNamesList
+
+    usersNode = ATDF.getNode("/avr-tools-device-file/devices/device/events/users")
+    usersValues = usersNode.getChildren()
+    for id in range(0, len(usersNode.getChildren())):
+        if usersValues[id].getAttribute("module-instance") == instanceName:
+            evsys_usersNamesList.append(usersValues[id].getAttribute("name"))
+
+def acEvsysGenNameGet(genNameMatchList):
+    global evsys_generatorsNamesList
+
+    for genName in evsys_generatorsNamesList:
+        if all ( x in genName for x in genNameMatchList):
+            return genName
+
+def acEvsysUserNameGet(usrNameMatchList):
+    global evsys_usersNamesList
+
+    for userName in evsys_usersNamesList:
+        if all ( x in userName for x in usrNameMatchList):
+            return userName
+
+def getValueGrp(module, reg_grp, reg_name, bitfield_name , mode = None):
+    node_str = ""
+    val_grp_node = None
+
+    if mode != None:
+        node_str = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[modes=\"{2}\",name=\"{3}\"]/bitfield@[name=\"{4}\"]".format(module, reg_grp, mode, reg_name, bitfield_name)
+    else:
+         node_str = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/register-group@[name=\"{1}\"]/register@[name=\"{2}\"]/bitfield@[name=\"{3}\"]".format(module, reg_grp, reg_name, bitfield_name)
+    bitfield_node = ATDF.getNode(node_str)
+
+    if bitfield_node != None:
+        val_grp = bitfield_node.getAttribute("values")
+        node_str = "/avr-tools-device-file/modules/module@[name=\"{0}\"]/value-group@[name=\"{1}\"]".format(module, val_grp)
+        val_grp_node = ATDF.getNode(node_str)
+
+    return val_grp_node
 #######################################################################################################################################
 #####################################        Callback Funtions ----START      #########################################################
 #######################################################################################################################################
@@ -124,18 +177,48 @@ def updateACClockWarningStatus(symbol, event):
 def acEvesysConfigure(symbol, event):
     if("AC_EVCTRL_COMPEO" in event["id"]):
         instance = filter(str.isdigit,str(event["id"]))
-        Database.setSymbolValue("evsys", "GENERATOR_AC_COMP_"+str(instance) + "_ACTIVE", event["value"], 2)
+        evsysGenName = acEvsysGenNameGet(["COMP", str(instance)])
+        Database.setSymbolValue("evsys", "GENERATOR_" + evsysGenName + "_ACTIVE", event["value"], 2)
 
     if("AC_EVCTRL_WINEO" in event["id"]):
         instance = filter(str.isdigit,str(event["id"]))
-        Database.setSymbolValue("evsys", "GENERATOR_AC_WIN_"+str(instance) + "_ACTIVE", event["value"], 2)
+        evsysGenName = acEvsysGenNameGet(["WIN", str(instance)])
+        Database.setSymbolValue("evsys", "GENERATOR_" + evsysGenName + "_ACTIVE", event["value"], 2)
 
     if ("AC_EVCTRL_COMPEI" in event["id"]):
         instance = filter(str.isdigit,str(event["id"]))
+        evsysUserName = acEvsysUserNameGet(["SOC", str(instance)])
         if (event["value"] > 0):
-            Database.setSymbolValue("evsys", "USER_AC_SOC_"+str(instance) + "_READY", True, 2)
+            Database.setSymbolValue("evsys", "USER_" + evsysUserName + "_READY", True, 2)
         else:
-             Database.setSymbolValue("evsys", "USER_AC_SOC_"+str(instance) + "_READY", False, 2)
+             Database.setSymbolValue("evsys", "USER_" + evsysUserName + "_READY", False, 2)
+
+def handleMessage(messageID, args):
+    retDict = {}
+    if (messageID == "AC_CONFIG_HW_IO"):
+        component = 'ac'
+        comparatorID, muxInput, ioPin = args['config']
+        symbolId = "AC{}_{}".format(comparatorID, muxInput)
+        enable = args['enable']
+        if enable == True:
+            Database.setSymbolValue(component, "ANALOG_COMPARATOR_ENABLE_" + str(comparatorID), enable)
+            if ioPin == -1:
+                res = Database.clearSymbolValue(component, symbolId)
+            else:
+                res = Database.setSymbolValue(component, symbolId, int(ioPin))
+
+        else:
+            res = Database.clearSymbolValue(component, symbolId)
+            
+        if res == True:
+            retDict = {"Result": "Success"}
+        else:
+            retDict = {"Result": "Fail"}
+            
+    else:
+        retDict= {"Result": "AC UnImplemented Command"}
+    
+    return retDict
 
 #######################################################################################################################################
 #####################################        Callback Funtions ---- END      ##########################################################
@@ -162,6 +245,16 @@ def instantiateComponent(acComponent):
     acInstanceName.setVisible(False)
     acInstanceName.setDefaultValue(acComponent.getID().upper())
 
+    acEvsysGeneratorNamesPopulate(acInstanceName.getValue())
+    acEvsysUserNamesPopulate(acInstanceName.getValue())
+
+    acSym_ChannelGroup = acComponent.createStringSymbol("AC_CHANNEL_GROUP", None)
+    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"CHANNEL\"]") != None:
+        acSym_ChannelGroup.setDefaultValue("CHANNEL")
+    elif ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"AC\"]") != None:
+        acSym_ChannelGroup.setDefaultValue("AC")
+    acSym_ChannelGroup.setVisible(False)
+
     acSym_Enable = []
     acSym_SCALERn = []
     acSym_COMP_NUM = []
@@ -182,7 +275,7 @@ def instantiateComponent(acComponent):
             numOfComparators = int(parameters[param].getAttribute("value"))
         if(parameters[param].getAttribute("name") == "LOAD_CALIB"):
             calibRequired = int(parameters[param].getAttribute("value"))
-            
+
     # If LOAD_CALIB parameter is not present, it is assumed that CALIB register update is required to maintain backward compatibility
     if calibRequired == -1:
         calibRequired = 1
@@ -207,7 +300,7 @@ def instantiateComponent(acComponent):
     for cmp in range (0, numOfComparators):
         cmpPresent.append(cmp)
         if channelID == -1:
-            cmpPresent[cmp] = 1   #by default, all comparator channels are present. 
+            cmpPresent[cmp] = 1   #by default, all comparator channels are present.
         else:
             if cmp == channelID:
                 cmpPresent[cmp] = 1
@@ -219,12 +312,12 @@ def instantiateComponent(acComponent):
         ctrlc_reg_present = True
 
     dacctrl_reg_present = False
-    acSym_DACCTRL_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"AC\"]/register@[name=\"DACCTRL\"]")
+    acSym_DACCTRL_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"{0}\"]/register@[name=\"DACCTRL\"]".format(acSym_ChannelGroup.getValue()))
     if acSym_CTRLC_Node != None:
         dacctrl_reg_present = True
 
     compctrl_sut_bitfield_present = False
-    acSym_COMPCTRL_SUT_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"AC\"]/register@[name=\"COMPCTRL\"]/bitfield@[name=\"SUT\"]")
+    acSym_COMPCTRL_SUT_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"{0}\"]/register@[name=\"COMPCTRL\"]/bitfield@[name=\"SUT\"]".format(acSym_ChannelGroup.getValue()))
     if acSym_COMPCTRL_SUT_Node != None:
         compctrl_sut_bitfield_present = True
 
@@ -240,14 +333,18 @@ def instantiateComponent(acComponent):
     isDACPresent.setValue(dacctrl_reg_present)
     isDACPresent.setVisible(False)
 
-    acSym_COMPCTRL_MUXPOS_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__MUXPOS\"]")
+    for comparatorID in range(0, int(numOfComparators)):
+        if cmpPresent[comparatorID] == 1:
+            break
+
+    acSym_COMPCTRL_MUXPOS_Node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "MUXPOS")
     acSym_COMPCTRL_MUXPOS_Node_Values = acSym_COMPCTRL_MUXPOS_Node.getChildren()
     for id in range(len(acSym_COMPCTRL_MUXPOS_Node_Values)):
         acSym_MUXPOS_ENUM = acComponent.createStringSymbol("AC_MUXPOS_ENUM_"+str(id), None)
         acSym_MUXPOS_ENUM.setDefaultValue(acSym_COMPCTRL_MUXPOS_Node_Values[id].getAttribute("name"))
         acSym_MUXPOS_ENUM.setVisible(False)
 
-    acSym_COMPCTRL_MUXNEG_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__MUXNEG\"]")
+    acSym_COMPCTRL_MUXNEG_Node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "MUXNEG")
     acSym_COMPCTRL_MUXNEG_Node_Values = acSym_COMPCTRL_MUXNEG_Node.getChildren()
     for id in range(len(acSym_COMPCTRL_MUXNEG_Node_Values)):
         acSym_MUXNEG_ENUM = acComponent.createStringSymbol("AC_MUXNEG_ENUM_"+str(id), None)
@@ -256,28 +353,31 @@ def instantiateComponent(acComponent):
 
     if ctrlc_reg_present == True:
         acSym_ChargePumpEnable = acComponent.createBooleanSymbol("ANALOG_INPUT_CHARGE_PUMP_ENABLE", None)
+        acSym_ChargePumpEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:CTRLC")
         acSym_ChargePumpEnable.setLabel("Analog Input Charge Pump Enable")
 
     #Populate menu for all comparators in the AC peripheral
     for comparatorID in range(0, int(numOfComparators)):
-        # comparator ID enum  
+        # comparator ID enum
         acSym_COMP_NUM.append(comparatorID)
-        acSym_COMP_NUM[comparatorID] = acComponent.createStringSymbol("AC_COMP_ID_ENUM_"+str(comparatorID), None)     
+        acSym_COMP_NUM[comparatorID] = acComponent.createStringSymbol("AC_COMP_ID_ENUM_"+str(comparatorID), None)
         acSym_COMP_NUM[comparatorID].setVisible(False)
         if cmpPresent[comparatorID] == 0:
             acSym_COMP_NUM[comparatorID].setValue("-1")
         else:
             acSym_COMP_NUM[comparatorID].setValue("AC_CHANNEL" + str(comparatorID))
-        
+
         acSym_Enable.append(comparatorID)
         acSym_Enable[comparatorID] = acComponent.createBooleanSymbol("ANALOG_COMPARATOR_ENABLE_" + str(comparatorID), None)
+        acSym_Enable[comparatorID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_Enable[comparatorID].setLabel("Comparator " + str(comparatorID) + " Settings")
         if cmpPresent[comparatorID] == 0:
-            acSym_Enable[comparatorID].setVisible(False)        
+            acSym_Enable[comparatorID].setVisible(False)
 
         #Interrupt Enable
         global acInterrupt_Enable
         acInterrupt_Enable = acComponent.createBooleanSymbol("COMP" + str(comparatorID) + "INTERRUPT_ENABLE", acSym_Enable[comparatorID])
+        acInterrupt_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:intenset")
         acInterrupt_Enable.setLabel("Comparator Interrupt Enable")
         acInterrupt_Enable.setVisible(False)
         acInterrupt_Enable.setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
@@ -285,6 +385,7 @@ def instantiateComponent(acComponent):
 
         #Single-shot Mode
         acSym_COMPCTRL_SINGLE = acComponent.createBooleanSymbol("AC_COMPCTRL_" + str(comparatorID) +"SINGLE_MODE", acSym_Enable[comparatorID])
+        acSym_COMPCTRL_SINGLE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_COMPCTRL_SINGLE.setLabel("Enable Single Shot Mode")
         acSym_COMPCTRL_SINGLE.setDefaultValue(False)
         acSym_COMPCTRL_SINGLE.setVisible(False)
@@ -292,10 +393,11 @@ def instantiateComponent(acComponent):
 
         #MUXPOS
         acSym_COMPCTRL_MUXPOS = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_MUXPOS", acSym_Enable[comparatorID])
+        acSym_COMPCTRL_MUXPOS.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_COMPCTRL_MUXPOS.setLabel("Positive Input Mux Selection")
         acSym_COMPCTRL_MUXPOS.setVisible(False)
 
-        acSym_COMPCTRL_MUXPOS_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__MUXPOS\"]")
+        acSym_COMPCTRL_MUXPOS_Node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "MUXPOS")
         acSym_COMPCTRL_MUXPOS_Node_Values = []
         acSym_COMPCTRL_MUXPOS_Node_Values = acSym_COMPCTRL_MUXPOS_Node.getChildren()
 
@@ -319,10 +421,11 @@ def instantiateComponent(acComponent):
         #MUXNEG
         global acSym_COMPCTRL_MUXNEG
         acSym_COMPCTRL_MUXNEG = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_MUXNEG", acSym_Enable[comparatorID])
+        acSym_COMPCTRL_MUXNEG.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_COMPCTRL_MUXNEG.setLabel("Negative Input Mux Selection")
         acSym_COMPCTRL_MUXNEG.setVisible(False)
 
-        acSym_COMPCTRL_MUXNEG_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__MUXNEG\"]")
+        acSym_COMPCTRL_MUXNEG_Node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "MUXNEG")
         acSym_COMPCTRL_MUXNEG_Node_Values = []
         acSym_COMPCTRL_MUXNEG_Node_Values = acSym_COMPCTRL_MUXNEG_Node.getChildren()
 
@@ -350,6 +453,7 @@ def instantiateComponent(acComponent):
             #Scaling factor for VDD scaler
             acSym_SCALERn.append(comparatorID)
             acSym_SCALERn[comparatorID] = acComponent.createIntegerSymbol("AC_SCALER_N_" + str(comparatorID), acSym_Enable[comparatorID])
+            acSym_SCALERn[comparatorID].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:SCALER0")
             acSym_SCALERn[comparatorID].setLabel("Scaling factor for VDD scaler")
             acSym_SCALERn[comparatorID].setMin(0)
             acSym_SCALERn[comparatorID].setMax(int(acSym_SCALER_MaxVal, 16))
@@ -360,10 +464,11 @@ def instantiateComponent(acComponent):
 
         #Output Mode
         acSym_COMPCTRL_OUT = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_OUTPUT_TYPE", acSym_Enable[comparatorID])
+        acSym_COMPCTRL_OUT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_COMPCTRL_OUT.setLabel("Output Edge Type")
         acSym_COMPCTRL_OUT.setVisible(False)
 
-        acSym_COMPCTRL_OUT_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__OUT\"]")
+        acSym_COMPCTRL_OUT_Node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "OUT")
         acSym_COMPCTRL_OUT_Node_Values = []
         acSym_COMPCTRL_OUT_Node_Values = acSym_COMPCTRL_OUT_Node.getChildren()
 
@@ -386,10 +491,11 @@ def instantiateComponent(acComponent):
 
         #ISEL
         acSym_COMPCTRL_ISEL = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_ISEL", acSym_Enable[comparatorID])
+        acSym_COMPCTRL_ISEL.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_COMPCTRL_ISEL.setLabel("Interrupt Selection")
         acSym_COMPCTRL_ISEL.setVisible(False)
 
-        acSym_COMPCTRL_ISEL_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__INTSEL\"]")
+        acSym_COMPCTRL_ISEL_Node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "INTSEL")
         acSym_COMPCTRL_ISEL_Node_Values = []
         acSym_COMPCTRL_ISEL_Node_Values = acSym_COMPCTRL_ISEL_Node.getChildren()
 
@@ -413,6 +519,7 @@ def instantiateComponent(acComponent):
         # COMPCTRLx.SUT
         if compctrl_sut_bitfield_present == True:
             acSym_COMPCTRL_SUT = acComponent.createIntegerSymbol("AC" + str(comparatorID) + "_COMPCTRL_SUT", acSym_Enable[comparatorID])
+            acSym_COMPCTRL_SUT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
             acSym_COMPCTRL_SUT.setLabel("Start-up Time")
             acSym_COMPCTRL_SUT.setMin(0)
             acSym_COMPCTRL_SUT.setMax(31)
@@ -422,12 +529,13 @@ def instantiateComponent(acComponent):
 
         #RUNSTDBY Enable
         acSym_COMPCTRL_RUNSTDBY = acComponent.createBooleanSymbol("AC" + str(comparatorID) + "_COMPCTRL_RUNSTDBY", acSym_Enable[comparatorID])
+        acSym_COMPCTRL_RUNSTDBY.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_COMPCTRL_RUNSTDBY.setLabel("Enable Run in Standby")
         acSym_COMPCTRL_RUNSTDBY.setDefaultValue(False)
         acSym_COMPCTRL_RUNSTDBY.setVisible(False)
         acSym_COMPCTRL_RUNSTDBY.setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
 
-        if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"AC\"]/register@[name=\"COMPCTRL\"]/bitfield@[name=\"SPEED\"]") != None:
+        if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"{0}\"]/register@[name=\"COMPCTRL\"]/bitfield@[name=\"SPEED\"]".format(acSym_ChannelGroup.getValue())) != None:
             acSym_COMPCTRL_SPEED = acComponent.createIntegerSymbol("AC" + str(comparatorID) + "_COMPCTRL_SPEED", acSym_Enable[comparatorID])
             acSym_COMPCTRL_SPEED.setDefaultValue(3)
             acSym_COMPCTRL_SPEED.setVisible(False)
@@ -437,6 +545,7 @@ def instantiateComponent(acComponent):
 
             # DACCTRL.VALUEx
             acSym_DACCTRL_VALUE = acComponent.createIntegerSymbol("AC" + str(comparatorID) + "_DACCTRL_VALUE", acSym_Enable[comparatorID])
+            acSym_DACCTRL_VALUE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:DACCTRL")
             acSym_DACCTRL_VALUE.setLabel("DAC Output Value")
             acSym_DACCTRL_VALUE.setMin(0)
             acSym_DACCTRL_VALUE.setMax(127)
@@ -451,6 +560,7 @@ def instantiateComponent(acComponent):
 
             # DACCTRL.SHENx
             acSym_DACCTRL_SHEN = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_DACCTRL_SHEN", acSym_Enable[comparatorID])
+            acSym_DACCTRL_SHEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:DACCTRL")
             acSym_DACCTRL_SHEN.setLabel("DAC Enable Sample and Hold Operation Mode")
             acSym_DACCTRL_SHEN.addKey("0x0", "0x0", "Continuous operation mode is enabled")
             acSym_DACCTRL_SHEN.addKey("0x1", "0x1", "Sample-and-hold operation mode is enabled")
@@ -467,27 +577,29 @@ def instantiateComponent(acComponent):
         acSym_AdvConf.setDependencies(setacSymbolVisibility,["ANALOG_COMPARATOR_ENABLE_" + str(comparatorID)])
 
         #Hysteresis Enable
-        acSym_COMPCTRL_HYSTEN_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"AC\"]/register@[name=\"COMPCTRL\"]/bitfield@[name=\"HYSTEN\"]")
+        acSym_COMPCTRL_HYSTEN_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"{0}\"]/register@[name=\"COMPCTRL\"]/bitfield@[name=\"HYSTEN\"]".format(acSym_ChannelGroup.getValue()))
         if acSym_COMPCTRL_HYSTEN_Node != None:
             acSym_COMPCTRL_HYSTEN = acComponent.createBooleanSymbol("AC" + str(comparatorID) + "_HYSTEN", acSym_AdvConf)
+            acSym_COMPCTRL_HYSTEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
             acSym_COMPCTRL_HYSTEN.setLabel("Hysteresis Enable")
             acSym_COMPCTRL_HYSTEN.setDefaultValue(False)
             acSym_COMPCTRL_HYSTEN.setVisible(True)
             #Should not be shown when single-shot is selected.
             acSym_COMPCTRL_HYSTEN.setDependencies(setacHystVisibility,["AC_COMPCTRL_" + str(comparatorID) +"SINGLE_MODE"])
 
-        if (ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__HYST\"]") != None):
+        if getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "HYST") != None:
             #Hysteresis selection
             if acSym_COMPCTRL_HYSTEN_Node != None:
                 acSym_COMPCTRL_HYST = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_HYST_VAL", acSym_COMPCTRL_HYSTEN)
             else:
                 acSym_COMPCTRL_HYST = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_HYST_VAL", acSym_AdvConf)
+                acSym_COMPCTRL_HYST.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
             acSym_COMPCTRL_HYST.setLabel("Hysteresis Selection")
             if acSym_COMPCTRL_HYSTEN_Node != None:
                 acSym_COMPCTRL_HYST.setVisible(False)
             else:
                 acSym_COMPCTRL_HYST.setVisible(True)
-            acSym_COMPCTRL_HYST_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__HYST\"]")
+            acSym_COMPCTRL_HYST_node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "HYST")
             acSym_COMPCTRL_HYST_Values = []
             acSym_COMPCTRL_HYST_Values = acSym_COMPCTRL_HYST_node.getChildren()
 
@@ -513,9 +625,10 @@ def instantiateComponent(acComponent):
 
         #Filter Length selection
         acSym_COMPCTRL_FLEN = acComponent.createKeyValueSetSymbol("AC" + str(comparatorID) + "_FLEN_VAL", acSym_AdvConf)
+        acSym_COMPCTRL_FLEN.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:COMPCTRL0")
         acSym_COMPCTRL_FLEN.setLabel("Filter Length Selection")
         acSym_COMPCTRL_FLEN.setDescription("Filtering must be disabled if continuous measurements will be done during sleep modes")
-        acSym_COMPCTRL_FLEN_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_COMPCTRL__FLEN\"]")
+        acSym_COMPCTRL_FLEN_node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "COMPCTRL", "FLEN")
         acSym_COMPCTRL_FLEN_Values = []
         acSym_COMPCTRL_FLEN_Values = acSym_COMPCTRL_FLEN_node.getChildren()
 
@@ -537,6 +650,7 @@ def instantiateComponent(acComponent):
 
         #Event Input Enable
         acSym_EVCTRL_COMPEI = acComponent.createKeyValueSetSymbol("AC_EVCTRL_COMPEI" + str(comparatorID), acSym_AdvConf)
+        acSym_EVCTRL_COMPEI.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:EVCTRL")
         acSym_EVCTRL_COMPEI.setLabel("Enable Event Input")
         acSym_EVCTRL_COMPEI.setVisible(False)
         acSym_EVCTRL_COMPEI.setOutputMode("Value")
@@ -549,6 +663,7 @@ def instantiateComponent(acComponent):
 
         #Event Output Enable
         acSym_EVCTRL_COMPEO = acComponent.createBooleanSymbol("AC_EVCTRL_COMPEO" + str(comparatorID), acSym_AdvConf)
+        acSym_EVCTRL_COMPEO.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:EVCTRL")
         acSym_EVCTRL_COMPEO.setLabel("Enable Event Output")
         acSym_EVCTRL_COMPEO.setDefaultValue(False)
         acSym_EVCTRL_COMPEO.setVisible(False)
@@ -559,14 +674,26 @@ def instantiateComponent(acComponent):
     acSym_WindowConf = acComponent.createMenuSymbol("WINDOW_CONFIGURATION", None)
     acSym_WindowConf.setLabel("Comparator Window Configurations")
 
+    win0Str = "0"
+    if ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"{0}\"]/register@[name=\"WINCTRL\"]/bitfield@[name=\"WEN\"]".format(acSym_ChannelGroup.getValue())) != None:
+        win0Str = ""
+    acSym_WINCTRL_WEN0 = acComponent.createStringSymbol("AC_WINCTRL_WEN0", None)
+    acSym_WINCTRL_WEN0.setDefaultValue(win0Str)
+    acSym_WINCTRL_WEN0.setVisible(False)
+
+    if win0Str != "":
+        win0Str = "0 "
+
     #Window 0 configuration
     acSym_WINCTRL0 = acComponent.createBooleanSymbol("AC_WINCTRL_WIN0", acSym_WindowConf)
-    acSym_WINCTRL0.setLabel("Window 0 Enable")
+    acSym_WINCTRL0.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:WINCTRL")
+    acSym_WINCTRL0.setLabel("Window " + win0Str + "Enable")
     acSym_WINCTRL0.setDefaultValue(False)
 
     #Window 0 Interrupt Enable
     acSym_INTENSET_WIN0 = acComponent.createBooleanSymbol("AC_INTENSET_WIN0", acSym_WINCTRL0)
-    acSym_INTENSET_WIN0.setLabel("Window 0 Interrupt Enable")
+    acSym_INTENSET_WIN0.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:INTENSET")
+    acSym_INTENSET_WIN0.setLabel("Window " + win0Str + "Interrupt Enable")
     acSym_INTENSET_WIN0.setDefaultValue(False)
     acSym_INTENSET_WIN0.setVisible(False)
     acSym_INTENSET_WIN0.setDependencies(setacSymbolVisibility,["AC_WINCTRL_WIN0"])
@@ -574,11 +701,14 @@ def instantiateComponent(acComponent):
 
     #Window 0 interrupt configuration
     acSym_WNCTRL_WINT0 = acComponent.createKeyValueSetSymbol("AC_WINTSEL0", acSym_WINCTRL0)
-    acSym_WNCTRL_WINT0.setLabel("AC Window 0 Interrupt Selection")
+    acSym_WNCTRL_WINT0.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:WINCTRL")
+    acSym_WNCTRL_WINT0.setLabel("AC Window " + win0Str + "Interrupt Selection")
     acSym_WNCTRL_WINT0.setVisible(False)
     acSym_WNCTRL_WINT0.setDependencies(setacSymbolVisibility,["AC_WINCTRL_WIN0"])
 
-    acSym_WNCTRL_WINT0_node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"AC_WINCTRL__WINTSEL0\"]")
+    acSym_WNCTRL_WINT0_node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "WINCTRL" , "WINTSEL0")
+    if acSym_WNCTRL_WINT0_node == None:
+        acSym_WNCTRL_WINT0_node = getValueGrp("AC", acSym_ChannelGroup.getValue(), "WINCTRL" , "WINTSEL")
     acSym_WNCTRL_WINT0_Values = []
     acSym_WNCTRL_WINT0_Values = acSym_WNCTRL_WINT0_node.getChildren()
 
@@ -600,7 +730,8 @@ def instantiateComponent(acComponent):
 
     #Window 0 Event Output
     acSym_WINCTRL_EVENT_OUT0 = acComponent.createBooleanSymbol("AC_EVCTRL_WINEO0", acSym_WINCTRL0)
-    acSym_WINCTRL_EVENT_OUT0.setLabel("Enable Window 0 Event Output")
+    acSym_WINCTRL_EVENT_OUT0.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:EVCTRL")
+    acSym_WINCTRL_EVENT_OUT0.setLabel("Enable Window " + win0Str + "Event Output")
     acSym_WINCTRL_EVENT_OUT0.setDefaultValue(False)
     acSym_WINCTRL_EVENT_OUT0.setVisible(False)
     acSym_WINCTRL_EVENT_OUT0.setDependencies(setacSymbolVisibility,["AC_WINCTRL_WIN0"])
@@ -615,10 +746,11 @@ def instantiateComponent(acComponent):
         acSym_InternalDAC_SH_Conf.setLabel("Internal DAC Sample-Hold configuration")
 
         # CTRLC.PRESCALER
-        acSym_CTRLC_PRESCALER_Node = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/value-group@[name=\"CTRLC__PRESCALER\"]")
+        acSym_CTRLC_PRESCALER_Node = getValueGrp("AC", "AC", "CTRLC" , "PRESCALER")
         acSym_CTRLC_PRESCALER_Values = acSym_CTRLC_PRESCALER_Node.getChildren()
 
         acSym_CTRLC_PRESCALSER = acComponent.createKeyValueSetSymbol("AC_CTRLC_PRESCALER", acSym_InternalDAC_SH_Conf)
+        acSym_CTRLC_PRESCALSER.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:CTRLC")
         acSym_CTRLC_PRESCALSER.setLabel("Prescaler for DAC sampling clock")
 
         for id in range (len(acSym_CTRLC_PRESCALER_Values)):
@@ -633,6 +765,7 @@ def instantiateComponent(acComponent):
 
         # CTRLC.PERIOD
         acSym_CTRLC_PERIOD = acComponent.createIntegerSymbol("AC_CTRLC_PERIOD", acSym_InternalDAC_SH_Conf)
+        acSym_CTRLC_PERIOD.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:CTRLC")
         acSym_CTRLC_PERIOD.setLabel("Sample and Hold Clock Period")
         acSym_CTRLC_PERIOD.setMin(0)
         acSym_CTRLC_PERIOD.setMax(511)
@@ -640,6 +773,7 @@ def instantiateComponent(acComponent):
 
         # CTRLC.WIDTH
         acSym_CTRLC_WIDTH = acComponent.createIntegerSymbol("AC_CTRLC_WIDTH", acSym_InternalDAC_SH_Conf)
+        acSym_CTRLC_WIDTH.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:ac_u2501;register:CTRLC")
         acSym_CTRLC_WIDTH.setLabel("Sample and Hold Clock Pulse Width")
         acSym_CTRLC_WIDTH.setMin(0)
         acSym_CTRLC_WIDTH.setMax(511)
@@ -683,6 +817,7 @@ def instantiateComponent(acComponent):
     acSym_CTRLB_SIZE = acComponent.createIntegerSymbol("AC_CTRLB_SIZE", None)
     acSym_CTRLB_SIZE.setDefaultValue(int(ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"AC\"]/register-group@[name=\"AC\"]/register@[name=\"CTRLB\"]").getAttribute("size")))
     acSym_CTRLB_SIZE.setVisible(False)
+
     ###################################################################################################
     ####################################### Code Generation  ##########################################
     ###################################################################################################

@@ -53,7 +53,7 @@
 // *****************************************************************************
 // *****************************************************************************
 static const uint8_t* hsmciFifoBaseAddress = (uint8_t*)(${HSMCI_INSTANCE_NAME}_BASE_ADDRESS + HSMCI_FIFO_REG_OFST);
-volatile static HSMCI_OBJECT ${HSMCI_INSTANCE_NAME?lower_case}Obj;
+static volatile HSMCI_OBJECT ${HSMCI_INSTANCE_NAME?lower_case}Obj;
 
 static void ${HSMCI_INSTANCE_NAME}_VariablesInit ( void )
 {
@@ -439,9 +439,25 @@ void ${HSMCI_INSTANCE_NAME}_CommandSend (
         {
             cmd_reg |= HSMCI_CMDR_TRTYP_SINGLE;
         }
-        else
+        else if (transferFlags.transferType == HSMCI_DATA_TRANSFER_TYPE_MULTI)
         {
             cmd_reg |= HSMCI_CMDR_TRTYP_MULTIPLE;
+        }
+        else if (transferFlags.transferType == HSMCI_DATA_TRANSFER_MMC_STREAM)
+        {
+            cmd_reg |= HSMCI_CMDR_TRTYP_STREAM;
+        }
+        else if (transferFlags.transferType == HSMCI_DATA_TRANSFER_SDIO_BYTE)
+        {
+            cmd_reg |= HSMCI_CMDR_TRTYP_BYTE;
+        }
+        else if (transferFlags.transferType == HSMCI_DATA_TRANSFER_SDIO_BLOCK)
+        {
+            cmd_reg |= HSMCI_CMDR_TRTYP_BLOCK;
+        }
+        else
+        {
+            //Do Nothing
         }
 
         if (transferFlags.transferDir == HSMCI_DATA_TRANSFER_DIR_READ)
@@ -482,14 +498,14 @@ void ${HSMCI_INSTANCE_NAME}_CommandSend (
     /* Disable all the interrupt sources to begin with */
     ${HSMCI_INSTANCE_NAME}_REGS->HSMCI_IDR = HSMCI_IDR_Msk;
 
-    /* Enable the needed interrupts */
-    ${HSMCI_INSTANCE_NAME}_REGS->HSMCI_IER = ier_reg;
-
     /* Write the argument register */
     ${HSMCI_INSTANCE_NAME}_REGS->HSMCI_ARGR = argument;
 
     /* Write to the command register and the operation */
     ${HSMCI_INSTANCE_NAME}_REGS->HSMCI_CMDR = cmd_reg;
+
+    /* Enable the needed interrupts */
+    ${HSMCI_INSTANCE_NAME}_REGS->HSMCI_IER = ier_reg;
 }
 
 void ${HSMCI_INSTANCE_NAME}_ModuleInit ( void )

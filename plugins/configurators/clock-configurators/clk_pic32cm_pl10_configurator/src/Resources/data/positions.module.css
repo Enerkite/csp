@@ -1,0 +1,578 @@
+.main-block-diagram {
+    position: absolute;
+    height: 950px;
+    top: 0;
+    left: 0;
+    width: 1350px
+    }
+.internalOsc48Settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 166px;
+    left: 358px
+    }
+.xosc48MFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    left: 430px;
+    top: 92px
+    }
+.xoscFrequency {
+    position: absolute;
+    height: 30px;
+    width: 155px;
+    left: 195px;
+    top: 126px
+    }
+.osc32CrystalEnable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 543px;
+    left: 155px
+    }
+.osc32CrystalCFDEnable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 359px;
+    top: 468px
+    }
+.osc32K_settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 415px;
+    left: 146px
+    }
+.xosc32K_settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 148px;
+    top: 604px
+    }
+.xosc32KFrequency {
+    position: absolute;
+    width: 100px;
+    height: 30px;
+    left: 211px;
+    top: 866px
+    }
+.osc32KFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 372px;
+    left: 439px
+    }
+.xosc32KFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 543px;
+    left: 437px
+    }
+.gclkGen0Enable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 782px;
+    top: 14px
+    }
+.gclkGen0_settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 249px;
+    left: 742px
+    }
+.gclkGen0DivLabel {
+    position: absolute;
+    height: 20px;
+    width: 50px;
+    color: black;
+    left: 723px;
+    top: 118px
+    }
+.gclkGen0Div {
+    position: absolute;
+    height: 30px;
+    width: 70px;
+    top: 163px;
+    left: 705px
+    }
+.gclkGen0Freq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 137px;
+    left: 818px
+    }
+.gclkGen1Enable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 782px;
+    top: 310px
+    }
+.gclkGen1_settings {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 745px;
+    top: 514px
+    }
+.gclkGen1DivLabel {
+    position: absolute;
+    height: 20px;
+    width: 50px;
+    color: black;
+    left: 725px;
+    top: 413px
+    }
+.gclkGen1Freq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    left: 819px;
+    top: 428px
+    }
+.gclkGen1Div {
+    position: absolute;
+    height: 30px;
+    width: 80px;
+    top: 456px;
+    left: 705px
+    }
+.gclkGen0RadioName0 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 570px;
+    top: 60px
+    }
+.gclkGen0RadioName1 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 570px;
+    top: 89px
+    }
+.gclkGen0RadioName2 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 570px;
+    top: 115px
+    }
+.gclkGen0RadioName3 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 571px;
+    top: 142px
+    }
+.gclkGen0RadioName4 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 570px;
+    top: 170px
+    }
+.gclkGen1RadioName0 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    top: 354px;
+    left: 572px
+    }
+.gclkGen1RadioName1 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    top: 382px;
+    left: 571px
+    }
+.gclkGen1RadioName2 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 571px;
+    top: 407px
+    }
+.gclkGen1RadioName3 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    top: 435px;
+    left: 570px
+    }
+.gclkGenXRadioName0 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 574px;
+    top: 661px
+    }
+.gclkGenXRadioName1 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    top: 690px;
+    left: 573px
+    }
+.gclkGenXRadioName2 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 574px;
+    top: 715px
+    }
+.gclkGenXRadioName3 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    left: 573px;
+    top: 743px
+    }
+.gclkGenXRadioName4 {
+    position: absolute;
+    height: 20px;
+    width: 65px;
+    top: 770px;
+    left: 574px
+    }
+.rtcClockSelRadioName0 {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 559px;
+    left: 907px
+    }
+.rtcClockSelRadioName1 {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 598px;
+    left: 908px
+    }
+.rtcClockSelRadioName2 {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 640px;
+    left: 907px
+    }
+.rtcClockSelRadioName3 {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 680px;
+    left: 907px
+    }
+.gclkGenXEnable {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 621px;
+    left: 783px
+    }
+.gclkGenX_settings {
+    position: absolute;
+    height: 30px;
+    width: 30px;
+    top: 844px;
+    left: 747px
+    }
+.gclkGenXDivLabel {
+    position: absolute;
+    height: 20px;
+    width: 50px;
+    color: black;
+    left: 725px;
+    top: 721px
+    }
+.gclkGen0Radio0 {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    left: 647px;
+    top: 66px
+    }
+.gclkGen0Radio1 {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    top: 94px;
+    left: 647px
+    }
+.gclkGen0Radio2 {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    left: 647px;
+    top: 122px
+    }
+.gclkGen0Radio3 {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    left: 647px;
+    top: 150px
+    }
+.gclkGen0Radio4 {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    top: 177px;
+    left: 647px
+    }
+.gclkGen1Radio0 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 362px;
+    left: 649px
+    }
+.gclkGen1Radio1 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 389px;
+    left: 649px
+    }
+.gclkGen1Radio2 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 416px;
+    left: 649px
+    }
+.gclkGen1Radio3 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 649px;
+    top: 444px
+    }
+.gclkGenXRadio0 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 669px;
+    left: 653px
+    }
+.gclkGenXRadio1 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 697px;
+    left: 653px
+    }
+.gclkGenXRadio2 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 653px;
+    top: 724px
+    }
+.gclkGenXRadio3 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 653px;
+    top: 751px
+    }
+.gclkGenXRadio4 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 779px;
+    left: 653px
+    }
+.oscillators32KhzContrlRadio0 {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    left: 316px;
+    top: 495px
+    }
+.oscillators32KhzContrlRadio1 {
+    position: absolute;
+    width: 23px;
+    height: 23px;
+    left: 317px;
+    top: 545px
+    }
+.rtcClockSelRadio0 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 1067px;
+    top: 566px
+    }
+.rtcClockSelRadio1 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 606px;
+    left: 1067px
+    }
+.rtcClockSelRadio2 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 647px;
+    left: 1067px
+    }
+.rtcClockSelRadio3 {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 687px;
+    left: 1067px
+    }
+.oscillatorsControllerReset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 391px;
+    top: 166px
+    }
+.oscillatorsController32KhzReset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 395px;
+    top: 634px
+    }
+.gclkGen0Reset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 249px;
+    left: 775px
+    }
+.gclkGen1Reset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 777px;
+    top: 513px
+    }
+.gclkGeneratorXReset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 844px;
+    left: 779px
+    }
+.mainClockReset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 1113px;
+    top: 114px
+    }
+.rtcClkSelectionReset {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 1113px;
+    top: 745px
+    }
+.gclkGenXDiv {
+    position: absolute;
+    height: 30px;
+    width: 80px;
+    left: 703px;
+    top: 768px
+    }
+.gclkGenXFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 750px;
+    left: 815px
+    }
+.cpuDivLabel {
+    position: absolute;
+    color: black;
+    height: 20px;
+    width: 30px;
+    top: 55px;
+    left: 1049px
+    }
+.cpuDiv {
+    position: absolute;
+    height: 30px;
+    width: 80px;
+    top: 96px;
+    left: 1017px
+    }
+.mainFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    left: 1157px;
+    top: 72px
+    }
+.eicFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 489px;
+    left: 1155px
+    }
+.wdtFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    left: 1154px;
+    top: 528px
+    }
+.rtcFreq {
+    position: absolute;
+    height: 20px;
+    width: 100px;
+    top: 648px;
+    left: 1152px
+    }
+.gclkXgenTab {
+    position: absolute;
+    width: 60px;
+    height: 50px;
+    left: 809px;
+    top: 617px
+    }
+.periClockConfig {
+    position: absolute;
+    width: 100px;
+    height: 60px;
+    top: 346px;
+    left: 1028px
+    }
+.gclkIOConfiguration {
+    position: absolute;
+    height: 40px;
+    width: 120px;
+    left: 989px;
+    top: 887px
+    }
+.peripheralClockSelectionReset {
+    height: 30px;
+    position: absolute;
+    width: 30px;
+    left: 1113px;
+    top: 415px
+    }
+.gclkIOReset {
+    height: 30px;
+    position: absolute;
+    width: 30px;
+    left: 1113px;
+    top: 903px
+    }

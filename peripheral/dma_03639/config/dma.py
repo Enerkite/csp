@@ -36,6 +36,7 @@ global updateDMAInterrupt
 global enableAllDMAPriorityInterrupts
 global createPeripheralTrigger_IDMap
 global updateDMAInterruptWarringStatus
+global multi_iqrn_sym_exists
 
 global DMACfilesArray
 DMACfilesArray = []
@@ -83,6 +84,72 @@ triggerSettings = {
 ################################################################################
 #### Business Logic ####
 ################################################################################
+global dmaConfiguration
+def dmaConfiguration(dmaConfig):
+    #Example usage
+    #{"channel_number": 0, "trigger_source": "SPI", "trigger_action": "cell_xfer", "source_addr_mode": "increment", "dest_addr_mode": "fixed", "bytes_xfer_on_trigger": 20, "interface_width": 4}
+    #The above is an example where data is transferred from RAM buffer to SPI FIFO. The FIFO can hold 5 words, where each word is 32-bits. That is, the FIFO can
+    #hold 20 bytes of data. But the SPI transfer width is 4 bytes. Hence, DMA should read 20 bytes from RAM, and write in chunks of 4 bytes into the FIFO. #Thereby, DMA will write in chunks of 4 bytes, 5 times at which point the FIFO will be full.
+
+    ch = ""
+    cell_size = 0
+    interface_width = 0
+    component = Database.getComponentByID("core")
+
+    if "channel_number" in dmaConfig:
+        ch = str(dmaConfig["channel_number"])
+        sym = "DMA_CHXSIZ_CSZ_CH_" + ch
+        cell_size = component.getSymbolByID(sym).getValue()
+    if "trigger_source" in dmaConfig:
+        sym = "DMA_CHCTRLB_TRIG_CH_" + ch
+        component.getSymbolByID(sym).setValue(dmaConfig["trigger_source"])
+    if "trigger_action" in dmaConfig:
+        sym = "DMA_CHCTRLB_CASTEN_CH_" + ch
+        action = dmaConfig["trigger_action"]
+        if action == "cell_xfer":
+            component.getSymbolByID(sym).setSelectedKey("CELL_TRANSFER")
+        elif action == "block_xfer":
+            component.getSymbolByID(sym).setSelectedKey("BLOCK_TRANSFER")
+    if "bytes_xfer_on_trigger" in dmaConfig:
+        sym = "DMA_CHXSIZ_CSZ_CH_" + ch
+        cell_size = dmaConfig["bytes_xfer_on_trigger"]
+        component.getSymbolByID(sym).setValue(cell_size)
+    if "interface_width" in dmaConfig:
+        interface_width = dmaConfig["interface_width"]
+    if "source_addr_mode" in dmaConfig:
+        sym = "DMA_CHCTRLB_RAS_CH_" + ch
+        addr_mode = dmaConfig["source_addr_mode"]
+        if addr_mode == "increment":
+            if interface_width == 1:
+                component.getSymbolByID(sym).setSelectedKey("BYTE_ADDR_INCR")
+            elif interface_width == 2:
+                component.getSymbolByID(sym).setSelectedKey("HALF_WORD_ADDR_INCR")
+            else:
+                component.getSymbolByID(sym).setSelectedKey("AUTO_ADDR_INCR")
+        if addr_mode == "fixed":
+            if interface_width == 1:
+                component.getSymbolByID(sym).setSelectedKey("FIXED_BYTE_ADDR_INCR")
+            elif interface_width == 2:
+                component.getSymbolByID(sym).setSelectedKey("FIXED_HALF_WORD_ADDR_INCR")
+            else:
+                component.getSymbolByID(sym).setSelectedKey("FIXED_WORD_ADDR_INCR")
+    if "dest_addr_mode" in dmaConfig:
+        sym = "DMA_CHCTRLB_WAS_CH_" + ch
+        addr_mode = dmaConfig["dest_addr_mode"]
+        if addr_mode == "increment":
+            if interface_width == 1:
+                component.getSymbolByID(sym).setSelectedKey("BYTE_ADDR_INCR")
+            elif interface_width == 2:
+                component.getSymbolByID(sym).setSelectedKey("HALF_WORD_ADDR_INCR")
+            else:
+                component.getSymbolByID(sym).setSelectedKey("AUTO_ADDR_INCR")
+        if addr_mode == "fixed":
+            if interface_width == 1:
+                component.getSymbolByID(sym).setSelectedKey("FIXED_BYTE_ADDR_INCR")
+            elif interface_width == 2:
+                component.getSymbolByID(sym).setSelectedKey("FIXED_HALF_WORD_ADDR_INCR")
+            else:
+                component.getSymbolByID(sym).setSelectedKey("FIXED_WORD_ADDR_INCR")
 
 #-------------------------------------------------------------------------------------------------------------------------#
 def dmacfileUpdate(symbol, event):
@@ -108,7 +175,7 @@ def dmacfileUpdate(symbol, event):
                 Database.setSymbolValue("core", vector, True)
         else:
             Database.setSymbolValue("core", dmacInterruptVectorSecurity, True)
-            
+
 def getDMAVectorName(priority):
     global dmaVectorNameList
 
@@ -185,6 +252,7 @@ def DMAInterruptConfig(coreComponent,dmaMenu):
     global enableAllDMAPriorityInterrupts
     global updateDMAInterruptWarringStatus
     global dmaInstanceName
+    global multi_iqrn_sym_exists
     InterruptVectorUpdate = []
     global dmacInterruptVectorSecurity
 
@@ -196,11 +264,14 @@ def DMAInterruptConfig(coreComponent,dmaMenu):
             dmaVectorNameList.append(dmaVectorName)
 
     dmaNumIntPriorities = coreComponent.createIntegerSymbol("DMA_NUM_INT_PRIO", dmaMenu)
+    dmaNumIntPriorities.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHINTEN")
     dmaNumIntPriorities.setLabel("Number of interrupt priorities")
     dmaNumIntPriorities.setDefaultValue(len(dmaVectorNameList))
     dmaNumIntPriorities.setVisible(False)
 
-    if len(dmaVectorNameList) > 1:
+    multi_iqrn_sym_exists = Database.getSymbolValue("core", dmaInstanceName.getValue() + "_MULTI_IRQn")
+
+    if len(dmaVectorNameList) > 1 and multi_iqrn_sym_exists == None:
         nvic_multi_vector = coreComponent.createBooleanSymbol(dmaInstanceName.getValue() + "_MULTI_IRQn", None)
         nvic_multi_vector.setDefaultValue(True)
         nvic_multi_vector.setVisible(False)
@@ -218,7 +289,7 @@ def DMAInterruptConfig(coreComponent,dmaMenu):
     dmaSym_IntEnComment = coreComponent.createCommentSymbol("DMA_INTERRUPT_ENABLE_COMMENT", dmaMenu)
     dmaSym_IntEnComment.setVisible(False)
     dmaSym_IntEnComment.setLabel("Warning!!! DMA Interrupt is Disabled in Interrupt Manager")
-    dmaSym_IntEnComment.setDependencies(updateDMAInterruptWarringStatus, InterruptVectorUpdate)  
+    dmaSym_IntEnComment.setDependencies(updateDMAInterruptWarringStatus, InterruptVectorUpdate)
 
     if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
         dmacIsNonSecure = Database.getSymbolValue("core", dmaInstanceName.getValue() + "_IS_NON_SECURE")
@@ -268,7 +339,8 @@ def onChannelPriorityChange(symbol, event):
     global updateDMAInterrupt
     localComponent = symbol.getComponent()
 
-    priority_level = localComponent.getSymbolByID(event["id"]).getSelectedKey().split("_")[1]
+    priority_level = int (localComponent.getSymbolByID(event["id"]).getSelectedKey().split("_")[1])
+    priority_level = str(priority_level - 1)
     symbol.setValue(dmaInstanceName.getValue() + "_PRI" + priority_level + "_IRQn")
 
     # Make sure the DMA interrupt for the new priority level is enabled
@@ -481,6 +553,7 @@ def DMA_ATDF_Read(coreComponent, dmaEnable):
 
     # DMA_CHANNEL_COUNT: Needed for DMA system service to generate channel enum
     dmaChCount = coreComponent.createIntegerSymbol("DMA_CHANNEL_COUNT", dmaEnable)
+    dmaChCount.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLA")
     dmaChCount.setLabel("DMA (DMAC) Channels Count")
     dmaChCount.setDefaultValue(dmaChannelCount)
     dmaChCount.setVisible(False)
@@ -555,22 +628,26 @@ dmaMenu.setDescription("DMA (DMAC) Configuration")
 
 # DMA_IP: Needed to generate IP specific code in DMA System Service
 dmaPLIBIp = coreComponent.createStringSymbol("DMA_IP", dmaMenu)
+dmaPLIBIp.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLA")
 dmaPLIBIp.setLabel("DMA IP")
 dmaPLIBIp.setValue("dma_03639")
 dmaPLIBIp.setVisible(False)
 
 # DMA_ENABLE: Needed to conditionally generate API mapping in DMA System service
 dmaEnable = coreComponent.createBooleanSymbol("DMA_ENABLE", dmaMenu)
+dmaEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
 dmaEnable.setLabel("Use DMA Service ?")
 dmaEnable.setVisible(False)
 dmaEnable.setDefaultValue(False)
 
 # Needed to generate Linked list APIs
 dmaChannelLinkedList = coreComponent.createBooleanSymbol("DMA_LL_ENABLE", dmaMenu)
+dmaChannelLinkedList.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLA")
 dmaChannelLinkedList.setLabel("Use Linked List Mode ?")
 
 # Needed for code generation
 dmaHighestCh = coreComponent.createIntegerSymbol("DMA_HIGHEST_CHANNEL", dmaEnable)
+dmaHighestCh.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLA")
 dmaHighestCh.setLabel("DMA (DMAC) Highest Active Channel")
 dmaHighestCh.setVisible(False)
 
@@ -588,6 +665,7 @@ for channelID in range(0, channelCount):
 
     # Channel enable - CHCTRLAk.ENABLE
     dmaChannelEnable = coreComponent.createBooleanSymbol("DMA_ENABLE_CH_" + str(channelID), dmaMenu)
+    dmaChannelEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLA")
     dmaChannelEnable.setLabel("Use DMA Channel " + str(channelID))
     dmaChannelEnable.setDefaultValue(False)
     dmaChannelEnable.setDependencies(onDMAChannelEnable, ["DMA_ENABLE_CH_" + str(channelID)])
@@ -595,11 +673,13 @@ for channelID in range(0, channelCount):
 
     #Channel Run in Standby - CHCTRLAk.RUNSTANDBY
     CHCTRLA_RUNSTDBY_Enable = coreComponent.createBooleanSymbol("DMA_CHCTRLA_RUNSTDBY_CH_" + str(channelID), dmaChannelEnable)
+    CHCTRLA_RUNSTDBY_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLA")
     CHCTRLA_RUNSTDBY_Enable.setLabel("Run Channel in Standby mode")
     CHCTRLA_RUNSTDBY_Enable.setDefaultValue(False)
 
     # Channel Trigger Source - CHCTRLBk.TRIG[7:0]
     CHCTRLB_TRIG_Config = coreComponent.createKeyValueSetSymbol("DMA_CHCTRLB_TRIG_CH_" + str(channelID), dmaChannelEnable)
+    CHCTRLB_TRIG_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_TRIG_Config.setLabel("Trigger Source")
 
     sortedTriggerSourcesKeyList = sorted(per_instance.keys())
@@ -616,6 +696,7 @@ for channelID in range(0, channelCount):
 
     # DMA manager will use LOCK symbol to lock the "DMA_CHCTRLB_TRIG_CH_ + str(channelID)" symbol
     dmaSym_CHCTRLA_TRIGSRC_LOCK = coreComponent.createBooleanSymbol("DMA_CHCTRLB_TRIG_CH_" + str(channelID) + "_VAL_LOCK", dmaChannelEnable)
+    dmaSym_CHCTRLA_TRIGSRC_LOCK.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     dmaSym_CHCTRLA_TRIGSRC_LOCK.setLabel("Lock DMA Request")
     dmaSym_CHCTRLA_TRIGSRC_LOCK.setVisible(False)
     dmaSym_CHCTRLA_TRIGSRC_LOCK.setUseSingleDynamicValue(True)
@@ -624,6 +705,7 @@ for channelID in range(0, channelCount):
     priority_level_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMA\"]/value-group@[name=\"CHCTRLB__PRI\"]").getChildren()
 
     CHCTRLB_PRI_Config = coreComponent.createKeyValueSetSymbol("DMA_CHCTRLB_PRI_CH_" + str(channelID), dmaChannelEnable)
+    CHCTRLB_PRI_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_PRI_Config.setLabel("Channel Priority Level")
 
     for id in range(len(priority_level_values)):
@@ -637,6 +719,7 @@ for channelID in range(0, channelCount):
     ras_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMA\"]/value-group@[name=\"CHCTRLB__RAS\"]").getChildren()
 
     CHCTRLB_RAS_Config = coreComponent.createKeyValueSetSymbol("DMA_CHCTRLB_RAS_CH_" + str(channelID), dmaChannelEnable)
+    CHCTRLB_RAS_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_RAS_Config.setLabel("Read Address Sequence")
 
     for id in range(len(ras_values)):
@@ -653,6 +736,7 @@ for channelID in range(0, channelCount):
     was_values = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMA\"]/value-group@[name=\"CHCTRLB__WAS\"]").getChildren()
 
     CHCTRLB_WAS_Config = coreComponent.createKeyValueSetSymbol("DMA_CHCTRLB_WAS_CH_" + str(channelID), dmaChannelEnable)
+    CHCTRLB_WAS_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_WAS_Config.setLabel("Write Address Sequence")
 
     for id in range(len(was_values)):
@@ -674,6 +758,7 @@ for channelID in range(0, channelCount):
             break
 
     CHXSIZ_CSZ_Config = coreComponent.createIntegerSymbol("DMA_CHXSIZ_CSZ_CH_" + str(channelID), dmaChannelEnable)
+    CHXSIZ_CSZ_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHXSIZ")
     CHXSIZ_CSZ_Config.setLabel("Cell Transfer Size")
     CHXSIZ_CSZ_Config.setMin(0)
     CHXSIZ_CSZ_Config.setMax(int(max_cell_size_value, 16))
@@ -681,6 +766,7 @@ for channelID in range(0, channelCount):
 
     #Channel Trigger Action (Cell Auto Start Enable of Ensuing Transfers) - CHCTRLB.CASTEN
     CHCTRLB_CASTEN_Config = coreComponent.createKeyValueSetSymbol("DMA_CHCTRLB_CASTEN_CH_" + str(channelID), dmaChannelEnable)
+    CHCTRLB_CASTEN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_CASTEN_Config.setLabel("Trigger Action (Cell Auto Start Enable)")
     CHCTRLB_CASTEN_Config.addKey("CELL_TRANSFER", "0", "One Cell Transfer Per DMA Start Trigger")
     CHCTRLB_CASTEN_Config.addKey("BLOCK_TRANSFER", "1", "Transfer all cells (complete block) on a single DMA Start Trigger")
@@ -696,6 +782,7 @@ for channelID in range(0, channelCount):
             break
 
     CHSSTRD_SSTRD_Config = coreComponent.createIntegerSymbol("DMA_CHSSTRD_SSTRD_CH_" + str(channelID), dmaChannelEnable)
+    CHSSTRD_SSTRD_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHSSTRD")
     CHSSTRD_SSTRD_Config.setLabel("Source Cell Striding Size")
     CHSSTRD_SSTRD_Config.setMin(0)
     CHSSTRD_SSTRD_Config.setMax(int(max_cell_striding_size_value, 16))
@@ -705,6 +792,7 @@ for channelID in range(0, channelCount):
 
     #Channel Destination Cell Striding Size - CHDSTRDk.DSTRD
     CHDSTRD_DSTRD_Config = coreComponent.createIntegerSymbol("DMA_CHDSTRD_DSTRD_CH_" + str(channelID), dmaChannelEnable)
+    CHDSTRD_DSTRD_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHDSTRD")
     CHDSTRD_DSTRD_Config.setLabel("Destination Cell Striding Size")
     CHDSTRD_DSTRD_Config.setMin(0)
     CHDSTRD_DSTRD_Config.setMax(int(max_cell_striding_size_value, 16))
@@ -714,11 +802,13 @@ for channelID in range(0, channelCount):
 
     #Channel Enable Abort on Pattern Match - CHCTRLB.PATEN
     CHCTRLB_PATEN_Enable = coreComponent.createBooleanSymbol("DMA_CHCTRLB_PATEN_CH_" + str(channelID), dmaChannelEnable)
+    CHCTRLB_PATEN_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_PATEN_Enable.setLabel("Enable Abort on Pattern Match?")
     CHCTRLB_PATEN_Enable.setDefaultValue(False)
 
     #Channel Enable Abort on Pattern Match - CHCTRLB.PATLEN
     CHCTRLB_PATLEN_Config = coreComponent.createKeyValueSetSymbol("DMA_CHCTRLB_PATLEN_CH_" + str(channelID), CHCTRLB_PATEN_Enable)
+    CHCTRLB_PATLEN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_PATLEN_Config.setLabel("Pattern Match Length")
     CHCTRLB_PATLEN_Config.addKey("1_BYTE", "0", "1 Byte")
     CHCTRLB_PATLEN_Config.addKey("2_BYTE", "1", "2 Bytes")
@@ -730,6 +820,7 @@ for channelID in range(0, channelCount):
 
     #Channel Pattern Match Data - CHPDAT.PDAT
     CHPDAT_PDAT_Config = coreComponent.createHexSymbol("DMA_CHPDAT_PDAT_CH_" + str(channelID), CHCTRLB_PATEN_Enable)
+    CHPDAT_PDAT_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHPDAT")
     CHPDAT_PDAT_Config.setLabel("Pattern Match Data")
     CHPDAT_PDAT_Config.setMin(0)
     CHPDAT_PDAT_Config.setMax(65535)
@@ -739,6 +830,7 @@ for channelID in range(0, channelCount):
 
     #Channel Pattern Ignore Byte Enable - CHCTRLB.PIGNEN
     CHCTRLB_PIGNEN_Enable = coreComponent.createBooleanSymbol("DMA_CHCTRLB_PIGNEN_CH_" + str(channelID), CHCTRLB_PATEN_Enable)
+    CHCTRLB_PIGNEN_Enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHCTRLB")
     CHCTRLB_PIGNEN_Enable.setLabel("Enable Pattern Ignore Byte")
     CHCTRLB_PIGNEN_Enable.setDefaultValue(False)
     CHCTRLB_PIGNEN_Enable.setVisible(False)
@@ -746,6 +838,7 @@ for channelID in range(0, channelCount):
 
     #Channel Pattern Ignore Byte Value - CHPDAT.PIGN[7:0]
     CHPDAT_PIGN_Config = coreComponent.createHexSymbol("DMA_CHPDAT_PIGN_CH_" + str(channelID), CHCTRLB_PIGNEN_Enable)
+    CHPDAT_PIGN_Config.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHPDAT")
     CHPDAT_PIGN_Config.setLabel("Pattern Ignore Value")
     CHPDAT_PIGN_Config.setMin(0)
     CHPDAT_PIGN_Config.setMax(255)
@@ -754,11 +847,13 @@ for channelID in range(0, channelCount):
     CHPDAT_PIGN_Config.setDependencies(updatePatternMatchLength, ["DMA_CHCTRLB_PIGNEN_CH_" + str(channelID)])
 
     # DMA channel interrupt number - needed by core drivers to disable during critical section
-    DMA_ChannelX_VectorEnum = coreComponent.createStringSymbol(dmaInstanceName.getValue() + "_CHANNEL" + str(channelID) + "_INT_SRC", dmaChannelEnable)
-    DMA_ChannelX_VectorEnum.setLabel("DMA Channel X interrupt Vector Number Enum")
-    DMA_ChannelX_VectorEnum.setDefaultValue(dmaInstanceName.getValue() + "_PRI" + CHCTRLB_PRI_Config.getSelectedKey().split("_")[1] + "_IRQn")
-    DMA_ChannelX_VectorEnum.setDependencies(onChannelPriorityChange, ["DMA_CHCTRLB_PRI_CH_" + str(channelID)])
-    DMA_ChannelX_VectorEnum.setVisible(False)
+    if len(dmaVectorNameList) > 1 and multi_iqrn_sym_exists == None:
+        DMA_ChannelX_VectorEnum = coreComponent.createStringSymbol(dmaInstanceName.getValue() + "_CHANNEL" + str(channelID) + "_INT_SRC", dmaChannelEnable)
+        DMA_ChannelX_VectorEnum.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:%NOREGISTER%")
+        DMA_ChannelX_VectorEnum.setLabel("DMA Channel X interrupt Vector Number Enum")
+        DMA_ChannelX_VectorEnum.setDefaultValue(dmaInstanceName.getValue() + "_PRI" + str(int (CHCTRLB_PRI_Config.getSelectedKey().split("_")[1]) - 1) + "_IRQn")
+        DMA_ChannelX_VectorEnum.setDependencies(onChannelPriorityChange, ["DMA_CHCTRLB_PRI_CH_" + str(channelID)])
+        DMA_ChannelX_VectorEnum.setVisible(False)
 
 ####################################################################################################
 
@@ -768,9 +863,11 @@ for channelID in range(0, channelCount):
 
         if channelID < numGenerators:
             dmaEvsysOut = coreComponent.createBooleanSymbol("DMA_ENABLE_EVSYS_OUT_" + str(channelID), dmaEVSYSMenu)
+            dmaEvsysOut.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
             dmaEvsysOut.setLabel("Enable Event Output for Channel " + str(channelID))
 
             dmaEvsysEVOMODE = coreComponent.createKeyValueSetSymbol("DMA_BTCTRL_EVSYS_EVOMODE_" + str(channelID), dmaEvsysOut)
+            dmaEvsysEVOMODE.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
             dmaEvsysEVOMODE.setLabel("Event Output Mode")
 
             dmaEvsysEVOMODEValues = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMA\"]/value-group@[name=\"CHEVCTRL__EVOMODE\"]").getChildren()
@@ -787,12 +884,15 @@ for channelID in range(0, channelCount):
             dmaEvsysEVOMODE.setDependencies(eventModesVisibility, ["DMA_ENABLE_EVSYS_OUT_" + str(channelID)])
 
         dmaEvsysIn = coreComponent.createBooleanSymbol("DMA_ENABLE_EVSYS_IN_" + str(channelID), dmaEVSYSMenu)
+        dmaEvsysIn.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
         dmaEvsysIn.setLabel("Enable Start Event Input for Channel " + str(channelID))
 
         dmaEvsysAuxIn = coreComponent.createBooleanSymbol("DMA_ENABLE_EVSYS_AUX_IN_" + str(channelID), dmaEVSYSMenu)
+        dmaEvsysAuxIn.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
         dmaEvsysAuxIn.setLabel("Enable Auxillary Event for Channel " + str(channelID))
 
         dmaEvsysAuxACT = coreComponent.createKeyValueSetSymbol("DMA_CHEVCTRL_EVACT_" + str(channelID), dmaEvsysAuxIn)
+        dmaEvsysAuxACT.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
         dmaEvsysAuxACT.setLabel("Event Input Action")
 
         dmaEvsysAuxActValues = ATDF.getNode("/avr-tools-device-file/modules/module@[name=\"DMA\"]/value-group@[name=\"CHEVCTRL__EVAUXACT\"]").getChildren()
@@ -825,16 +925,19 @@ dmaSymbolsForDMASysService(coreComponent, dmaChannelEnable)
 # Interface for Peripheral clients
 for per in per_instance.keys():
     dmaChannelNeeded = coreComponent.createBooleanSymbol("DMA_CH_NEEDED_FOR_" + str(per), dmaMenu)
+    dmaChannelNeeded.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
     dmaChannelNeeded.setLabel("Local DMA_CH_NEEDED_FOR_" + str(per))
     dmaChannelNeeded.setVisible(False)
     peridValueListSymbols.append("DMA_CH_NEEDED_FOR_" + str(per))
 
     dmaChannel = coreComponent.createIntegerSymbol("DMA_CH_FOR_" + str(per), dmaMenu)
+    dmaChannel.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
     dmaChannel.setLabel("Local DMA_CH_FOR_" + str(per))
     dmaChannel.setDefaultValue(-1)
     dmaChannel.setVisible(False)
 
 dmaPERIDChannelUpdate = coreComponent.createBooleanSymbol("DMA_CHANNEL_ALLOC", dmaChannelEnable)
+dmaPERIDChannelUpdate.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:dma_03639;register:CHEVCTRL")
 dmaPERIDChannelUpdate.setLabel("Local dmaChannelAllocLogic")
 dmaPERIDChannelUpdate.setVisible(False)
 dmaPERIDChannelUpdate.setDependencies(dmaChannelAllocLogic, peridValueListSymbols)
@@ -898,7 +1001,7 @@ if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_E
     dmacDummyFile = coreComponent.createBooleanSymbol("DMA_SECURe_FILE", None)
     dmacDummyFile.setVisible(False)
     dmacDummyFile.setDependencies(dmacfileUpdate, ["core." + dmaInstanceName.getValue() + "_IS_NON_SECURE"])
-    
+
     DMACfilesArray.append(dmaHeaderFile)
     DMACfilesArray.append(dmaSourceFile)
     DMACfilesArray.append(dmaSystemInitFile)

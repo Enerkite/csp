@@ -96,6 +96,7 @@ def instantiateComponent(trngComponent):
 
     trngReserved = trngComponent.createBooleanSymbol("TRNG_Reserved", None)
     trngReserved.setLabel("TRNG Reserved")
+    trngReserved.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:trng_6334;register:TRNG_CR")
     trngReserved.setVisible(False)
 
     trngWarning = trngComponent.createCommentSymbol("TRNG_COMMENT", None)
@@ -110,6 +111,7 @@ def instantiateComponent(trngComponent):
 
     #Create a Checkbox to enable disable interrupts
     trngInterrupt = trngComponent.createBooleanSymbol("trngEnableInterrupt", trngMenu)
+    trngInterrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:trng_6334;register:TRNG_IER")
     trngInterrupt.setLabel("Enable Interrupts")
     trngInterrupt.setDefaultValue(False)
 
@@ -151,6 +153,13 @@ def instantiateComponent(trngComponent):
     trngSystemDefFile.setOutputName("core.LIST_SYSTEM_DEFINITIONS_H_INCLUDES")
     trngSystemDefFile.setSourcePath("../peripheral/trng_6334/templates/system/definitions.h.ftl")
     trngSystemDefFile.setMarkup(True)
+
+    #System Initialization
+    trngSystemInitFile = trngComponent.createFileSymbol("TRNG_SYS_INIT", None)
+    trngSystemInitFile.setType("STRING")
+    trngSystemInitFile.setOutputName("core.LIST_SYSTEM_INIT_C_SYS_INITIALIZE_PERIPHERALS")
+    trngSystemInitFile.setSourcePath("../peripheral/trng_6334/templates/system/initialization.c.ftl")
+    trngSystemInitFile.setMarkup(True)
 
     if Variables.get("__TRUSTZONE_ENABLED") != None and Variables.get("__TRUSTZONE_ENABLED") == "true":
         global TRNGfilesArray

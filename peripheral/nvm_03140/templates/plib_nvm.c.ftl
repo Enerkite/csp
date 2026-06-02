@@ -93,7 +93,7 @@ typedef struct
     uintptr_t Context;
 }nvmCallbackObjType;
 
-volatile static nvmCallbackObjType ${NVM_INSTANCE_NAME?lower_case}CallbackObj;
+static volatile nvmCallbackObjType ${NVM_INSTANCE_NAME?lower_case}CallbackObj;
 </#if>
 /* ************************************************************************** */
 /* ************************************************************************** */
@@ -126,7 +126,21 @@ volatile static nvmCallbackObjType ${NVM_INSTANCE_NAME?lower_case}CallbackObj;
     <#lt>    }
     <#lt>}
 </#if>
+<#if __PROCESSOR == "PIC32MZ2051W104132" ||  __PROCESSOR == "WFI32E03" >
+__attribute__((ramfunc,  section(".ramfunc"),long_call,unique_section)) void ${NVM_INSTANCE_NAME}_WriteUnlockSequence( void )
+{
+    // Write the unlock key sequence
+    NVMKEY = 0x0U;
+    NVMKEY = (uint32_t)NVM_UNLOCK_KEY1;
+    NVMKEY = (uint32_t)NVM_UNLOCK_KEY2;
 
+    // Start the operation
+    NVMCONSET = _NVMCON_WR_MASK;
+
+   /*wait for operation to complete */
+   while ((NVMCON & _NVMCON_WR_MASK) != 0);
+}
+<#else>
 static void ${NVM_INSTANCE_NAME}_WriteUnlockSequence( void )
 {
     // Write the unlock key sequence
@@ -135,6 +149,7 @@ static void ${NVM_INSTANCE_NAME}_WriteUnlockSequence( void )
     NVMKEY = (uint32_t)NVM_UNLOCK_KEY2;
 }
 
+</#if>
 static void ${NVM_INSTANCE_NAME}_StartOperationAtAddress( uint32_t address,  NVM_OPERATION_MODE operation )
 {
     volatile uint32_t processorStatus;
@@ -171,9 +186,11 @@ static void ${NVM_INSTANCE_NAME}_StartOperationAtAddress( uint32_t address,  NVM
 
     ${NVM_INSTANCE_NAME}_WriteUnlockSequence();
 
-    // Start the operation
+<#if __PROCESSOR == "PIC32MZ2051W104132" >
+    NVMCONbits.WREN = 0;
+<#else>
     NVMCONSET = _NVMCON_WR_MASK;
-
+</#if>
     __builtin_mtc0(12U, 0U, processorStatus);
 
 <#if INTERRUPT_ENABLE == true>
@@ -195,13 +212,13 @@ void ${NVM_INSTANCE_NAME}_Initialize( void )
 
 bool ${NVM_INSTANCE_NAME}_Read( uint32_t *data, uint32_t length, const uint32_t address )
 {
-    /* MISRA C-2012 Rule 11.6 violated 1 time below. Deviation record ID - H3_MISRAC_2012_R_11_6_DR_1*/
+    /* MISRA C-2023 Rule 11.6 violated 1 time below. Deviation record ID - H3_MISRAC_2023_R_11_6_DR_1*/
     <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>
     <#if core.COMPILER_CHOICE == "XC32">
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunknown-pragmas"
     </#if>
-    #pragma coverity compliance deviate:1 "MISRA C-2012 Rule 11.6" "H3_MISRAC_2012_R_11_6_DR_1"
+    #pragma coverity compliance deviate:1 "MISRA C-2023 Rule 11.6" "H3_MISRAC_2023_R_11_6_DR_1"
     </#if>
     (void) memcpy(data, (uint32_t*)KVA0_TO_KVA1(address), length);
     <#if core.COVERITY_SUPPRESS_DEVIATION?? && core.COVERITY_SUPPRESS_DEVIATION>

@@ -23,6 +23,27 @@
 
 global instanceName
 
+def handleMessage(messageID, args):
+    dummy_dict = {}
+
+    if (messageID == "PIT_TIMER_CONFIG"):
+        if "isPitEnRdOnly" in args:
+            Database.getComponentByID("pit").getSymbolByID("ENABLE_COUNTER").setReadOnly(args["isPitEnRdOnly"])
+        if "isPitEn" in args:
+            Database.setSymbolValue("pit", "ENABLE_COUNTER", args["isPitEn"])
+        if "isPitIntRdOnly" in args:
+            Database.getComponentByID("pit").getSymbolByID("ENABLE_INTERRUPT").setReadOnly(args["isPitIntRdOnly"])
+        if "isPitIntEn" in args:
+            Database.setSymbolValue("pit", "ENABLE_INTERRUPT", args["isPitIntEn"])
+        if "rtosInterruptHandler" in args:
+            if args["rtosInterruptHandler"] != "":
+                Database.setSymbolValue("pit", "RTOS_INTERRUPT_HANDLER", args["rtosInterruptHandler"])
+            else:
+                instanceName = Database.getComponentByID("pit").getSymbolByID("PIT_INSTANCE_NAME")
+                Database.setSymbolValue("pit", "RTOS_INTERRUPT_HANDLER", instanceName.getValue()+"_InterruptHandler")
+
+    return dummy_dict
+
 def updateInterrupt(symbol, event):
     instanceName = symbol.getComponent().getSymbolByID("PIT_INSTANCE_NAME")
     if event["source"].getSymbolValue("ENABLE_INTERRUPT") == True:
@@ -46,6 +67,8 @@ def updatePIV(symbol, event):
     period = symbol.getComponent().getSymbolValue("PERIOD_MS")
     piv = calcPIV(period)
     symbol.setValue(piv, 1)
+
+    event["source"].getSymbolByID("PIT_PERIOD_US").setValue(int(round(period * 1000)))
 
 
 def provideCommonTimerSymbols( aComponent ):
@@ -111,6 +134,7 @@ def instantiateComponent( pitComponent ):
     provideCommonTimerSymbols( pitComponent )
 
     enable = pitComponent.createBooleanSymbol("ENABLE_COUNTER", None)
+    enable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pit_6079;register:PIT_MR")
     enable.setLabel("Enable Counter")
     enable.setDefaultValue(True)
 
@@ -119,6 +143,7 @@ def instantiateComponent( pitComponent ):
     rtosInterruptVector.setDefaultValue("")
 
     interrupt = pitComponent.createBooleanSymbol("ENABLE_INTERRUPT", None)
+    interrupt.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pit_6079;register:PIT_MR")
     interrupt.setLabel("Enable Interrupt")
     interrupt.setDefaultValue(True)
     interrupt.setDependencies(updateInterrupt, ["ENABLE_INTERRUPT", "RTOS_INTERRUPT_HANDLER"])
@@ -132,6 +157,7 @@ def instantiateComponent( pitComponent ):
     clk = clk / 16
     maxval = float(pow(2,20) * 1000.0 / float(clk))
     period = pitComponent.createFloatSymbol("PERIOD_MS", None)
+    period.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pit_6079;register:PIT_MR")
     period.setLabel("Period (ms)")
     period.setMax(maxval)
     period.setMin(1001.0 / float(clk))
@@ -139,10 +165,16 @@ def instantiateComponent( pitComponent ):
 
     piv = calcPIV(period.getValue())
     piv_sym = pitComponent.createIntegerSymbol("PERIOD_TICKS", None)
+    piv_sym.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:pit_6079;register:PIT_MR")
     piv_sym.setLabel("Period")
     piv_sym.setDefaultValue(piv)
     piv_sym.setReadOnly(True)
     piv_sym.setDependencies(updatePIV,["PERIOD_MS", "core.PIT_CLOCK_FREQUENCY"])
+
+    pitPeriodUS = pitComponent.createIntegerSymbol("PIT_PERIOD_US", None)
+    pitPeriodUS.setVisible(False)
+    pitPeriodUS.setDefaultValue(1000)
+    pitPeriodUS.setMin(0)
 
     configName = Variables.get("__CONFIGURATION_NAME")
 

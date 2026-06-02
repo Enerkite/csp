@@ -64,18 +64,18 @@ def setMPUDefaultSettings():
     return mpuRegions, mpuSettings, mpuSetUpLogicList
 
 # load family specific configurations
-print("Loading System Services for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading System Services for " + Variables.get("__PROCESSOR"))
 
 fuseSettings = coreComponent.createBooleanSymbol("FUSE_CONFIG_ENABLE", devCfgMenu)
 fuseSettings.setLabel("Generate Fuse Settings")
 fuseSettings.setDefaultValue(True)
 
 registerGroup = ["FUSES_USERCFG1", "FUSES_BOOTCFG1", "FUSES_DALCFG", "FUSES_USERCFG2", "FUSES_BOOTCFG2"]
-default = [0x1, 0xFFFE, 0xFFFF , 0xFFFF, 0, 0 , 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 1, 0x3, 1, 0x3, 1, 0x3, 1, 0xF, 0xF, 0xF, 0xF, 0x3, 1, 1, 0, 0, 0, 0, 1, 1, 0xFFFFFFFF, 0xFFFFFFFF, #FUSES_USERCFG1
+default = [0x1, 0xFFFE, 0xFFFF , 0xFFFF, 0, 0 , 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 1, 0, 1, 0, 1, 0, 1, 0xF, 0xF, 0xF, 0xF, 0x3, 1, 1, 0, 0, 0, 0, 1, 1, 0xFFFFFFFF, 0xFFFFFFFF, #FUSES_USERCFG1
            0, 0, 0, 0, 1, 1, 0x1, 0xFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,  #FUSES_BOOTCFG1
            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 1, 1, 0x7, 1, 0xF, 1, 1, 0xF,
            0x2, 1, 0x0, 0x0, 0x7, 1, 1, 0x3, 1, 1, 1, 1, 1, 2, 7, 0x3FF, 0x3F, 0x3F, 1, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-           0x0, 0xFFFF, 0xFFFF , 0xFFFF, 0, 1 , 1, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 1, 0x3, 1, 0x3, 1, 0x3, 1, 0xF, 0xF, 0xF, 0xF, 0x3, 1, 1, 0, 0, 0, 0, 1, 1, 0xFFFFFFFF, 0xFFFFFFFF, #FUSES_USERCFG2
+           0x0, 0xFFFF, 0xFFFF , 0xFFFF, 0, 1 , 1, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 1, 0, 1, 0, 1, 0, 1, 0xF, 0xF, 0xF, 0xF, 0x3, 1, 1, 0, 0, 0, 0, 1, 1, 0xFFFFFFFF, 0xFFFFFFFF, #FUSES_USERCFG2
            0, 0, 0, 0, 1, 1, 0x0, 0xFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,  #FUSES_BOOTCFG2
            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 1, 1, 0x7, 1, 0xF, 1, 1, 0xF,
            0x2, 1, 0x0, 0x0, 0x7, 1, 1, 0x3, 1, 1, 1, 1, 1, 2, 7, 0x3FF, 0x3F, 0x3F, 1, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF]
@@ -227,7 +227,15 @@ coreComponent.addPlugin("../peripheral/port_u2210/plugin/port_u2210.jar")
 
 # load clock manager information
 execfile(Variables.get("__CORE_DIR") + "/../peripheral/clk_pic32cz_ca/config/clk.py")
-coreComponent.addPlugin("../peripheral/clk_pic32cz_ca/plugin/clk_pic32cz_ca.jar")
+coreComponent.addPlugin(
+        "../../harmony-services/plugins/generic_plugin.jar",
+        "CLK_UI_MANAGER_ID_CLK_PIC32CZ_CA",
+        {
+            "plugin_name": "Clock Configuration",
+            "main_html_path": "csp/plugins/configurators/clock-configurators/clk_pic32cz_ca_configurator/build/index.html",
+            "componentId": coreComponent.getID()
+        }
+    )
 
 # Cortex-M7 IP Configuration
 tcmMenu = coreComponent.createMenuSymbol("TCM_MENU", cortexMenu)
@@ -236,19 +244,21 @@ tcmMenu.setDescription("TCM Configuration")
 
 tcmComment = coreComponent.createCommentSymbol("TCM_COMMENT", tcmMenu)
 tcmComment.setLabel("Configure the TCM using the Device Configuration Fuse Setting")
+tcmComment.setVisible(False)
 
 tcmEnable = coreComponent.createBooleanSymbol("TCM_ENABLE", tcmMenu)
 tcmEnable.setLabel("Enable TCM")
 tcmEnable.setDefaultValue(True)
-tcmEnable.setVisible(False)
+tcmEnable.setVisible(True)
 
 stackTCM = coreComponent.createBooleanSymbol("STACK_IN_TCM", xc32Menu)
 stackTCM.setLabel("Locate Stack in TCM")
 stackTCM.setDefaultValue(False)
 
-ramInit = coreComponent.createBooleanSymbol("RAM_INIT", xc32Menu)
-ramInit.setDefaultValue(True)
-ramInit.setVisible(False)
+# SRAM + ITCM + DTCM are initialized by the Boot ROM code if ECC is enabled via fuse settings.
+# ramInit = coreComponent.createBooleanSymbol("RAM_INIT", xc32Menu)
+# ramInit.setDefaultValue(False)
+# ramInit.setVisible(False)
 
 cacheMenu = coreComponent.createMenuSymbol("CACHE_MENU", cortexMenu)
 cacheMenu.setLabel("CACHE")

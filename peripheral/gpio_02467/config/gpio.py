@@ -27,7 +27,7 @@ import xml.etree.ElementTree as ET
 import os.path
 import inspect
 
-print("Loading Pin Manager for " + Variables.get("__PROCESSOR"))
+Log.writeInfoMessage("Loading Pin Manager for " + Variables.get("__PROCESSOR"))
 
 # "pioSymChannel" list will hold the port channels which are present in particular device.
 # it will be dynamically populated based on ATDF pinout info.
@@ -48,16 +48,163 @@ global createPinMap
 global availablePinDictionary
 availablePinDictionary = {}
 
+## SHD: Dictionary to store symbols created for each pin
+global pinSymbolsDictionary
+pinSymbolsDictionary = dict()
+global ppsSymbolsDictionary
+ppsSymbolsDictionary = dict()
+global PORTS_REMAP_INPUT_FUNCTION
+PORTS_REMAP_INPUT_FUNCTION= []
+
+global ppsInputPinMap
+ppsInputPinMap = {}
+global ppsOutputFunctionMap
+ppsOutputFunctionMap = {}
+global PPSPinCount
+PPSPinCount = 60
+
 ###################################################################################################
 ########################### Callback functions for dependencies   #################################
 ###################################################################################################
 
 global getAvailablePins
+global getFunctionListByPinName
+# global getInstanceNameFromPinFunction
 
 # API used by core to return available pins to sender component
 def getAvailablePins():
 
     return availablePinDictionary
+
+global setPinConfigurationValue
+global getPinConfigurationValue
+global clearPinConfigurationValue
+
+global checkPPSPin
+def checkPPSPin(ppsPad):
+    global ppsSymbolsDictionary
+    
+    for pinNum in range(0, PPSPinCount):
+        usePPSSymbol = ppsSymbolsDictionary.get("USE_PPS_OUTPUT_{}".format(pinNum))
+        if usePPSSymbol != None and usePPSSymbol.getValue() == True:
+            pinSymbol = ppsSymbolsDictionary.get("SYS_PORT_PPS_OUTPUT_PIN_{}".format(pinNum))
+            selPad = pinSymbol.getValue()
+            if selPad == ppsPad:
+                return (pinNum, "OUTPUT")
+        
+        usePPSSymbol = ppsSymbolsDictionary.get("USE_PPS_INPUT_{}".format(pinNum))
+        if usePPSSymbol != None and usePPSSymbol.getValue() == True:
+            pinSymbol = ppsSymbolsDictionary.get("SYS_PORT_PPS_INPUT_PIN_{}".format(pinNum))
+            selPad = pinSymbol.getSelectedKey()
+            if selPad == ppsPad:
+                return (pinNum, "INPUT")
+
+    return (PPSPinCount, "")
+
+def setPinConfigurationValue(pinNumber, setting, value):
+    global ppsOutputFunctionMap
+    global ppsInputPinMap
+    global PPSPinCount
+    global ppsSymbolsDictionary
+
+    symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+    if symbol:
+        symbol.clearValue()
+        symbol.setValue(value)
+
+    if setting == 'function':
+        symbol = pinSymbolsDictionary.get(pinNumber).get('mode')
+        if symbol != None:
+            if value.startswith("AN") and value[-1].isnumeric():
+                symbol.setValue("ANALOG")
+            else:
+                symbol.setValue("DIGITAL")
+
+        if value != "GPIO":
+            ppsPad = None
+            # Look for input/output PAD
+            for pin, pad in availablePinDictionary.items():
+                if int(pin) == pinNumber:
+                    ppsPad = pad.replace("R", "RP")
+                    break
+
+            # Check if ppsPad has been previously configured 
+            (pinNum, direction) = checkPPSPin(ppsPad)
+            if pinNum == PPSPinCount:
+                # ppsPad not configured
+                if ppsInputPinMap.get(ppsPad) != None:
+                    ppsFunction = value.split("_")[-1]
+                    ppsOutputPin = ppsOutputFunctionMap.get(ppsFunction)
+                    ppsDirection = ""
+                    ppsPinNum = ""
+                    if ppsOutputPin != None:
+                        for pinNum in range(0, PPSPinCount):
+                            usePPSSymbol = ppsSymbolsDictionary.get("USE_PPS_OUTPUT_{}".format(pinNum))
+                            if usePPSSymbol != None and usePPSSymbol.getValue() == False:
+                                usePPSSymbol.setValue(True)
+                                ppsDirection = "OUTPUT"
+                                ppsPinNum = pinNum
+                                break
+                            
+                    else:
+                        if ppsFunction in PORTS_REMAP_INPUT_FUNCTION:
+                            for pinNum in range(0, PPSPinCount):
+                                usePPSSymbol = ppsSymbolsDictionary.get("USE_PPS_INPUT_{}".format(pinNum))
+                                if usePPSSymbol != None and usePPSSymbol.getValue() == False:
+                                    usePPSSymbol.setValue(True)
+                                    ppsDirection = "INPUT"
+                                    ppsPinNum = pinNum
+                                    break
+
+                    if ppsDirection != "":
+                        symbol = ppsSymbolsDictionary.get("SYS_PORT_PPS_{}_FUNCTION_{}".format(ppsDirection, ppsPinNum))
+                        if symbol != None:
+                            if ppsDirection == "OUTPUT":
+                                symbol.setSelectedKey(ppsFunction)
+                            else:
+                                symbol.setValue(ppsFunction)
+
+                        symbol = ppsSymbolsDictionary.get("SYS_PORT_PPS_{}_PIN_{}".format(ppsDirection, ppsPinNum))
+                        if symbol != None:
+                            if ppsDirection == "OUTPUT":
+                                symbol.setValue(ppsPad)
+                            else:
+                                symbol.setSelectedKey(ppsPad)
+
+def getPinConfigurationValue(pinNumber, setting):
+    symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+    if symbol:
+        return symbol.getValue()
+
+def clearPinConfigurationValue(pinNumber, setting):
+    symbol = pinSymbolsDictionary.get(pinNumber).get(setting)
+    if symbol:
+        symbol.setReadOnly(True)
+        symbol.setReadOnly(False)
+        symbol.clearValue()
+        
+    if setting == 'function':
+        symbol = pinSymbolsDictionary.get(pinNumber).get('mode')
+        if symbol != None:
+            symbol.clearValue()
+
+        ppsPad = None
+        # Find input/output PAD
+        for pin, pad in availablePinDictionary.items():
+            if int(pin) == pinNumber:
+                ppsPad = pad.replace("R", "RP")
+                break
+
+        # Clear symbols if needed
+        if ppsPad != None:
+            (pinNum, direction) = checkPPSPin(ppsPad)
+            if pinNum != PPSPinCount:
+                symbol = ppsSymbolsDictionary.get("SYS_PORT_PPS_{}_FUNCTION_{}".format(direction, pinNum))
+                symbol.clearValue()
+                symbol = ppsSymbolsDictionary.get("SYS_PORT_PPS_{}_PIN_{}".format(direction, pinNum))
+                symbol.clearValue()
+                symbol = ppsSymbolsDictionary.get("USE_PPS_{}_{}".format(direction, pinNum))
+                symbol.clearValue()
 
 # Dependency Function to show or hide the warning message depending on Interrupt
 def InterruptStatusWarning(symbol, event):
@@ -327,6 +474,60 @@ def createPinMap(packageSymbol):
 
     return (pin_map, pin_position)
 
+def getFunctionListByPinName(pinName):
+    import xml.etree.ElementTree as ET
+
+    # Look for fixed functions
+    global pinoutXmlPath
+    tree = ET.parse(pinoutXmlPath)
+    root = tree.getroot()
+
+    fnList = []
+    for myPins in root.findall('pins'):
+        for myPin in myPins.findall('pin'):
+           if myPin.get("name") == pinName:
+                # Found pin, add fixed functions
+                for myFunction in myPin.findall('function'):
+                    fnList.append(myFunction.get("name"))
+                break
+
+    # Look for mappeable functions
+    global ppsXmlPath
+    tree = ET.parse(ppsXmlPath)
+    root = tree.getroot()
+
+    # Adapt pinName to names used in xml files
+    pinName = pinName.replace("R", "RP")
+    for myGroups in root.findall('groups'):
+        for myGroup in myGroups.findall('group'):
+            for myPin in myGroup.findall('pin'):
+                if myPin.get("name") == pinName:
+                    # Found pin, add remappable functions
+                    for myFunction in myGroup.findall('function'):
+                        fnList.append(myFunction.get("name"))
+
+    return fnList
+
+# def getInstanceNameFromPinFunction(pinFunction):
+#     import xml.etree.ElementTree as ET
+    
+#     global ppsXmlPath
+#     tree = ET.parse(ppsXmlPath)
+#     root = tree.getroot()
+
+#     # Adapt pinName to names used in xml files
+#     pinName = pinName.replace("R", "RP")
+#     for myModules in root.findall('modules'):
+#         for myModule in myModules.findall('module'):
+#             for myFunction in myGroup.findall('function'):
+#                 if myFunction.get("name") == pinFunction:
+#                     # Found function, return Module Name
+#                     instanceName = myModule.get("name")
+#                     return instanceName
+
+
+
+    
 ###################################################################################################
 ######################################### GPIO Main Menu  ##########################################
 ###################################################################################################
@@ -336,6 +537,7 @@ pioMenu.setLabel("Ports (GPIO)")
 pioMenu.setDescription("Configuration for GPIO PLIB")
 
 pioEnable = coreComponent.createBooleanSymbol("GPIO_ENABLE", pioMenu)
+pioEnable.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
 pioEnable.setLabel("Use GPIO PLIB?")
 pioEnable.setDefaultValue(True)
 pioEnable.setReadOnly(True)
@@ -395,6 +597,7 @@ for myPackages in root.findall('packages'):
         packageIdMap[myPackage.get("name")] = myPackage.get("id")
 
 pioPackage = coreComponent.createComboSymbol("COMPONENT_PACKAGE", pioEnable, packageIdMap.keys())
+pioPackage.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
 pioPackage.setLabel("Pin Package")
 pioPackage.setReadOnly(False)
 pioPackage.setDependencies(packageChange, ["COMPONENT_PACKAGE"])
@@ -414,6 +617,9 @@ pin_map, pin_position = createPinMap(pioPackage)
 # that is why "pinNumber-1" is used to index the lists wherever applicable.
 
 for pinNumber in range(1, packagePinCount + 1):
+
+    symbolsDict = dict()
+    
     pin.append(pinNumber)
     pin[pinNumber-1]= coreComponent.createMenuSymbol("GPIO_PIN_CONFIGURATION" + str(pinNumber), pinConfiguration)
     pin[pinNumber-1].setLabel("Pin " + str(pin_position[pinNumber-1]))
@@ -421,24 +627,30 @@ for pinNumber in range(1, packagePinCount + 1):
 
     pinName.append(pinNumber)
     pinName[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_FUNCTION_NAME", pin[pinNumber-1])
+    pinName[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     pinName[pinNumber-1].setLabel("Name")
     pinName[pinNumber-1].setDefaultValue("")
     pinName[pinNumber-1].setReadOnly(False)
+    symbolsDict.setdefault('name', pinName[pinNumber-1])
 
 
     pinType.append(pinNumber)
     pinType[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_FUNCTION_TYPE", pin[pinNumber-1])
+    pinType[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     pinType[pinNumber-1].setLabel("Type")
     pinType[pinNumber-1].setReadOnly(False)
     #pinType[pinNumber-1].setDependencies(pinFunctionCal, ["PIN_" + str(pinNumber) + "_PERIPHERAL_FUNCTION"])
+    symbolsDict.setdefault('function', pinType[pinNumber-1])
 
     pinBitPosition.append(pinNumber)
     pinBitPosition[pinNumber-1] = coreComponent.createIntegerSymbol("BSP_PIN_" + str(pinNumber) + "_PORT_PIN", pin[pinNumber-1])
+    pinBitPosition[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     pinBitPosition[pinNumber-1].setLabel("Bit Position")
     pinBitPosition[pinNumber-1].setReadOnly(False)
 
     pinChannel.append(pinNumber)
     pinChannel[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_PORT_CHANNEL", pin[pinNumber-1])
+    pinChannel[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     pinChannel[pinNumber-1].setLabel("Channel")
     pinChannel[pinNumber-1].setDefaultValue("")
     pinChannel[pinNumber-1].setReadOnly(False)
@@ -456,50 +668,65 @@ for pinNumber in range(1, packagePinCount + 1):
 
     pinMode.append(pinNumber)
     pinMode[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_MODE", pin[pinNumber-1])
+    pinMode[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     pinMode[pinNumber-1].setLabel("Mode")
     pinMode[pinNumber-1].setDefaultValue("")
     pinMode[pinNumber-1].setReadOnly(False)
     pinMode[pinNumber-1].setDependencies(pinModeCal, ["BSP_PIN_" + str(pinNumber) + "_MODE" ])
+    symbolsDict.setdefault('mode', pinMode[pinNumber-1])
 
     pinDirection.append(pinNumber)
     pinDirection[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_DIR", pin[pinNumber-1])
+    pinDirection[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:TRISA")
     pinDirection[pinNumber-1].setLabel("Direction")
     pinDirection[pinNumber-1].setReadOnly(False)
     pinDirection[pinNumber-1].setDependencies(pinDirCal, ["BSP_PIN_" + str(pinNumber) + "_DIR" ])
+    symbolsDict.setdefault('direction', pinDirection[pinNumber-1])
 
     pinLatch.append(pinNumber)
     pinLatch[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_LAT", pin[pinNumber-1])
+    pinLatch[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:LATA")
     pinLatch[pinNumber-1].setLabel("Initial Latch Value")
     pinLatch[pinNumber-1].setReadOnly(False)
     pinLatch[pinNumber-1].setDefaultValue("")
     pinLatch[pinNumber-1].setDependencies(pinLatchCal, ["BSP_PIN_" + str(pinNumber) + "_LAT"])
+    symbolsDict.setdefault('latch', pinLatch[pinNumber-1])
 
     pinOpenDrain.append(pinNumber)
     pinOpenDrain[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_OD", pin[pinNumber-1])
+    pinOpenDrain[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:ODCA")
     pinOpenDrain[pinNumber-1].setLabel("Open Drain")
     pinOpenDrain[pinNumber-1].setReadOnly(False)
     pinOpenDrain[pinNumber-1].setDependencies(pinOpenDrainCal, ["BSP_PIN_" + str(pinNumber) + "_OD"])
+    symbolsDict.setdefault('open drain', pinOpenDrain[pinNumber-1])
 
     pinInterrupt.append(pinNumber)
     pinInterrupt[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_CN", pin[pinNumber-1])
+    pinInterrupt[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:CNENA")
     pinInterrupt[pinNumber-1].setLabel("Change Notice")
     pinInterrupt[pinNumber-1].setReadOnly(False)
     pinInterrupt[pinNumber-1].setDependencies(pinInterruptCal, ["BSP_PIN_" + str(pinNumber) + "_CN"])
+    symbolsDict.setdefault('change notification', pinInterrupt[pinNumber-1])
 
     pinPullUp.append(pinNumber)
     pinPullUp[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_PU", pin[pinNumber-1])
+    pinPullUp[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:CNPUA")
     pinPullUp[pinNumber-1].setLabel("Pull Up")
     pinPullUp[pinNumber-1].setReadOnly(False)
     pinPullUp[pinNumber-1].setDependencies(pinPullUpCal, ["BSP_PIN_" + str(pinNumber) + "_PU"])
+    symbolsDict.setdefault('pull up', pinPullUp[pinNumber-1])
 
     pinPullDown.append(pinNumber)
     pinPullDown[pinNumber-1] = coreComponent.createStringSymbol("BSP_PIN_" + str(pinNumber) + "_PD", pin[pinNumber-1])
+    pinPullDown[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:CNPDA")
     pinPullDown[pinNumber-1].setLabel("Pull Down")
     pinPullDown[pinNumber-1].setReadOnly(False)
     pinPullDown[pinNumber-1].setDependencies(pinPullDownCal, ["BSP_PIN_" + str(pinNumber) + "_PD"])
+    symbolsDict.setdefault('pull down', pinPullDown[pinNumber-1])
 
     pinSlewRate.append(pinNumber)
     pinSlewRate[pinNumber-1] = coreComponent.createKeyValueSetSymbol("BSP_PIN_" + str(pinNumber) + "_SR", pin[pinNumber-1])
+    pinSlewRate[pinNumber-1].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:SRCON0A")
     pinSlewRate[pinNumber-1].setLabel("Slew Rate")
     pinSlewRate[pinNumber-1].setReadOnly(False)
     pinSlewRate[pinNumber-1].setOutputMode("Value")
@@ -511,17 +738,19 @@ for pinNumber in range(1, packagePinCount + 1):
     pinSlewRate[pinNumber-1].addKey("Slow Edge Rate", "0x2", "Slow Edge Rate")
     pinSlewRate[pinNumber-1].addKey("Slowest Edge Rate", "0x3", "Slowest Edge Rate")
     pinSlewRate[pinNumber-1].setDependencies(pinSlewRateCal, ["BSP_PIN_" + str(pinNumber) + "_SR"])
+    symbolsDict.setdefault('slewrate', pinSlewRate[pinNumber-1])
 
     #list created only for dependency
     pinInterruptList.append(pinNumber)
     pinInterruptList[pinNumber-1] = "BSP_PIN_" + str(pinNumber) + "_CN"
 
+    ## Add symbol to global dictionary
+    pinSymbolsDictionary.setdefault(pinNumber, symbolsDict)
+
 ###################################################################################################
 ################################# PPS Pins Configuration related code #################################
 ###################################################################################################
 pioSymChannel.sort()
-
-PPSPinCount = 60
 
 ppsPinInputConfiguration= coreComponent.createMenuSymbol("GPIO_PPS_PIN_INPUT_CONFIGURATION", pioEnable)
 ppsPinInputConfiguration.setLabel("PPS Input Pin Configuration")
@@ -531,6 +760,7 @@ ppsPinOutputConfiguration.setLabel("PPS Output Pin Configuration")
 
 #Number of PPS input/output pins
 gpioSymPPSPinCount = coreComponent.createIntegerSymbol("PPS_PIN_COUNT", pioEnable)
+gpioSymPPSPinCount.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
 gpioSymPPSPinCount.setLabel("PPS Pin Count")
 gpioSymPPSPinCount.setDefaultValue(PPSPinCount)
 gpioSymPPSPinCount.setReadOnly(False)
@@ -542,12 +772,10 @@ ppsInputPin = []
 ppsOutputEnable = []
 ppsOutputFunction = []
 ppsOutputPin = []
-ppsInputPinMap = {}
-ppsOutputFunctionMap = {}
 PORTS_REMAP_OUTPUT_PIN = []
-PORTS_REMAP_INPUT_FUNCTION= []
 
 # parse XML and populate PPS lists and dictionaries
+global ppsXmlPath
 ppsXmlName = deviceXmlRoot.get("families")
 ppsXmlPath = os.path.join(currentPath, "../plugin/pin_xml/families/" + ppsXmlName + ".xml")
 ppsXmlPath = os.path.normpath(ppsXmlPath)
@@ -571,19 +799,24 @@ for pinNumber in range(0, PPSPinCount):
     #PPS input pin Configuration
     ppsInputEnable.append(pinNumber)
     ppsInputEnable[pinNumber] = coreComponent.createBooleanSymbol("USE_PPS_INPUT_" + str(pinNumber), ppsPinInputConfiguration)
+    ppsInputEnable[pinNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     ppsInputEnable[pinNumber].setLabel("USE PPS Input" + str(pinNumber))
     ppsInputEnable[pinNumber].setDefaultValue(False)
     ppsInputEnable[pinNumber].setReadOnly(False)
+    ppsSymbolsDictionary.setdefault("USE_PPS_INPUT_" + str(pinNumber), ppsInputEnable[pinNumber])
 
     ppsInputFunction.append(pinNumber)
     ppsInputFunction[pinNumber] = coreComponent.createComboSymbol("SYS_PORT_PPS_INPUT_FUNCTION_" + str(pinNumber), ppsInputEnable[pinNumber], PORTS_REMAP_INPUT_FUNCTION)
+    ppsInputFunction[pinNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     ppsInputFunction[pinNumber].setLabel("Function")
     ppsInputFunction[pinNumber].setReadOnly(False)
     ppsInputFunction[pinNumber].setVisible(False)
     ppsInputFunction[pinNumber].setDependencies(PPSOptionsVisibilityControl, ["USE_PPS_INPUT_" + str(pinNumber)])
+    ppsSymbolsDictionary.setdefault("SYS_PORT_PPS_INPUT_FUNCTION_" + str(pinNumber), ppsInputFunction[pinNumber])
 
     ppsInputPin.append(pinNumber)
     ppsInputPin[pinNumber] = coreComponent.createKeyValueSetSymbol("SYS_PORT_PPS_INPUT_PIN_" + str(pinNumber), ppsInputEnable[pinNumber])
+    ppsInputPin[pinNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     ppsInputPin[pinNumber].setLabel("Pin")
     ppsInputPin[pinNumber].setOutputMode("Value")
     ppsInputPin[pinNumber].setDisplayMode("Key")
@@ -593,17 +826,21 @@ for pinNumber in range(0, PPSPinCount):
     for key, value in ppsInputPinMap.items():
         ppsInputPin[pinNumber].addKey(key, value, key)
     ppsInputPin[pinNumber].setDependencies(PPSOptionsVisibilityControl, ["USE_PPS_INPUT_" + str(pinNumber)])
+    ppsSymbolsDictionary.setdefault("SYS_PORT_PPS_INPUT_PIN_" + str(pinNumber), ppsInputPin[pinNumber])
 
 
     #PPS Output pin Configuration
     ppsOutputEnable.append(pinNumber)
     ppsOutputEnable[pinNumber] = coreComponent.createBooleanSymbol("USE_PPS_OUTPUT_" + str(pinNumber), ppsPinOutputConfiguration)
+    ppsOutputEnable[pinNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     ppsOutputEnable[pinNumber].setLabel("USE PPS Output" + str(pinNumber))
     ppsOutputEnable[pinNumber].setDefaultValue(False)
     ppsOutputEnable[pinNumber].setReadOnly(False)
+    ppsSymbolsDictionary.setdefault("USE_PPS_OUTPUT_" + str(pinNumber), ppsOutputEnable[pinNumber])
 
     ppsOutputFunction.append(pinNumber)
     ppsOutputFunction[pinNumber] = coreComponent.createKeyValueSetSymbol("SYS_PORT_PPS_OUTPUT_FUNCTION_" + str(pinNumber), ppsOutputEnable[pinNumber])
+    ppsOutputFunction[pinNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     ppsOutputFunction[pinNumber].setLabel("Function")
     ppsOutputFunction[pinNumber].setOutputMode("Value")
     ppsOutputFunction[pinNumber].setDisplayMode("Key")
@@ -613,13 +850,16 @@ for pinNumber in range(0, PPSPinCount):
     for key, value in ppsOutputFunctionMap.items():
         ppsOutputFunction[pinNumber].addKey(key, value, key)
     ppsOutputFunction[pinNumber].setDependencies(PPSOptionsVisibilityControl, ["USE_PPS_OUTPUT_" + str(pinNumber)])
+    ppsSymbolsDictionary.setdefault("SYS_PORT_PPS_OUTPUT_FUNCTION_" + str(pinNumber), ppsOutputFunction[pinNumber])
 
     ppsOutputPin.append(pinNumber)
     ppsOutputPin[pinNumber] = coreComponent.createComboSymbol("SYS_PORT_PPS_OUTPUT_PIN_" + str(pinNumber), ppsOutputEnable[pinNumber], PORTS_REMAP_OUTPUT_PIN)
+    ppsOutputPin[pinNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     ppsOutputPin[pinNumber].setLabel("Pin")
     ppsOutputPin[pinNumber].setReadOnly(False)
     ppsOutputPin[pinNumber].setVisible(False)
     ppsOutputPin[pinNumber].setDependencies(PPSOptionsVisibilityControl, ["USE_PPS_OUTPUT_" + str(pinNumber)])
+    ppsSymbolsDictionary.setdefault("SYS_PORT_PPS_OUTPUT_PIN_" + str(pinNumber), ppsOutputPin[pinNumber])
 
 ###################################################################################################
 ################################# PORT Configuration related code #################################
@@ -687,6 +927,7 @@ for interrupt in range (0, len(interruptsChildrenList)):
 # This symbol gives which IFS/IEC register should be used for CN interrupt handling.
 # it is assumed (true for all the existing MIPS mask) that all the CN interrupts belong to same IFS/IEC register.
 gpioSym_IFS_RegIndex = coreComponent.createStringSymbol("SYS_PORT_IFS_REG_INDEX", pioEnable)
+gpioSym_IFS_RegIndex.setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
 gpioSym_IFS_RegIndex.setLabel("IFS Register Index")
 gpioSym_IFS_RegIndex.setDefaultValue(str((int(intVectorDataDictionary.get("CHANGE_NOTICE_B")))/32)) # Note that CHANGE_NOTICE_B is present in all the MIPS devices, but CHANGE_NOTICE_A is not.
 gpioSym_IFS_RegIndex.setReadOnly(True)
@@ -705,12 +946,14 @@ for portNumber in range(0, len(pioSymChannel)):
 
     portInterrupt.append(portNumber)
     portInterrupt[portNumber] = coreComponent.createBooleanSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_CN_USED", port[portNumber])
+    portInterrupt[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     portInterrupt[portNumber].setLabel("Use Change Notice On PORT " + pioSymChannel[portNumber])
     portInterrupt[portNumber].setDefaultValue(False)
     portInterrupt[portNumber].setVisible(True)
     portInterrupt[portNumber].setReadOnly(True)
     portInterruptStyle.append(portNumber)
     portInterruptStyle[portNumber] = coreComponent.createBooleanSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_CN_STYLE", port[portNumber])
+    portInterruptStyle[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:%NOREGISTER%")
     portInterruptStyle[portNumber].setLabel("Use Edge Type Interrupt On PORT " + pioSymChannel[portNumber])
     portInterruptStyle[portNumber].setDescription("if False, mismatch type interrupt will be used; check the box for edge style interrupt")
     portInterruptStyle[portNumber].setDefaultValue(False)
@@ -723,54 +966,63 @@ for portNumber in range(0, len(pioSymChannel)):
 
     gpioSym_GPIO_CNPU.append(portNumber)
     gpioSym_GPIO_CNPU[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_CNPU", port[portNumber])
+    gpioSym_GPIO_CNPU[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:CNPUA")
     gpioSym_GPIO_CNPU[portNumber].setLabel("CNPU" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_CNPU[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_CNPU[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_CNPD.append(portNumber)
     gpioSym_GPIO_CNPD[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_CNPD", port[portNumber])
+    gpioSym_GPIO_CNPD[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:CNPDA")
     gpioSym_GPIO_CNPD[portNumber].setLabel("CNPD" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_CNPD[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_CNPD[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_TRIS.append(portNumber)
     gpioSym_GPIO_TRIS[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_TRIS", port[portNumber])
+    gpioSym_GPIO_TRIS[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:TRISA")
     gpioSym_GPIO_TRIS[portNumber].setLabel("TRIS" + str(pioSymChannel[portNumber]) + "CLR" + " Value")
     gpioSym_GPIO_TRIS[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_TRIS[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_LAT.append(portNumber)
     gpioSym_GPIO_LAT[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_LAT", port[portNumber])
+    gpioSym_GPIO_LAT[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:LATA")
     gpioSym_GPIO_LAT[portNumber].setLabel("LAT" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_LAT[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_LAT[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_ODC.append(portNumber)
     gpioSym_GPIO_ODC[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_ODC", port[portNumber])
+    gpioSym_GPIO_ODC[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:ODCA")
     gpioSym_GPIO_ODC[portNumber].setLabel("ODC" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_ODC[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_ODC[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_ANSEL.append(portNumber)
     gpioSym_GPIO_ANSEL[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_ANSEL", port[portNumber])
+    gpioSym_GPIO_ANSEL[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:ANSELA")
     gpioSym_GPIO_ANSEL[portNumber].setLabel("ANSEL" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_ANSEL[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_ANSEL[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_CNEN.append(portNumber)
     gpioSym_GPIO_CNEN[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_CNEN", port[portNumber])
+    gpioSym_GPIO_CNEN[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:CNENA")
     gpioSym_GPIO_CNEN[portNumber].setLabel("CNEN" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_CNEN[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_CNEN[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_SRCON0.append(portNumber)
     gpioSym_GPIO_SRCON0[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_SRCON0", port[portNumber])
+    gpioSym_GPIO_SRCON0[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:SRCON0A")
     gpioSym_GPIO_SRCON0[portNumber].setLabel("SRCON0" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_SRCON0[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_SRCON0[portNumber].setReadOnly(False)
 
     gpioSym_GPIO_SRCON1.append(portNumber)
     gpioSym_GPIO_SRCON1[portNumber] = coreComponent.createHexSymbol("SYS_PORT_" + str(pioSymChannel[portNumber]) + "_SRCON1", port[portNumber])
+    gpioSym_GPIO_SRCON1[portNumber].setHelp("atmel;device:" + Variables.get("__PROCESSOR") + ";comp:gpio_02467;register:SRCON1A")
     gpioSym_GPIO_SRCON1[portNumber].setLabel("SRCON1" + str(pioSymChannel[portNumber]) + " Value")
     gpioSym_GPIO_SRCON1[portNumber].setDefaultValue(0x00000000)
     gpioSym_GPIO_SRCON1[portNumber].setReadOnly(False)
